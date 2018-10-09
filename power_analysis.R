@@ -2,6 +2,7 @@
 ## Andrew Morris
 ## 10/8/18
 
+library(tidyverse)
 library(pwr)
 
 ss <- NULL
@@ -13,8 +14,6 @@ pow = 0.80
 pwr.t.test(power = pow, sig.level = sig, d = 0.5, n = NULL, type = "two.sample")
 
 
-power_function <- function(ES, beta, n, sigma, alpha) {
-  if(beta == NULL) 
-    (ES * alpha * sqrt(n)) / sigma
-  if(ES == NULL)
-}
+qplot(rlnorm(1000, meanlog = 1.6))
+
+
