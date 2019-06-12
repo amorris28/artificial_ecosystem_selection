@@ -1,9 +1,3 @@
-## Todo list
-## 1. plot transfers in the same figure
-## 2. calculate heritability
-## 3. plot mid-parent against offspring (this might make more sense if
-##     I actually crossed specific pairs of jars rather than homogenizing them all
-
 library(tidyverse)
 library(lubridate)
 library(broom)
