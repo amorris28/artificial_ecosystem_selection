@@ -1,7 +1,3 @@
-# Protocol: Artificial Ecosystem Selection Pilot Study
-
-###  Andrew Morris
-
 ### Things I would like to determine with preliminary experiments
 - What transmission rate balances fidelity (heritability) with variation between generations?
   - 1, 5, 10% by volume? This could be one experiment.
@@ -16,9 +12,15 @@
 - How many and what kind of ecoystems to sample from?
   - Forests seem to have the greatest oxidation rates and variation
 - Does the mixing ratio of different source soils matter or can they be homogenized in equal proportions?
-  - Bill expressed concerns about this, but I feel like microbial communities are sufficiently heterogeneous that it won't matter whether you mix samples 50:50 or 60:40.
+  - When homogenizing, combine top 3 samples in varying proportions:
+    - 1:1:1, 1:2:1, 2:1:1, 1:1:2, 2:2:1, 1:2:2, 2:1:2
 - Measure site-specific fluxes before homogenizing?
   - Homogenization before first incubation or incubate individual sites first to get site-specific flux measurements coupled with marker gene sequences?
+- Decide among three generation proportions
+  1. Homogenization: Select top 3 bottles, homogenize them, use homogenized material to inoculate all 9 bottles. (Or combine the three top ones in different proportions )
+  2. Inbreeding: Select top 3 bottles, use each bottle to inoculate 3 bottles in the next generations
+  3. Gene Flow: Inbreed, but introduce external variation every few generations by adding inoculum from another sample
+  4. Hybrid: Inbreeding with crossing every few generations
 
 ### Oxidation rates from temperate ecosystems
 

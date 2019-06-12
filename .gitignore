@@ -2,4 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-protocol.pdf
+*.pdf
+permits/
+Figures/
+Presentation/
