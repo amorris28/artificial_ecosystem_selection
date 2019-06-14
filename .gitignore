@@ -6,3 +6,6 @@
 Permits/
 Figures/
 Presentation/
+*.html
+R/*.md
+R/Figs/*
