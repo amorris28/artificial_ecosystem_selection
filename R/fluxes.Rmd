@@ -76,36 +76,38 @@ conc <-
 
 # Convert ppm to umol
 conc$ch4_umol <- conc$CH4_CONC * 0.965 / ((0.08206 * (293)))
-conc
 
 conc$selected[conc$JAR %in% top_jars_gen1 & conc$transfer == '1'] <- T
 conc$selected[!(conc$JAR %in% top_jars_gen1) | conc$transfer != '1'] <- F
 ```
 
-```{r}
+```{r calc_flux}
 
-# Calculate fluxes from lm slopes
+## Calculate fluxes from lm slopes
+#flux <- 
+#  conc %>% 
+#  group_by(Date, JAR) %>%
+#  do(tidy(lm(ch4_umol ~ days, data = .))) %>% 
+#  filter(term == 'days')#  %>% 
+#  select(Date, JAR, flux_umold = estimate)
+ggplot(conc[conc$Date == "20190614" & conc$JAR == 8,], aes(x = days, y = ch4_umol)) +
+  geom_point() +
+  stat_smooth(method = "glm", method.args = list(family = gaussian(link = "log")))
 flux <- 
   conc %>% 
-  group_by(Date, JAR) %>%
-  do(tidy(lm(ch4_umol ~ days, data = .))) %>% 
-  filter(term == 'days')#  %>% 
-  select(Date, JAR, flux_umold = estimate)
-
-flux <- 
-  conc %>% 
-  group_by(Date, JAR) %>%
+  group_by(transfer, Date, JAR, selected) %>%
   #do(tidy(glm(ch4_umol ~ days, data = ., family = gaussian(link = "log")))) %>% 
     nest() %>% 
 mutate(fit_glm = purrr::map(data, ~ glm(ch4_umol ~ days, data = ., family = gaussian(link = "log"))),
          fit_lm = purrr::map(data, ~ lm(ch4_umol ~ days, data = .)))
+results <-
 flux %>% 
-    mutate(aov = map2(fit_glm, fit_lm, stats::anova)) %>% 
-    pull(aov)
-
-out %>% 
-    mutate(aov = map2(fit_nls, fit_lm, stats::anova)) %>% 
-    pull(aov) %>% head(2)
+  mutate(glance_lm = map(fit_lm, glance),
+         glance_glm = map(fit_glm, glance)) %>% 
+        unnest(glance_lm, glance_glm) %>% 
+        select(transfer, Date, JAR, fit_lm, fit_glm, deviance, deviance1) %>% 
+        mutate(diff_deviance = deviance - deviance1) %>% 
+        select(-deviance, -deviance1)
 
 flux$transfer[flux$Date == 20190527] <- 1
 flux$transfer[flux$Date != 20190527] <- 2
