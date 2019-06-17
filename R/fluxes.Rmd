@@ -48,21 +48,46 @@ n1 <- length(unique(conc[conc$transfer == 1, ]$JAR))
 n2 <- length(unique(conc[conc$transfer == 2, ]$JAR))
 ```
 
-# Overview
+## Overview
 
-This is a pilot experiment with the following goals:
+This is a pilot experiment to demonstrate a response to selection on
+soil methane oxidation at the ecosystem/community level. We hope to demonstrate a
+change in mean trait value as a response to selection that is greater than 
+neutral selection, to calculate community heritability using the breeder's equation, 
+and to identify microbial taxa that change in abundance or presence/absence due to 
+selection. This pilot experiment has the following goals:
 
   1. Determine whether there is a response to selection on soil methane oxidation
-  2. Determine the size of the inoculum and selection differential to use
+  2. Determine the experimental setup including the size of the inoculum, the 
+     selection differential, the generation time, and the environmental conditions
+     (e.g. methane concentration) to achieve a response to selection
 
 A set of `r n1` replicate ecosystems were generated
-with 50 g of soil (5% sterile potting mix plus inoculum)
+with 50 g of soil (sterile potting mix plus 5% inoculum by mass)
 and sterile water to bring them to 60% of field capacity in 500 mL mason jars.
-These jars were initially kept at
-atmospheric concentrations of methane. Later, they were capped and spiked to
-a headspace concentration of approximately 1000 ppm CH4.  After about 8 weeks
-of incubation (2 weeks at 1000 ppm), we finally observed significant (negative) methane fluxes. From the 'r n1' jars, we selected the top 4 
+These jars were initially kept at atmospheric concentrations of methane, but did not 
+display significant methane oxidation rates after ~6 weeks. As a result, 
+they were capped and spiked to
+a headspace concentration of approximately 1000 ppm CH4. Both CH4 and CO2 were monitored
+daily and it was determined that flushing and respiking was required every three
+days in order to maintain aerobic conditions and an elevated CH4 concentration. After about 8 weeks
+of incubation (2 weeks at 1000 ppm), we finally observed significant (negative)
+methane fluxes. From the `r n1` jars, we selected the top 4 
 (jars `r top_jars_gen1`) to homogenize and transfer to the next set of ecosystems.
+
+
+For the first transfer, we used 10% inoculum intead of 5% inoculum and generated
+`r n2` jars. After one week we observed
+significant, negative methane fluxes that exceeded the first set of ecosystems. This
+may have been a response to selection, a biomass effect due to the larger inoculum,
+or both. After two weeks, we observed dampened fluxes compared to week one, but still
+greater flux than before the first transfer. The elevated fluxes in week 1 compared
+to week 2 could have been a result of using two different standard curves for t0 and t1
+and for t2 and t3 in week 1 or due to some temporal effect during the incubations 
+(e.g. response to water addition or initial available nutrients or growth).
+In order to truly demonstrate a response to selection we will generate at
+least one more set of ecosystems through a transfer with the same inoculum size
+(10%).
 
 ```{r process_data}
 
@@ -81,14 +106,22 @@ conc$selected[conc$JAR %in% top_jars_gen1 & conc$transfer == '1'] <- T
 conc$selected[!(conc$JAR %in% top_jars_gen1) | conc$transfer != '1'] <- F
 ```
 
+## Raw flux curves
+
+The raw methane concentration data for each methane flux measurement labelled by
+jar and the date the measurement was taken. The red lines indicate the regression
+line for OLS regression and the blue line indicates the regression line for 
+glm (link = log). Both x and y axes are allowed to vary.
 
 ```{r plot_flux_curves, fig.width=10, fig.height=15}
 ggplot(conc, aes(x = days, y = ch4_umol, group = JAR)) + 
   geom_point() + 
   facet_wrap(~ Date + JAR, scales = "free")  + 
-  stat_smooth(method = "glm", se = F, color = 'blue', alpha = 0.5, geom = 'line',
+  stat_smooth(method = "glm", se = F, color = 'blue', alpha = 0.4, geom = 'line',
+              size = 1,
               method.args = list(family = gaussian(link = "log"))) + 
-  stat_smooth(method = 'lm', se = F, color = 'red', alpha = 0.5, geom = 'line')
+  stat_smooth(method = 'lm', se = F, color = 'red', alpha = 0.4, geom = 'line', size = 1) +
+  labs(x = "Time (days)", y = expression(CH[4] ~ "Concentration" ~ (mu * Mol)))
 ```
 
 ```{r calc_flux}
@@ -143,62 +176,67 @@ sel_par_log <- flux$glm_umold[flux$transfer == '1' & flux$selected == T]
 
 ```
 
-For the first transfer, we used 10% inoculum intead of 5% inoculum and generated
-`r n2` jars. After one week we observed
-significant, negative methane fluxes that exceeded the first set of ecosystems. This
-may have been a response to selection, a biomass effect due to the larger inoculum,
-or both. After two weeks, we observed dampened flxues compared to week one, but still
-greater flux than before the firs transfer. The elevated fluxes in week 1 compared
-to week 2 could have been a result of using two different standard curves for t0 and t1
-and for t2 and t3 in week 1 or due to some temporal effect during the incubations 
-(e.g. response to water addition or initial available nutrients or growth).
-In order to truly demonstrate a response to selection we will generate at
-least one more set of ecosystems through a transfer with the same inoculum size
-(10%).
 
+## Plot fluxes
 
-# Plot fluxes
+Histograms and boxplots of the distribution of methane oxidation rates across jars. 
+The first date is from the first set of jars with the four jars used as the
+inoculum in the first transfer indicated in red. The second date is Transfer 2, Week1
+and the third date is Transfer 2, Week 1. The black line is the
+mean methane flux for the parent generation, the red line is the mean methane
+flux for the selected jars, the light blue line is the mean methane flux
+for transfer 2 week 1 and the dark blue line is the mean metahne flux for
+transfer 2 week 2. Methane fluxes are negtaive, because it's a consumptive
+process (methane oxidation). The first two plots have fluxes calculated from simple
+linear regression. The second two plots have fluxes calculated from a glm
+(family = Gaussian, link = log) to better match the exponential decay function
+for methane oxidation.
+
 ```{r plot_fluxes}
 
 
 ggplot(flux, aes(x = lm_umold)) +
-  geom_histogram(aes(fill = selected)) +
+  geom_histogram(aes(fill = interaction(selected, Date))) +
   facet_grid(Date ~ .) +
-  scale_fill_manual(values = c('black', 'red')) +
+  scale_fill_manual(values = c('black', 'red', 'blue', 'darkblue')) +
   geom_vline(xintercept = mean(all_par)) +
   geom_vline(xintercept = mean(offspr1), color = 'blue') +
   geom_vline(xintercept = mean(offspr2), color = 'darkblue') +
-  geom_vline(xintercept = mean(sel_par), color = 'red') 
+  geom_vline(xintercept = mean(sel_par), color = 'red') +
+  labs(x = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), y = "Number of Jars", title = "LM Fluxes")
 
 ggplot(flux, aes(x = Date, y = lm_umold)) +
   geom_boxplot(outlier.shape = NA) +
-  geom_jitter(aes(color =selected)) +
-  scale_color_manual(values = c('black', 'red')) + 
+  geom_jitter(aes(color = interaction(selected, Date))) +
+  scale_color_manual(values = c('black', 'red', 'blue', 'darkblue')) + 
   geom_hline(yintercept = mean(all_par)) +
   geom_hline(yintercept = mean(offspr1), color = 'blue') +
   geom_hline(yintercept = mean(offspr2), color = 'darkblue') +
-  geom_hline(yintercept = mean(sel_par), color = 'red') 
+  geom_hline(yintercept = mean(sel_par), color = 'red')  + 
+  labs(y = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), x = "Measurement Date", title = "LM Fluxes")
 
 ggplot(flux, aes(x = glm_umold)) +
-  geom_histogram(aes(fill = selected)) +
+  geom_histogram(aes(fill = interaction(selected, Date))) +
   facet_grid(Date ~ .) +
-  scale_fill_manual(values = c('black', 'red')) +
+  scale_fill_manual(values = c('black', 'red', 'blue', 'darkblue')) +
   geom_vline(xintercept = mean(all_par_log)) +
   geom_vline(xintercept = mean(offspr1_log), color = 'blue') +
   geom_vline(xintercept = mean(offspr2_log), color = 'darkblue') +
-  geom_vline(xintercept = mean(sel_par_log), color = 'red') 
+  geom_vline(xintercept = mean(sel_par_log), color = 'red') +
+  labs(x = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), y = "Number of Jars", title = "GLM Fluxes")
 
 ggplot(flux, aes(x = Date, y = glm_umold)) +
   geom_boxplot(outlier.shape = NA) +
-  geom_jitter(aes(color =selected)) +
-  scale_color_manual(values = c('black', 'red')) + 
+  geom_jitter(aes(color = interaction(selected, Date))) +
+  scale_color_manual(values = c('black', 'red', 'blue', 'darkblue')) + 
   geom_hline(yintercept = mean(all_par_log)) +
   geom_hline(yintercept = mean(offspr1_log), color = 'blue') +
   geom_hline(yintercept = mean(offspr2_log), color = 'darkblue') +
-  geom_hline(yintercept = mean(sel_par_log), color = 'red') 
+  geom_hline(yintercept = mean(sel_par_log), color = 'red') +
+  labs(y = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), x = "Measurement Date", title = "GLM Fluxes")
 ```
 
-# Calculate narrow-sense heritability
+## Calculate narrow-sense heritability
 
 ```{r calc_heritability}
 
@@ -228,17 +266,24 @@ model. Granted, this is also not a valid estimate, because of the difference
 in inoculum size between transfer 1 and 2. We will calculate this again between
 transfer 2 and 3 to get a more accurate estimate.
 
-# Identify selected individuals from transfer 2
+## Identify selected individuals from transfer 2
 
 ```{r identify_top_jars} 
 flux %>% 
   group_by(Date) %>% 
   top_n(-4, lm_umold) %>% 
-  kable(caption = "Linear model fluxes") %>% 
+  kable(caption = "Linear model fluxes. transfer is the ecosystem generation,
+        Date is the flux measurement date, JAR lists the top 4 jars from that sample
+        date in terms of methane flux from a linear model, 
+        selected indicates whether they were the
+        selected parents for transfer 1, lm_umold is uMol/d flux based on a linear
+        regression and glm_umold is uMol/d flux based on a glm with family = Gaussian
+        and link = log") %>% 
   kable_styling()
 flux %>% 
   group_by(Date) %>% 
   top_n(-4, glm_umold) %>% 
-  kable(caption = "Generalized linear model link = log fluxes") %>% 
+  kable(caption = "Generalized linear model link = log fluxes. Same as above except
+        JAR indicates top 4 jars from a glm.") %>% 
   kable_styling()
 ```
