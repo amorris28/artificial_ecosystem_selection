@@ -1,0 +1,222 @@
+---
+title: "Oxidation Protocol"
+author: "Andrew Morris"
+date: "9/9/2019"
+output:
+  html_document:
+      toc: true
+      toc_float: 
+        collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,  fig.align="center")
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(broom)
+library(modelr)
+library(lubridate)
+```
+
+## General notes
+
+- Record everything in the lab notebook.
+- Take note of any mistakes or errors.
+- Ideally start flux measurements around 8:00 or 9:00 o'clock on Monday
+  morning to allow time for three measurements on that day.
+
+## Initial setup
+1. Sterilize potting mix, DI water, and mason jar disks in the autoclave.
+2. Sterilize jars with 70% ethanol.
+3. Add 45 g of steril potting mix, 5 g of live soil, and 3.5 mL of sterile DI water to each jar and cap.
+4. Spike each jar with 4.3 mL of 99% CH~4~.
+
+Allow these to incubate for at least two weeks before taking a flux
+measurements. Also, uncap them in the hood for ~30 minutes and respike with 4.3
+mL of 99% CH~4~ every 3-4 days to maintain aerobic conditions and maintain
+elevated CH~4~. So, for example, if the jars are spiked on Thursday, flush them
+on Monday and Thursday of the following two weeks and then take the flux
+measurements on the third Monday.
+
+## Flux sampling
+
+### Monday
+
+1. Uncap jars in hood with blower on to return them to atmospheric gas
+concentrations and to avoid cross-contamination.
+2. Measure standard curve on GC with 5-12 points for CH~4~. Record the
+   concentration of the standard in the bottle (ppm), the volume of the
+   injected standard (mL), the
+concentration of the injected standard (ppm), and the CH~4~ curve area. Also record the
+slope and y-intercept for the resulting equation as well as the R^2^. Continue running standard curves until the R^2^ is 99% and ideally 99.9%.
+3. Cap jars in the hood.
+4. Spike jars to ~1000 ppm CH~4~ using 0.43 mL of 99% CH~4~ and record time for
+   each jar to the minute (t~0~).
+5. Measure t~1~ immediately after spiking all jars resulting in a t~1~ that is
+20 to 30 minutes after t~0~. Measure jars in the order that they were spiked.
+Record the time, CH~4~ curve area, and CO~2~ curve area.
+6. Record t~2~ after 3-5 hours.
+7. Record t~3~ after 5-8 hours.
+
+### Tuesday
+
+8. Record t~4~ after 24 hours.
+
+### Wednesday
+
+9. Record t~5~ after 48 hours.
+10. Enter the standard curve and flux data into R. Visually inspect the graphs
+    to determine how many points to include in the linear portion of the curve
+    (the first 3 to 5 points) and calculate the linear decrease in CH~4~
+    concentration (Vmax). 
+11. Determine the top 2 (16.7%) or 3 (25%) of the ~12 replicate jars for the
+    positive selection treatment (p). Homogenize and reserve the soil from
+    those jars in the hood. Randomly select an equal number of jars from the
+    neutral selection treatment (n). Homogenize and reserve the soil from those
+    jars in the biosafety cabinet. Clearly label each of these containers.
+12. Empty the rest of the soil from the jars into an autoclave container, cover
+    it with aluminum foil, and label it "disposal". Clean the jars and lids
+    with soap and rinse and dry thoroughly.
+13. Add at least `r 45 * 24` grams of fresh potting mix to an autoclave tray
+    and cover with aluminum foil. Wrap the disks in a foil packet. Set aside
+    the rings, they do not need to be autoclaved.
+14. Autoclave the potting soil, lids, and disposal soil on the gravity cycle for 40
+    minutes. 
+15. Remove from the autoclave, put the jars and lids into the hood, and allow
+    to cool overnight.
+
+### Thursday
+
+16. Sterilize the inside of each jar with 70% ethanol.
+17. Add 45 grams of sterile potting mix to each jar.
+18. Add 5 grams of the selected soil homogenate to each 'p' jar and 5 grams of
+    the random soil to each 'n' jar. 
+19. Add 3.5 mL of sterile DI water to each jar. 
+20. Cap each jar and spike with 4.3 mL CH~4~.
+  
+## Preferred data format
+
+Dates should be recorded as `yyyy-mm-dd` and times should be recorded as
+`yyyy-mm-dd hh:mm` (seconds are optional). Use standard column headers with no
+caps and no spaces. Instead, simply use "variable_units" format.
+
+Column Headers | Meaning
+-------------- | ----------------------------------------------------------
+`flux_date`    | The date flux measurements began (i.e. Monday)
+`standard_ppm` | The concentration of the standard in the bottle. 
+`injection_ml` | The volume of standard injected into the GC. 
+`injectin_ppm` | The concentration of standard injected into the gc (standard_ppm multiplied by injection_ml) 
+`ch4_area`     | The area-under-the-curve for the methane peak output from the GC.
+
+### Standard Curve
+
+```{r sc_data, fig.height=3}
+example_sc <- data.frame(
+  flux_date = c('2019-05-27', '2019-05-27', '2019-05-27', '2019-06-07', '2019-06-07', '2019-06-07', '2019-06-14', '2019-06-14', '2019-06-14'),
+  standard_ppm = c(999, 999, 999, 999, 999, 999, 999, 999, 999),
+  injection_ml = c(0.1, 0.5, 1, 0.1, 0.5, 1, 0.1, 0.5, 1),
+  ch4_area = c(556.03, 3046.03, 5995.73, 493.256, 2720.52, 5259.6, 569.3, 3255.82, 6129.72))
+example_sc <- 
+  example_sc %>% 
+  mutate(injection_ppm = standard_ppm * injection_ml) %>% 
+  select(flux_date:injection_ml, injection_ppm, ch4_area)
+example_sc %>% 
+  kable() %>% 
+  kable_styling()
+ggplot(example_sc, aes(ch4_area, injection_ppm)) +
+  facet_wrap(~ flux_date) + 
+  geom_point() +
+  geom_line() +
+  coord_fixed(6)
+
+sc_model <- function(df) {lm(injection_ppm ~ ch4_area, data = df)}
+standard_curves <- 
+  example_sc %>% 
+  group_by(flux_date) %>% 
+  nest() %>% 
+  mutate(model = map(data, sc_model),
+         glance = map(model, glance),
+         tidy = map(model, tidy)) 
+sc_r2 <- 
+  standard_curves %>% 
+  unnest(glance, .drop = TRUE) %>% 
+  arrange(r.squared) %>% 
+  select(flux_date, r.squared)
+sc_equation <- 
+  standard_curves %>% 
+  unnest(tidy, .drop = TRUE) %>%
+  select(flux_date, term, estimate) %>% 
+  spread(term, estimate) %>% 
+  rename(intercept = `(Intercept)`, slope = ch4_area)
+sc_ch4 <- left_join(sc_r2, sc_equation, by = "flux_date")
+sc_ch4 %>% 
+  kable() %>% 
+  kable_styling()
+```
+
+### Flux Measurements
+
+```{r time_data}
+
+time_data <- data.table::fread('../Data/eg_time_data.csv')
+
+time_data[, c('t0', 't1', 't2', 't3', 't4')] <- 
+  lapply(time_data[, c('t0', 't1', 't2', 't3', 't4')],
+         ymd_hms)
+
+as.days <- function(start, end) {as.numeric(interval(start, end))/60/60/24}
+
+time_data[, c('t1', 't2', 't3', 't4')] <- 
+  lapply(time_data[, c('t1', 't2', 't3', 't4')],
+         function(x) as.days(time_data$t0, x))
+
+time_data <- 
+ time_data %>% 
+  select(-t0) %>% 
+  gather(t, days, t1:t4)
+
+```
+
+```{r conc_data, warning=FALSE}
+
+conc_data <- data.table::fread('../Data/eg_conc_data.csv')
+
+flux_data <- 
+  conc_data %>% 
+  gather(t, ch4_area, t1:t4) %>% 
+  left_join(sc_ch4, by = 'flux_date') %>% 
+  mutate(ch4_ppm = ch4_area * slope + intercept) %>% 
+  select(flux_date, jar, t, ch4_ppm) %>% 
+  left_join(time_data, by = c('flux_date', 'jar', 't'))
+
+```
+
+```{r plot_fluxes, fig.height=20}
+flux_data <- 
+  flux_data %>% 
+  mutate(flux_date = ymd(flux_date), 
+         jar = factor(jar),
+         t = factor(t)) %>% 
+  filter(ch4_ppm < 3000)
+
+flux_data %>% 
+  ggplot(aes(days, ch4_ppm)) + 
+  facet_grid(jar ~ flux_date, scales = "free") +
+  geom_point() + 
+  geom_line()
+```
+
+### Calculate Flux
+
+```{r calc_flux}
+
+```
+
+### Convert ppm to $\mu$grams
+
+```{r conversion}
+
+```
+
+### Selection

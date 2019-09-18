@@ -19,12 +19,15 @@ library(broom)
 library(broman)
 library(purrr)
 library(kableExtra)
+library(morris)
 
 ```
 
+
 ```{r import_data}
 
-top_jars_gen1 <- c(2, 3, 13, 16)
+top_jars_pas1 <- c(2, 3, 13, 16)
+top_jars_pas2 <- c(6, 8, 17, 21)
 
 temp <- list.files(path="../Data", pattern="FluxData*", full.names = TRUE)
 conc <- sapply(temp, read.csv, stringsAsFactors = FALSE,
@@ -46,6 +49,20 @@ conc <- conc[!(conc$JAR == 2 & conc$Date == "20190607"), ]
 n1 <- length(unique(conc[conc$transfer == 1, ]$JAR))
 
 n2 <- length(unique(conc[conc$transfer == 2, ]$JAR))
+
+# The two SCs from passage 2, week 1
+sc_1 <- function(x) {(0.1904*x)+58.823}
+sc_2 <- function(x) {(0.1427*x)+99.075}
+
+# Convert the saved concentrations (using two different curves) to using
+# one or the other
+conc <- 
+  conc  %>% 
+  mutate_cond(Date == "20190607", CH4_CONC = sc_1(CH4_AREA))
+# Confirmed that the weirdly high fluxes in Passage 2, Week 1 were due to 
+# using two different standard curves
+
+
 ```
 
 ## Overview
@@ -73,7 +90,7 @@ daily and it was determined that flushing and respiking was required every three
 days in order to maintain aerobic conditions and an elevated CH4 concentration. After about 8 weeks
 of incubation (2 weeks at 1000 ppm), we finally observed significant (negative)
 methane fluxes. From the `r n1` jars, we selected the top 4 
-(jars `r top_jars_gen1`) to homogenize and transfer to the next set of ecosystems.
+(jars `r top_jars_pas1`) to homogenize and transfer to the next set of ecosystems.
 
 
 For the first transfer, we used 10% inoculum intead of 5% inoculum and generated
@@ -87,7 +104,7 @@ and for t2 and t3 in week 1 or due to some temporal effect during the incubation
 (e.g. response to water addition or initial available nutrients or growth).
 In order to truly demonstrate a response to selection we will generate at
 least one more set of ecosystems through a transfer with the same inoculum size
-(10%).
+(10%) using jars `r top_jars_pas2` from passage 2.
 
 ```{r process_data}
 
@@ -102,8 +119,10 @@ conc <-
 # Convert ppm to umol
 conc$ch4_umol <- conc$CH4_CONC * 0.965 / ((0.08206 * (293)))
 
-conc$selected[conc$JAR %in% top_jars_gen1 & conc$transfer == '1'] <- T
-conc$selected[!(conc$JAR %in% top_jars_gen1) | conc$transfer != '1'] <- F
+conc$selected[conc$JAR %in% top_jars_pas1 & conc$transfer == '1'] <- T
+conc$selected[conc$JAR %in% top_jars_pas2 & conc$transfer == '2'] <- T
+conc$selected[!(conc$JAR %in% top_jars_pas1) & conc$transfer == '1'] <- F
+conc$selected[!(conc$JAR %in% top_jars_pas2) & conc$transfer == '2'] <- F
 ```
 
 ## Raw flux curves
@@ -162,18 +181,26 @@ flux %>%
          tidy_glm = map(fit_glm, tidy)) %>% 
 unnest(tidy_lm, tidy_glm) %>% 
 filter(term == 'days') %>% 
-select(transfer, Date, JAR, selected, lm_umold = estimate, glm_umold = estimate1)
+select(transfer, Date, JAR, selected, lm_umold = estimate, glm_umold = estimate1)  %>% 
+mutate(glm_umold_exp = exp(glm_umold))
 
 all_par <- flux$lm_umold[flux$Date == '20190527']
 offspr1 <- flux$lm_umold[flux$Date == '20190607']
 offspr2 <- flux$lm_umold[flux$Date == '20190614']
-sel_par <- flux$lm_umold[flux$transfer == '1' & flux$selected == T]
+sel_par1 <- flux$lm_umold[flux$transfer == '1' & flux$selected == T]
+sel_par2 <- flux$lm_umold[flux$Date == '20190614' & flux$selected == T]
 
 all_par_log <- flux$glm_umold[flux$Date == '20190527']
 offspr1_log <- flux$glm_umold[flux$Date == '20190607']
 offspr2_log <- flux$glm_umold[flux$Date == '20190614']
-sel_par_log <- flux$glm_umold[flux$transfer == '1' & flux$selected == T]
+sel_par1_log <- flux$glm_umold[flux$transfer == '1' & flux$selected == T]
+sel_par2_log <- flux$glm_umold[flux$Date == '20190614' & flux$selected == T]
 
+all_par_exp <- flux$glm_umold_exp[flux$Date == '20190527']
+offspr1_exp <- flux$glm_umold_exp[flux$Date == '20190607']
+offspr2_exp <- flux$glm_umold_exp[flux$Date == '20190614']
+sel_par1_exp <- flux$glm_umold_exp[flux$transfer == '1' & flux$selected == T]
+sel_par2_exp <- flux$glm_umold_exp[flux$Date == '20190614' & flux$selected == T]
 ```
 
 
@@ -197,42 +224,71 @@ for methane oxidation.
 
 ggplot(flux, aes(x = lm_umold)) +
   geom_histogram(aes(fill = interaction(selected, Date))) +
-  facet_grid(Date ~ .) +
-  scale_fill_manual(values = c('black', 'red', 'blue', 'darkblue')) +
-  geom_vline(xintercept = mean(all_par)) +
-  geom_vline(xintercept = mean(offspr1), color = 'blue') +
-  geom_vline(xintercept = mean(offspr2), color = 'darkblue') +
-  geom_vline(xintercept = mean(sel_par), color = 'red') +
+  facet_grid(Date + transfer ~ .) +
+  scale_fill_manual(values = c('darkred', 'red', 'darkblue', 'blue', 'darkorange', 'orange')) +
+  geom_vline(xintercept = mean(all_par), color = 'darkred') +
+  geom_vline(xintercept = mean(offspr1), color = 'darkblue') +
+  geom_vline(xintercept = mean(offspr2), color = 'darkorange') +
+  geom_vline(xintercept = mean(sel_par1), color = 'red') +
+  geom_vline(xintercept = mean(sel_par2), color = 'orange') +
   labs(x = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), y = "Number of Jars", title = "LM Fluxes")
 
 ggplot(flux, aes(x = Date, y = lm_umold)) +
+  facet_wrap(~ transfer + Date, scales = 'free_x') + 
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(aes(color = interaction(selected, Date))) +
-  scale_color_manual(values = c('black', 'red', 'blue', 'darkblue')) + 
-  geom_hline(yintercept = mean(all_par)) +
-  geom_hline(yintercept = mean(offspr1), color = 'blue') +
-  geom_hline(yintercept = mean(offspr2), color = 'darkblue') +
-  geom_hline(yintercept = mean(sel_par), color = 'red')  + 
+  scale_color_manual(values = c('darkred', 'red', 'darkblue', 'blue', 'darkorange', 'orange')) + 
+  geom_hline(yintercept = mean(all_par), color = 'darkred') +
+  geom_hline(yintercept = mean(offspr1), color = 'darkblue') +
+  geom_hline(yintercept = mean(offspr2), color = 'darkorange') +
+  geom_hline(yintercept = mean(sel_par1), color = 'red')  + 
+  geom_hline(yintercept = mean(sel_par2), color = 'orange')  + 
   labs(y = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), x = "Measurement Date", title = "LM Fluxes")
 
 ggplot(flux, aes(x = glm_umold)) +
   geom_histogram(aes(fill = interaction(selected, Date))) +
-  facet_grid(Date ~ .) +
-  scale_fill_manual(values = c('black', 'red', 'blue', 'darkblue')) +
-  geom_vline(xintercept = mean(all_par_log)) +
-  geom_vline(xintercept = mean(offspr1_log), color = 'blue') +
-  geom_vline(xintercept = mean(offspr2_log), color = 'darkblue') +
-  geom_vline(xintercept = mean(sel_par_log), color = 'red') +
+  facet_grid(Date + transfer ~ .) +
+  scale_fill_manual(values = c('darkred', 'red', 'darkblue', 'blue', 'darkorange', 'orange')) +
+  geom_vline(xintercept = mean(all_par_log), color = 'darkred') +
+  geom_vline(xintercept = mean(offspr1_log), color = 'darkblue') +
+  geom_vline(xintercept = mean(offspr2_log), color = 'darkorange') +
+  geom_vline(xintercept = mean(sel_par1_log), color = 'red') +
+  geom_vline(xintercept = mean(sel_par2_log), color = 'orange') +
   labs(x = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), y = "Number of Jars", title = "GLM Fluxes")
 
 ggplot(flux, aes(x = Date, y = glm_umold)) +
+  facet_wrap(~ transfer + Date, scales = 'free_x') + 
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(aes(color = interaction(selected, Date))) +
-  scale_color_manual(values = c('black', 'red', 'blue', 'darkblue')) + 
-  geom_hline(yintercept = mean(all_par_log)) +
-  geom_hline(yintercept = mean(offspr1_log), color = 'blue') +
-  geom_hline(yintercept = mean(offspr2_log), color = 'darkblue') +
-  geom_hline(yintercept = mean(sel_par_log), color = 'red') +
+  scale_color_manual(values = c('darkred', 'red', 'darkblue', 'blue', 'darkorange', 'orange')) + 
+  geom_hline(yintercept = mean(all_par_log), color = 'darkred') +
+  geom_hline(yintercept = mean(offspr1_log), color = 'darkblue') +
+  geom_hline(yintercept = mean(offspr2_log), color = 'darkorange') +
+  geom_hline(yintercept = mean(sel_par1_log), color = 'red') +
+  geom_hline(yintercept = mean(sel_par2_log), color = 'orange') +
+  labs(y = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), x = "Measurement Date", title = "GLM Fluxes")
+
+ggplot(flux, aes(x = glm_umold_exp)) +
+  geom_histogram(aes(fill = interaction(selected, Date))) +
+  facet_grid(Date + transfer ~ .) +
+  scale_fill_manual(values = c('darkred', 'red', 'darkblue', 'blue', 'darkorange', 'orange')) +
+  geom_vline(xintercept = mean(all_par_exp), color = 'darkred') +
+  geom_vline(xintercept = mean(offspr1_exp), color = 'darkblue') +
+  geom_vline(xintercept = mean(offspr2_exp), color = 'darkorange') +
+  geom_vline(xintercept = mean(sel_par1_exp), color = 'red') +
+  geom_vline(xintercept = mean(sel_par2_exp), color = 'orange') +
+  labs(x = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), y = "Number of Jars", title = "GLM Fluxes")
+
+ggplot(flux, aes(x = Date, y = glm_umold_exp)) +
+  facet_wrap(~ transfer + Date, scales = 'free_x') + 
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color = interaction(selected, Date))) +
+  scale_color_manual(values = c('darkred', 'red', 'darkblue', 'blue', 'darkorange', 'orange')) + 
+  geom_hline(yintercept = mean(all_par_exp), color = 'darkred') +
+  geom_hline(yintercept = mean(offspr1_exp), color = 'darkblue') +
+  geom_hline(yintercept = mean(offspr2_exp), color = 'darkorange') +
+  geom_hline(yintercept = mean(sel_par1_exp), color = 'red') +
+  geom_hline(yintercept = mean(sel_par2_exp), color = 'orange') +
   labs(y = expression (CH[4] ~ "Flux" ~ (mu * "Mol"* ~ d^{-1})), x = "Measurement Date", title = "GLM Fluxes")
 ```
 
@@ -253,16 +309,19 @@ ns_heritability <- function(all_par, offspr, sel_par) {
   #     parents
 }
 
-nsh1 <- ns_heritability(all_par, offspr1, sel_par) 
-nsh2 <- ns_heritability(all_par, offspr2, sel_par) 
-nsh1_log <- ns_heritability(all_par_log, offspr1_log, sel_par_log)
-nsh2_log <- ns_heritability(all_par_log, offspr2_log, sel_par_log)
+nsh1 <- ns_heritability(all_par, offspr1, sel_par1) 
+nsh2 <- ns_heritability(all_par, offspr2, sel_par1) 
+nsh1_log <- ns_heritability(all_par_log, offspr1_log, sel_par1_log)
+nsh2_log <- ns_heritability(all_par_log, offspr2_log, sel_par1_log)
+nsh1_exp <- ns_heritability(all_par_exp, offspr1_exp, sel_par1_exp)
+nsh2_exp <- ns_heritability(all_par_exp, offspr2_exp, sel_par1_exp)
 ```
 
 Based on the mean ecosystem-level trait values from the first and second set
 of ecosystems (week 2), we calculated narrow-sense heritability as $h^2 = R / S$, which
-was `r myround(nsh2)` for the linear model and `r myround(nsh2_log)` for the exponential
-model. Granted, this is also not a valid estimate, because of the difference
+was `r myround(nsh2, 2)` for the linear model and `r myround(nsh2_log, 2)` for the exponential
+model and `r myround(nsh2_exp, 2)` for the back-transformed exponential coefficient. 
+Granted, this is also not a valid estimate, because of the difference
 in inoculum size between transfer 1 and 2. We will calculate this again between
 transfer 2 and 3 to get a more accurate estimate.
 
@@ -285,5 +344,12 @@ flux %>%
   top_n(-4, glm_umold) %>% 
   kable(caption = "Generalized linear model link = log fluxes. Same as above except
         JAR indicates top 4 jars from a glm.") %>% 
+  kable_styling()
+flux %>% 
+  group_by(Date) %>% 
+  top_n(-4, glm_umold_exp) %>% 
+  kable(caption = "Generalized linear model link = log fluxes. Same as above except
+        JAR indicates top 4 jars from a glm and instead of slopes it's the exp(coef)
+        so it's a multiplicative factor.") %>% 
   kable_styling()
 ```
