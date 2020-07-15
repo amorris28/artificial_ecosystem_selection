@@ -185,6 +185,7 @@ fluxes$passage <- as.numeric(fluxes$flux_date)
 
 fit <- lm(estimate ~ treat * passage, data = fluxes)
 summary(fit)
+plot(fit$residuals ~ fluxes$estimate)
 selection_table <- tidy(anova(fit))
 
 
@@ -296,10 +297,11 @@ post2 <- stan_lmer(estimate ~ 1 + (1|treat) + (1|passage) + (1|treat:passage),
 fluxes %>% 
   ggplot(mapping = aes(x = passage, y = estimate, color = treat)) +
   geom_jitter(width = 0.2) +
-  geom_smooth(method = 'lm') +
+  #geom_smooth(method = 'lm') +
   labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
   scale_color_discrete(name = "Selection Treatment", labels = c('Neutral', 'Positive')) +
-  theme_bw()
+  theme_bw() + 
+  geom_boxplot(aes(x = passage, y = estimate, color = treat, group = interaction(treat, passage)))
 
 #ggsave('selection.pdf', width = 6, height = 4)
 ```
@@ -307,9 +309,12 @@ fluxes %>%
 ```{r selection_log_plot}
 
 log_fluxes <- fluxes
-log_fluxes$estimate[log_fluxes$estimate < 0] <- 0.01
+#log_fluxes$estimate[log_fluxes$estimate < 0] <- 0.01
+log_fluxes$estimate <- log10(log_fluxes$estimate + abs(min(log_fluxes$estimate)) + 0.01)
 
 fit <- lm(estimate ~ treat * passage, data = log_fluxes)
+summary(fit)
+plot(fit$residuals ~ log_fluxes$estimate)
 
 selection_table <- tidy(anova(fit))
 
@@ -339,6 +344,15 @@ log_fluxes %>%
   scale_y_log10()
 
 #ggsave('selection.pdf', width = 6, height = 4)
+
+log_fluxes %>% 
+  ggplot(mapping = aes(x = passage, y = estimate, color = treat)) +
+  geom_jitter(width = 0.2) +
+  #geom_smooth(method = 'lm') +
+  labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
+  scale_color_discrete(name = "Selection Treatment", labels = c('Neutral', 'Positive')) +
+  theme_bw() + 
+  geom_boxplot(aes(x = passage, y = estimate, color = treat, group = interaction(treat, passage)))
 ```
 
 ```{r test_response_rank}
@@ -350,6 +364,7 @@ rank_fit
 summary(rank_fit)
 anova(rank_fit)
 
+plot(fit$residuals ~ fluxes$estimate_rank)
 
 ```
 
@@ -411,21 +426,62 @@ ggsave('selection.pdf', width = 6, height = 4)
 ggsave('selection.png', width = 6, height = 4)
 ```
 
+
+```{r}
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+
+ggplot(fluxes, aes(x = estimate)) + 
+  facet_wrap(~ passage + treat) +
+  geom_dotplot(method = 'histodot') +
+  geom_vline(aes(xintercept = mean(estimate)), color = 'blue') +
+  geom_vline(aes(xintercept = median(estimate)), color = 'red') +
+    geom_vline(aes(xintercept = gm_mean(estimate)), color = 'green')
+
+
+```
+
+
 # Deviance from mean
 
 ```{r}
-fluxes <- 
+deviance_se <- 
+  fluxes %>% 
+  select(treat, passage, estimate) %>% 
+  group_by(passage, treat) %>% 
+  summarize(se = se(estimate)) %>% 
+  pivot_wider(names_from = treat, values_from = se) %>% 
+  mutate(deviance_se = p + n) %>% 
+  pull(deviance_se)
+  
+
+deviance <-
 fluxes %>% 
-  group_by(passage) %>% 
-  mutate(passage_mean = mean(estimate)) %>% 
-  mutate(deviance = estimate - passage_mean)
+  select(treat, passage, estimate) %>% 
+  group_by(passage, treat) %>% 
+  summarize(mean = median(estimate)) %>% 
+  pivot_wider(names_from = treat, values_from = mean) %>% 
+  mutate(deviance = p - n)
 
-ggplot(fluxes, aes(x = passage, y = deviance, color = treat)) + 
-  geom_point() +
-  stat_smooth(method = 'lm')
+deviance$se <- deviance_se
 
-fit <- lm(deviance ~ treat * passage, data = fluxes)
+
+
+fit <- lm(deviance ~ passage, data = deviance)
 summary(fit)
+
+fit <- rma(deviance~passage,se^2,method="FE",data = deviance)
+fit
+
+summary(fit)
+plot(fit)
+
+ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
+  geom_pointrange() + 
+  geom_abline(intercept = fit$beta[1], slope = fit$beta[2], color = 'blue')
+
 ```
 
 
