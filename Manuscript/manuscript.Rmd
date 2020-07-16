@@ -174,30 +174,11 @@ Should we inoculate them onto sterile potting mix or onto neutral potting mix or
 
 ## Response to selection
 
-```{r sel_model}
-fluxes <- read_tsv('../Output/fluxes.tsv')
-rank_fit <- lm(estimate_rank ~ treat * passage, data = fluxes)
-
-sel_sum <- tidy(summary(rank_fit))
-sel_aov <- tidy(anova(rank_fit))
-```
-
-Methane oxidation rates increased over the course of the experiment in the positive selection treatment and did not change in the neutral selection treatment (`r figures("selection", display="cite")`). This can be seen in the significant interaction between treatment and passage number for the rank of CH~4~ oxidation rate (F~`r sel_aov[3,2]`,`r sel_aov[4,2]`~ = `r myround(sel_aov[3,5], 2)`, p = `r myround(sel_aov[3,6], 3)`). While there was no difference in the overall mean of the two treatments (F~`r sel_aov[1,2]`,`r sel_aov[4,2]`~ = `r myround(sel_aov[1,5], 2)`, p = `r myround(sel_aov[1,6], 2)`), the mean rank CH~4~ oxidation rate increased by `r myround(sel_sum[4,2],1)`  per passage for the positive selection treatment (t = `r myround(sel_sum[4, 4], 2)`, p = `r myround(sel_sum[4, 5], 3)`), but the neutral treatment did not change ($\beta$ = `r myround(sel_sum[3,2],1)`, t = `r myround(sel_sum[3,4], 2)`, p = `r myround(sel_sum[3,5], 2)`).
-
-```{r sel_fig, fig.width=5, fig.height=3, fig.cap=figures("selection")}
-fluxes %>% 
-  ggplot(mapping = aes(x = passage, y = estimate_rank, color = treat)) +
-  geom_jitter(width = 0.2) +
-  geom_smooth(method = 'lm', formula = y ~ x, se = FALSE) +
-  labs(x = "Passage Number", y = "Rank Methane Oxidation Rate (-k)") +
-  #scale_color_discrete(name = "Selection\nTreatment", labels = c('Neutral', 'Positive')) +
-    scale_color_manual(name = "Selection\nTreatment", labels = c('Neutral', 'Positive'), values = c("gray60", "darkorange2")) +
-  theme_bw()
-```
-
-## Deviance
 
 ```{r dev_model}
+fluxes <- read_tsv('../Output/fluxes.tsv')
+
+
 deviance_se <- 
   fluxes %>% 
   select(treat, passage, estimate) %>% 
