@@ -1,10 +1,13 @@
 ---
-title: "Artificial ecosystem selection on soil methane oxidation reveals simple/complex mapping between microbial community structure and ecosystem function"
+title: Artificial ecosystem selection on soil methane oxidation reveals simple/complex
+  mapping between microbial community structure and ecosystem function
 author: "Andrew H. Morris and Brendan J. M. Bohannan"
 output:
   html_document: default
   word_document:
     reference_docx: reference.docx
+editor_options:
+  chunk_output_type: inline
 ---
 
 ```{r options, echo=FALSE, include=FALSE}
@@ -13,9 +16,13 @@ library(tidyverse)
 library(captioner)
 library(broom)
 library(broman)
+library(morris)
+library(metafor)
 figures <- captioner()
 figures("selection", "Rank CH~4~ oxidation rate for each jar in each passage.")
-figures("herit", "Correlation between mid-parent CH~4~ flux and mid-offspring CH~4~ flux.")
+figures("deviance", "Deviance of CH~4~ oxidation rate for the Positive selection treatment relative to the Neutral selection treatment. Deviance is calculated as the mean of P within each passage minus the mean of N within each passage. Errorbars are the sums of the standard errors for P and N for each passage. The best fit line is an ordinary least squares fit taking into account the standard errors of the deviations. The gray ribbon is the 95% confidence interval for the regression coefficient.")
+figures("herit", "Correlation between mid-parent CH~4~ flux and mid-offspring CH~4~ flux. The mid-parents are the mean of the three (or two) jars selected to inoculate the next passage. The mid-offsprings are the mean of all twelve jars produced in one passage. The best fit line is an ordinary least squares regression line and the gray ribbon is the 95% confidence interval for the regression coefficient.")
+
 
 ```
 
@@ -165,6 +172,8 @@ Should we inoculate them onto sterile potting mix or onto neutral potting mix or
 
 # Results
 
+## Response to selection
+
 ```{r sel_model}
 fluxes <- read_tsv('../Output/fluxes.tsv')
 rank_fit <- lm(estimate_rank ~ treat * passage, data = fluxes)
@@ -175,40 +184,115 @@ sel_aov <- tidy(anova(rank_fit))
 
 Methane oxidation rates increased over the course of the experiment in the positive selection treatment and did not change in the neutral selection treatment (`r figures("selection", display="cite")`). This can be seen in the significant interaction between treatment and passage number for the rank of CH~4~ oxidation rate (F~`r sel_aov[3,2]`,`r sel_aov[4,2]`~ = `r myround(sel_aov[3,5], 2)`, p = `r myround(sel_aov[3,6], 3)`). While there was no difference in the overall mean of the two treatments (F~`r sel_aov[1,2]`,`r sel_aov[4,2]`~ = `r myround(sel_aov[1,5], 2)`, p = `r myround(sel_aov[1,6], 2)`), the mean rank CH~4~ oxidation rate increased by `r myround(sel_sum[4,2],1)`  per passage for the positive selection treatment (t = `r myround(sel_sum[4, 4], 2)`, p = `r myround(sel_sum[4, 5], 3)`), but the neutral treatment did not change ($\beta$ = `r myround(sel_sum[3,2],1)`, t = `r myround(sel_sum[3,4], 2)`, p = `r myround(sel_sum[3,5], 2)`).
 
-```{r sel_fig, fig.width=5, fig.height=4, fig.cap=figures("selection")}
+```{r sel_fig, fig.width=5, fig.height=3, fig.cap=figures("selection")}
 fluxes %>% 
   ggplot(mapping = aes(x = passage, y = estimate_rank, color = treat)) +
   geom_jitter(width = 0.2) +
-  geom_smooth(method = 'lm') +
+  geom_smooth(method = 'lm', formula = y ~ x, se = FALSE) +
   labs(x = "Passage Number", y = "Rank Methane Oxidation Rate (-k)") +
-  scale_color_discrete(name = "Selection\nTreatment", labels = c('Neutral', 'Positive')) +
+  #scale_color_discrete(name = "Selection\nTreatment", labels = c('Neutral', 'Positive')) +
+    scale_color_manual(name = "Selection\nTreatment", labels = c('Neutral', 'Positive'), values = c("gray60", "darkorange2")) +
   theme_bw()
 ```
+
+## Deviance
+
+```{r dev_model}
+deviance_se <- 
+  fluxes %>% 
+  select(treat, passage, estimate) %>% 
+  group_by(passage, treat) %>% 
+  summarize(se = se(estimate)) %>% 
+  pivot_wider(names_from = treat, values_from = se) %>% 
+  mutate(deviance_se = p + n) %>% 
+  pull(deviance_se)
+  
+
+deviance <-
+fluxes %>% 
+  select(treat, passage, estimate) %>% 
+  group_by(passage, treat) %>% 
+  summarize(mean = mean(estimate)) %>% 
+  pivot_wider(names_from = treat, values_from = mean) %>% 
+  mutate(deviance = p - n)
+
+deviance$se <- deviance_se
+
+dev_fit <- rma(deviance~passage, se^2, method="FE", data = deviance)
+dev_fit1 <- lm(deviance~passage, data = deviance)
+
+flux_per_psg <-
+fluxes %>% 
+  group_by(passage) %>% 
+  summarize(mean = mean(estimate), se = se(estimate)) %>% 
+  pull(mean)
+
+fluxes %>% 
+  group_by(passage, treat) %>% 
+  summarize(mean = mean(estimate), se = se(estimate))
+
+dev_pred <- predict(dev_fit)
+```
+
+
+Methane oxidation rate increased as a response to selection in the Positive selection treatment (`r figures("deviance", display="cite")`). This can be seen in the increase in deviation between the Positive and Neutral selection treatments over the course of the experiment (z = `r myround(dev_fit$zval[2], 2)`, p = `r myround(dev_fit$pval[2], 3)`). Mean CH~4~ oxidation rate for the Positive treatment increased by `r myround(dev_fit$beta[2], 3)` per passage relative to the Neutral treatment. The mean flux across all jars in all treatments in the first passage was `r myround(flux_per_psg[1], 3)` so this effectively represents a doubling of CH~4~ consumption in every passage due to selection. 
+
+```{r dev_fig, fig.width=4, fig.height=3, fig.cap=figures("deviance")}
+
+
+ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
+  geom_ribbon(aes(ymin = dev_pred$ci.lb, ymax = dev_pred$ci.ub), alpha = 0.2) +
+  geom_pointrange(color = 'darkorange2') + 
+  #geom_abline(intercept = 0.1 + fit$beta[1], slope = fit$beta[2], color = 'blue') +
+      geom_segment(aes(x = 1, xend = 5, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*5), color = 'darkorange2', size = 1) +
+  labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
+  theme_bw()
+```
+
+
+
+## Ecosystem heritability
 
 ```{r herit_model}
 heritability <- read_tsv('../Output/heritability.tsv')
-fit <- lm(offspring ~ parental, data = heritability)
-her_sum <- tidy(summary(fit))
-her_aov <- tidy(anova(fit))
+her_fit <- lm(offspring ~ parental, data = heritability)
+her_sum <- tidy(summary(her_fit))
+her_aov <- tidy(anova(her_fit))
+
+
 ```
-
-Methane oxidation rate was heritable between consecutive generations (`r figures("herit", display="cite")`). Specifically, the narrow-sense heritability ($h^2$), calculated as the slope of the mid-parent and mid-offspring, was `r myround(her_sum[2, 2], 2)`.
-
-```{r herit_fig, fig.width=5, fig.height=4, fig.cap=figures("herit")}
-ggplot(heritability, aes(x = parental, y = offspring)) +
-  geom_point(aes(color = treat)) +
-  stat_smooth(method = 'lm') + 
-  labs(x = "Parental Mean Flux (-k)", y = "Offspring Mean Flux (-k)") +
-  scale_color_discrete(name = "Selection\nTreatment", labels = c('Neutral', 'Positive')) +
-  theme_bw()
-```
-
 
 ```{r inbreeding_coef}
 N = 12 # population size
 T = 5  # number of passages (generations)
 F = 1 - (1 - 1 / (2 * N)) ^ T
-F
+```
+
+Methane oxidation rate was heritable between consecutive passages (`r figures("herit", display="cite")`). Specifically, the narrow-sense heritability, calculated as the slope of the mid-parent and mid-offspring, was $h^2$ = `r myround(her_sum[2, 2], 2)` $\pm$ `r myround(her_sum[2, 3], 2)`. With an inbreeding coefficient of `r myround(F, 2)`, 
+
+
+```{r herit_fig, fig.width=5, fig.height=4, fig.cap=figures("herit")}
+ggplot(heritability, aes(x = parental, y = offspring)) +
+  geom_point(aes(color = treat)) +
+  stat_smooth(method = 'lm', formula = y ~ x, color = "black") + 
+  labs(x = "Parental Mean Flux (-k)", y = "Offspring Mean Flux (-k)") +
+    scale_color_manual(name = "Selection\nTreatment", labels = c('Neutral', 'Positive'), values = c("gray60", "darkorange2")) +
+  theme_bw()
+
+```
+
+
+
+
+```{r}
+R = dev_fit$beta[2]
+h2 = pull(her_sum[2, 2])
+S = R/h2
+```
+
+```{r}
+fluxes
+heritability
 ```
 
 

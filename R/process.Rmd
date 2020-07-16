@@ -18,6 +18,7 @@ library(modelr)
 library(lubridate)
 library(morris)
 library(magrittr)
+library(metafor)
 ```
 
 ### Standard Curve
@@ -31,7 +32,7 @@ sc %>%
 ggplot(mapping = aes(area, injection_ppm)) +
   facet_wrap(~ flux_date + molecule, scales = "free") + 
   geom_point() +
-  stat_smooth(method = 'lm', se = FALSE)
+  stat_smooth(formula = y ~ x, method = 'lm', se = FALSE)
 
 sc_model <- function(df) {lm(injection_ppm ~ area, data = df)}
 standard_curves <- 
@@ -184,7 +185,6 @@ ggplot(fluxes, aes(y = estimate, x = treat, color = treat)) +
 fluxes$passage <- as.numeric(fluxes$flux_date)
 
 fit <- lm(estimate ~ treat * passage, data = fluxes)
-summary(fit)
 plot(fit$residuals ~ fluxes$estimate)
 selection_table <- tidy(anova(fit))
 
@@ -295,13 +295,13 @@ post2 <- stan_lmer(estimate ~ 1 + (1|treat) + (1|passage) + (1|treat:passage),
 ```{r selection}
 
 fluxes %>% 
-  ggplot(mapping = aes(x = passage, y = estimate, color = treat)) +
+  ggplot(mapping = aes(x = passage, y = estimate, color = treat)) + 
+  geom_boxplot(aes(x = passage, y = estimate, color = treat, group = interaction(treat, passage))) +
   geom_jitter(width = 0.2) +
   #geom_smooth(method = 'lm') +
   labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
   scale_color_discrete(name = "Selection Treatment", labels = c('Neutral', 'Positive')) +
-  theme_bw() + 
-  geom_boxplot(aes(x = passage, y = estimate, color = treat, group = interaction(treat, passage)))
+  theme_bw()
 
 #ggsave('selection.pdf', width = 6, height = 4)
 ```
@@ -461,7 +461,7 @@ deviance <-
 fluxes %>% 
   select(treat, passage, estimate) %>% 
   group_by(passage, treat) %>% 
-  summarize(mean = median(estimate)) %>% 
+  summarize(mean = mean(estimate)) %>% 
   pivot_wider(names_from = treat, values_from = mean) %>% 
   mutate(deviance = p - n)
 
@@ -479,7 +479,7 @@ summary(fit)
 plot(fit)
 
 ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
-  geom_pointrange() + 
+  geom_pointrange(color = 'darkorange2') + 
   geom_abline(intercept = fit$beta[1], slope = fit$beta[2], color = 'blue')
 
 ```
@@ -519,11 +519,6 @@ offspring <-
   filter(passage != 1) %>% 
   mutate(passage = passage - 1)
 
-ggplot(heritability, aes(x = offspring)) +
-  geom_histogram(position = 'identity', alpha = 0.5)
-
-ggplot(heritability, aes(x = parental)) +
-  geom_histogram(position = 'identity', alpha = 0.5)
 
 # offspring <-
 #   fluxes %>%
@@ -566,9 +561,16 @@ ggplot(mapping = aes(fit$residuals, heritability$parental)) +
 ggplot(heritability, aes(x = parental, y = offspring)) +
   geom_point()
 
+
+ggplot(heritability, aes(x = offspring)) +
+  geom_histogram(position = 'identity', alpha = 0.5)
+
+ggplot(heritability, aes(x = parental)) +
+  geom_histogram(position = 'identity', alpha = 0.5)
+
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 library(rstan)
 
 srr_block <- "
