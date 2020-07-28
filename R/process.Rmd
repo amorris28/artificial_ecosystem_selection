@@ -6,6 +6,8 @@ output:
       toc: true
       toc_float: 
         collapsed: false
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -26,11 +28,12 @@ library(metafor)
 ```{r sc_data, fig.height=3}
 
 sc <- read.csv('../Data/standard_curve.csv')
+sc_dates <- read.csv('../Data/sc_dates.csv')
 
 sc %>% 
   filter(molecule == 'ch4') %>% 
 ggplot(mapping = aes(area, injection_ppm)) +
-  facet_wrap(~ flux_date + molecule, scales = "free") + 
+  facet_wrap(~ sc_date + molecule, scales = "free") + 
   geom_point() +
   stat_smooth(formula = y ~ x, method = 'lm', se = FALSE)
 
@@ -38,7 +41,7 @@ sc_model <- function(df) {lm(injection_ppm ~ area, data = df)}
 standard_curves <- 
   sc %>% 
   filter(molecule == 'ch4') %>% 
-  group_by(flux_date) %>% 
+  group_by(flux_date, sc_date) %>% 
   nest() %>% 
   mutate(model = map(data, sc_model),
          glance = map(model, glance),
@@ -46,17 +49,22 @@ standard_curves <-
 sc_r2 <- 
   standard_curves %>% 
   unnest(glance) %>% 
-  select(flux_date, r.squared)
+  select(flux_date, sc_date, r.squared)
 sc_equation <- 
   standard_curves %>% 
   unnest(tidy) %>%
-  select(flux_date, term, estimate) %>% 
+  select(flux_date, sc_date, term, estimate) %>% 
   spread(term, estimate) %>% 
   rename(intercept = `(Intercept)`, slope = area)
-sc_ch4 <- left_join(sc_r2, sc_equation, by = c("flux_date"))
+sc_ch4 <- left_join(sc_r2, sc_equation, by = c("flux_date", "sc_date"))
 sc_ch4 %>% 
   kable() %>% 
   kable_styling()
+
+sc_ch4 <- 
+sc_ch4 %>% 
+  left_join(sc_dates) %>% 
+  select(flux_date:sc_date, t, r.squared:slope)
 
 ```
 
@@ -96,7 +104,7 @@ conc_data <-
   filter(molecule == 'ch4') %>% 
   mutate(flux_date = factor(flux_date)) %>% 
   gather(t, area, t1:t5) %>% 
-  left_join(sc_ch4, by = c('flux_date')) %>% 
+  left_join(sc_ch4, by = c('flux_date', 't')) %>% 
   mutate(ppm = area * slope + intercept) %>% 
   select(flux_date, jar, t, ppm) %>% 
   spread(t, ppm)
