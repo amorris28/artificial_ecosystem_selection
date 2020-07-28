@@ -99,7 +99,6 @@ fluxes %>%
 deviance$se <- deviance_se
 
 dev_fit <- rma(deviance~passage, se^2, method="FE", data = deviance)
-dev_fit2 <- lm(deviance~passage, data = deviance)
 
 flux_per_psg <-
   fluxes %>% 
@@ -119,10 +118,10 @@ Mean CH~4~ oxidation rate for the Positive treatment increased by `r myround(dev
 ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
   geom_ribbon(aes(ymin = dev_pred$ci.lb, ymax = dev_pred$ci.ub), alpha = 0.2) +
   geom_pointrange(color = 'darkorange2') + 
-  #geom_abline(intercept = 0.1 + fit$beta[1], slope = fit$beta[2], color = 'blue') +
-      geom_segment(aes(x = 1, xend = 5, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*5), color = 'darkorange2', size = 1) +
+      geom_segment(aes(x = 1, xend = 6, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*5), color = 'darkorange2', size = 1) +
   labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
   theme_bw()
+
 ```
 
 
@@ -135,7 +134,6 @@ her_fit <- lm(offspring ~ parental, data = heritability)
 her_sum <- tidy(summary(her_fit))
 her_aov <- tidy(anova(her_fit))
 
-
 ```
 
 ```{r inbreeding_coef}
@@ -144,7 +142,7 @@ T = 5  # number of passages (generations)
 F = 1 - (1 - 1 / (2 * N)) ^ T
 ```
 
-Methane oxidation rate was heritable between consecutive passages (`r figures("herit", display="cite")`). Specifically, the narrow-sense heritability, calculated as the slope of the mid-parent and mid-offspring, was $h^2$ = `r myround(her_sum[2, 2], 2)` $\pm$ `r myround(her_sum[2, 3], 2)`. With an inbreeding coefficient of `r myround(F, 2)`, 
+Methane oxidation rate was heritable between consecutive passages (`r figures("herit", display="cite")`). Specifically, the narrow-sense heritability, calculated as the slope of the mid-parent and mid-offspring, was $h^2$ = `r myround(her_sum[2, 2], 2)` $\pm$ `r myround(her_sum[2, 3], 2)` (t = `r myround(her_sum[2, 4], 2)`, p = `r myround(her_sum[2, 5], 3)`). With an inbreeding coefficient of `r myround(F, 2)`, 
 
 
 ```{r herit_fig, fig.width=5, fig.height=4, fig.cap=figures("herit")}

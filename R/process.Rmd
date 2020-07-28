@@ -23,9 +23,11 @@ library(magrittr)
 library(metafor)
 ```
 
-### Standard Curve
+# Standard Curves
 
-```{r sc_data, fig.height=3}
+Standard curves for each sc_date. (Some flux_dates have multiple standard curves if the instrument drifted from day to day as indicated by check standards.)
+
+```{r sc_data, fig.height=4}
 
 sc <- read.csv('../Data/standard_curve.csv')
 sc_dates <- read.csv('../Data/sc_dates.csv')
@@ -63,12 +65,15 @@ sc_ch4 %>%
 
 sc_ch4 <- 
 sc_ch4 %>% 
-  left_join(sc_dates) %>% 
+  left_join(sc_dates, by = "sc_date") %>% 
   select(flux_date:sc_date, t, r.squared:slope)
 
 ```
 
-### Flux Measurements
+
+# Fluxes
+
+Each column is jar by number (the jar numbers are arbitrary - there is no relationship between the communities of jar 01, passage 1 and jar 01, passage 2). Rows are each selection treatment (positive = p, neutral = n) within each passage (indicated by the date flux was measured). Lines are proportion of ppm CH4 consumed per day.
 
 ```{r time_data}
 
@@ -132,7 +137,8 @@ flux_data <-
 
 ```
 
-# Flux
+
+
 
 ```{r flux_curves, warning = FALSE, fig.height=8}
 
@@ -140,12 +146,13 @@ flux_data %>%
   ggplot(aes(days, ppm)) + 
   facet_grid(flux_date + treat ~ rep, scales = "free") +
   geom_point() + 
-  stat_smooth(method = 'lm')
+  stat_smooth(method = 'lm', formula = y ~ x)
 
 ```
 
 
-# Fluxes
+
+Histograms and boxplots of flux estimates for each jar within each treatment. The numbered points give an indication of which jars were the greatest methane consumers
 
 ```{r flux_model}
 lin_model <- function(dt) {
@@ -174,6 +181,7 @@ write_tsv(fluxes, '../Output/fluxes.tsv')
 
 ```
 
+
 ```{r plot_estimates}
 ggplot(fluxes, aes(x = estimate, fill = treat)) +
   facet_wrap(~ flux_date, scales = "free") +
@@ -185,10 +193,10 @@ ggplot(fluxes, aes(y = estimate, x = treat, color = treat)) +
   geom_label(aes(label = rep))
 ```
 
+# Response to Selection
 
 
-
-```{r test_response}
+```{r test_response, eval=FALSE, include=FALSE}
 
 fluxes$passage <- as.numeric(fluxes$flux_date)
 
@@ -209,7 +217,7 @@ selection_table %>%
 ```
 
 
-```{r selection}
+```{r selection, eval=FALSE, include=FALSE}
 
 fluxes %>% 
   ggplot(mapping = aes(x = passage, y = estimate, color = treat)) + 
@@ -223,14 +231,13 @@ fluxes %>%
 #ggsave('selection.pdf', width = 6, height = 4)
 ```
 
-```{r selection_log_plot}
+```{r selection_log_plot, eval=FALSE, include=FALSE}
 
 log_fluxes <- fluxes
 #log_fluxes$estimate[log_fluxes$estimate < 0] <- 0.01
 log_fluxes$estimate <- log10(log_fluxes$estimate + abs(min(log_fluxes$estimate)) + 0.01)
 
 fit <- lm(estimate ~ treat * passage, data = log_fluxes)
-summary(fit)
 plot(fit$residuals ~ log_fluxes$estimate)
 
 selection_table <- tidy(anova(fit))
@@ -272,7 +279,7 @@ log_fluxes %>%
   geom_boxplot(aes(x = passage, y = estimate, color = treat, group = interaction(treat, passage)))
 ```
 
-```{r test_response_rank}
+```{r test_response_rank, eval=FALSE, include=FALSE}
 
 fluxes$estimate_rank <- rank(fluxes$estimate)
 rank_fit <- lm(estimate_rank ~ treat * passage, data = fluxes)
@@ -285,7 +292,7 @@ plot(fit$residuals ~ fluxes$estimate_rank)
 
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 selection_table <- tidy(anova(rank_fit))
 selection_table[1, 1] <- "Treatment"
 selection_table[2, 1] <- "Passage"
@@ -329,7 +336,7 @@ selection_table %>%
 
 
 
-```{r selection_rank}
+```{r selection_rank, eval=FALSE, include=FALSE}
 
 fluxes %>% 
   ggplot(mapping = aes(x = passage, y = estimate_rank, color = treat)) +
@@ -344,22 +351,6 @@ ggsave('selection.png', width = 6, height = 4)
 ```
 
 
-```{r}
-
-gm_mean = function(x, na.rm=TRUE){
-  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
-}
-
-ggplot(fluxes, aes(x = estimate)) + 
-  facet_wrap(~ passage + treat) +
-  geom_dotplot(method = 'histodot') +
-  geom_vline(aes(xintercept = mean(estimate)), color = 'blue') +
-  geom_vline(aes(xintercept = median(estimate)), color = 'red') +
-    geom_vline(aes(xintercept = gm_mean(estimate)), color = 'green')
-
-
-```
-
 
 # Deviance from mean
 
@@ -368,7 +359,7 @@ deviance_se <-
   fluxes %>% 
   select(treat, passage, estimate) %>% 
   group_by(passage, treat) %>% 
-  summarize(se = se(estimate)) %>% 
+  summarize(se = se(estimate), .groups = "drop") %>% 
   pivot_wider(names_from = treat, values_from = se) %>% 
   mutate(deviance_se = p + n) %>% 
   pull(deviance_se)
@@ -378,7 +369,7 @@ deviance <-
 fluxes %>% 
   select(treat, passage, estimate) %>% 
   group_by(passage, treat) %>% 
-  summarize(mean = mean(estimate)) %>% 
+  summarize(mean = mean(estimate), .groups = "drop") %>% 
   pivot_wider(names_from = treat, values_from = mean) %>% 
   mutate(deviance = p - n)
 
@@ -386,19 +377,23 @@ deviance$se <- deviance_se
 
 
 
-fit <- lm(deviance ~ passage, data = deviance)
-summary(fit)
-
 fit <- rma(deviance~passage,se^2,method="FE",data = deviance)
-fit
-
-summary(fit)
-plot(fit)
 
 ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
   geom_pointrange(color = 'darkorange2') + 
   geom_abline(intercept = fit$beta[1], slope = fit$beta[2], color = 'blue')
 
+rma_output <- data.frame(
+Estimate = fit$beta,
+se = fit$se,
+z.value = fit$zval,
+p.value = fit$pval,
+upper.ci = fit$ci.lb,
+lower.ci = fit$ci.ub
+)
+rma_output %>% 
+  kable() %>% 
+  kable_styling()
 ```
 
 
@@ -415,14 +410,16 @@ parental <-
 parental <-
   parental %>% 
   group_by(passage, treat) %>% 
-  summarize(parental = mean(estimate)) %>% 
-  ungroup() %>% 
-  filter(passage != 5)
+  summarize(parental = mean(estimate), .groups = "drop")
 
 offspring <- 
   fluxes %>% 
   ungroup() %>%
   select(treat, rep, estimate, passage)
+
+```
+
+```{r}
 
 ggplot(offspring, aes(x = estimate, fill = factor(passage))) +
   geom_histogram(position = "identity", alpha = 0.5)
@@ -430,8 +427,7 @@ ggplot(offspring, aes(x = estimate, fill = factor(passage))) +
 offspring <-
   offspring %>% 
   group_by(passage, treat) %>%
-  summarize(offspring = mean(estimate)) %>%
-  ungroup() %>%
+  summarize(offspring = mean(estimate), .groups = "drop") %>%
   # mutate(offspring = estimate) %>%
   filter(passage != 1) %>% 
   mutate(passage = passage - 1)
@@ -459,6 +455,11 @@ ggplot(heritability, aes(x = parental, y = offspring)) +
 
 ggsave('heritability.pdf', width = 4, height = 3)
 ggsave('heritability.png', width = 4, height = 3)
+
+```
+
+```{r}
+
 heritability$parental_sq <- heritability$parental^2
 fit <- lm(sqrt(offspring) ~ parental, data = heritability)
 
