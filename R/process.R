@@ -1,17 +1,4 @@
----
-title: "Artificial Ecosystem Selection: Methane Oxidation"
-author: "Andrew Morris"
-output:
-  html_document:
-      toc: true
-      toc_float: 
-        collapsed: false
-editor_options: 
-  chunk_output_type: inline
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,  fig.align="center")
 library(tidyverse)
 library(knitr)
 library(kableExtra)
@@ -21,20 +8,18 @@ library(lubridate)
 library(morris)
 library(magrittr)
 library(metafor)
-```
+
 
 # Standard Curves
 
-Standard curves for each sc_date. (Some flux_dates have multiple standard curves if the instrument drifted from day to day as indicated by check standards.)
+# Standard curves for each sc_date. (Some flux_dates have multiple standard curves if the instrument drifted from day to day as indicated by check standards.)
 
-```{r sc_data, fig.height=4}
-
-sc <- read.csv('../Data/standard_curve.csv')
-sc_dates <- read.csv('../Data/sc_dates.csv')
+sc <- read.csv('Data/standard_curve.csv')
+sc_dates <- read.csv('Data/sc_dates.csv')
 
 sc %>% 
   filter(molecule == 'ch4') %>% 
-ggplot(mapping = aes(area, injection_ppm)) +
+  ggplot(mapping = aes(area, injection_ppm)) +
   facet_wrap(~ sc_date + molecule, scales = "free") + 
   geom_point() +
   stat_smooth(formula = y ~ x, method = 'lm', se = FALSE)
@@ -64,20 +49,15 @@ sc_ch4 %>%
   kable_styling()
 
 sc_ch4 <- 
-sc_ch4 %>% 
+  sc_ch4 %>% 
   left_join(sc_dates, by = "sc_date") %>% 
   select(flux_date:sc_date, t, r.squared:slope)
 
-```
-
-
 # Fluxes
 
-Each column is jar by number (the jar numbers are arbitrary - there is no relationship between the communities of jar 01, passage 1 and jar 01, passage 2). Rows are each selection treatment (positive = p, neutral = n) within each passage (indicated by the date flux was measured). Lines are proportion of ppm CH4 consumed per day.
+## Each column is jar by number (the jar numbers are arbitrary - there is no relationship between the communities of jar 01, passage 1 and jar 01, passage 2). Rows are each selection treatment (positive = p, neutral = n) within each passage (indicated by the date flux was measured). Lines are proportion of ppm CH4 consumed per day.
 
-```{r time_data}
-
-time_data <- data.table::fread('../Data/time_data.csv')
+time_data <- data.table::fread('Data/time_data.csv')
 
 time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')] <- 
   lapply(time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')],
@@ -89,19 +69,13 @@ time_data[, c('t1', 't2', 't3', 't4', 't5')] <-
   lapply(time_data[, c('t1', 't2', 't3', 't4', 't5')],
          function(x) as.days(time_data$t1, x))
 time_data <- 
- time_data %>% 
+  time_data %>% 
   select(-t0) %>% 
   gather(t, days, t1:t5) %>% 
   mutate(flux_date = factor(flux_date))
 
-```
 
-
-
-
-```{r}
-
-conc_data <- data.table::fread('../Data/conc_data.csv')
+conc_data <- data.table::fread('Data/conc_data.csv')
 
 
 conc_data <- 
@@ -122,7 +96,7 @@ conc_data[, c('t1', 't2', 't3', 't4', 't5')] <-
   lapply(conc_data[, c('t1', 't2', 't3', 't4', 't5')],
          function(x) ln_ch0_chn(conc_data$t1, x))
 flux_data <-
-conc_data %>% 
+  conc_data %>% 
   gather(t, ppm, t1:t5) %>% 
   left_join(time_data, by = c('flux_date', 'jar', 't'))
 
@@ -135,12 +109,6 @@ flux_data <-
   mutate(rep = factor(substr(jar, 2, 3)),
          treat = factor(substr(jar, 1, 1)))
 
-```
-
-
-
-
-```{r flux_curves, warning = FALSE, fig.height=8}
 
 flux_data %>% 
   ggplot(aes(days, ppm)) + 
@@ -148,26 +116,22 @@ flux_data %>%
   geom_point() + 
   stat_smooth(method = 'lm', formula = y ~ x)
 
-```
 
-```{r}
 flux_data[flux_data$flux_date == "2020-07-27", ] %>% 
   ggplot(mapping = aes(days, ppm)) +
   facet_wrap(~ treat + jar, scales = "free") +
   geom_point()
 
-```
 
 
-Histograms and boxplots of flux estimates for each jar within each treatment. The numbered points give an indication of which jars were the greatest methane consumers
+## Histograms and boxplots of flux estimates for each jar within each treatment. The numbered points give an indication of which jars were the greatest methane consumers
 
-```{r flux_model}
 lin_model <- function(dt) {
   lm(ppm ~ days, data = dt)
 }
 
 nested <- 
-flux_data %>% 
+  flux_data %>% 
   group_by(flux_date, jar, treat, rep) %>% 
   nest() %>% 
   mutate(model = map(data, lin_model))
@@ -184,12 +148,9 @@ fluxes <-
   mutate(passage = as.numeric(flux_date)) %>% 
   mutate(estimate_rank = rank(estimate))
 
-write_tsv(fluxes, '../Output/fluxes.tsv')
-
-```
+write_tsv(fluxes, 'Output/fluxes.tsv')
 
 
-```{r plot_estimates}
 ggplot(fluxes, aes(x = estimate, fill = treat)) +
   facet_wrap(~ flux_date, scales = "free") +
   geom_histogram(position = 'identity', alpha = 0.5, bins = 20)
@@ -198,170 +159,14 @@ ggplot(fluxes, aes(y = estimate, x = treat, color = treat)) +
   facet_wrap(~ flux_date, scales = "free") +
   geom_boxplot(outlier.shape = NA) +
   geom_label(aes(label = rep))
-```
+
 
 # Response to Selection
 
-
-```{r test_response, eval=FALSE, include=FALSE}
-
 fluxes$passage <- as.numeric(fluxes$flux_date)
-
-fit <- lm(estimate ~ treat * passage, data = fluxes)
-plot(fit$residuals ~ fluxes$estimate)
-selection_table <- tidy(anova(fit))
-
-
-selection_table[1, 1] <- "Treatment"
-selection_table[2, 1] <- "Passage"
-selection_table[3, 1] <- "Treatment:Passage"
-selection_table[4, 1] <- "Residuals"
-
-selection_table %>% 
-  kable(col.names = c('Term', 'Df', 'Sum Sq', 'Mean Sq', 'F Value', 'p-value')) %>% 
-  kable_styling()
-
-```
-
-
-```{r selection, eval=FALSE, include=FALSE}
-
-fluxes %>% 
-  ggplot(mapping = aes(x = passage, y = estimate, color = treat)) + 
-  geom_boxplot(aes(x = passage, y = estimate, color = treat, group = interaction(treat, passage))) +
-  geom_jitter(width = 0.2) +
-  #geom_smooth(method = 'lm') +
-  labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
-  scale_color_discrete(name = "Selection Treatment", labels = c('Neutral', 'Positive')) +
-  theme_bw()
-
-#ggsave('selection.pdf', width = 6, height = 4)
-```
-
-```{r selection_log_plot, eval=FALSE, include=FALSE}
-
-log_fluxes <- fluxes
-#log_fluxes$estimate[log_fluxes$estimate < 0] <- 0.01
-log_fluxes$estimate <- log10(log_fluxes$estimate + abs(min(log_fluxes$estimate)) + 0.01)
-
-fit <- lm(estimate ~ treat * passage, data = log_fluxes)
-plot(fit$residuals ~ log_fluxes$estimate)
-
-selection_table <- tidy(anova(fit))
-
-#selection_table[1, 1] <- "Neutral0"
-#selection_table[2, 1] <- "Positive0"
-#selection_table[3, 1] <- "Passage#"
-#selection_table[4, 1] <- "Positive:Passage#"
-
-
-selection_table[1, 1] <- "Treatment"
-selection_table[2, 1] <- "Passage"
-selection_table[3, 1] <- "Treatment:Passage"
-selection_table[4, 1] <- "Residuals"
-
-selection_table %>% 
-  kable(col.names = c('Term', 'Df', 'Sum Sq', 'Mean Sq', 'F Value', 'p-value')) %>% 
-  kable_styling()
-
-
-log_fluxes %>% 
-  ggplot(mapping = aes(x = passage, y = estimate, color = treat)) +
-  geom_jitter(width = 0.2) +
-  geom_smooth(method = 'lm') +
-  labs(x = "Passage Number", y = "log10(Methane Oxidation Rate (-k))") +
-  scale_color_discrete(name = "Selection Treatment", labels = c('Neutral', 'Positive')) +
-  theme_bw() +
-  scale_y_log10()
-
-#ggsave('selection.pdf', width = 6, height = 4)
-
-log_fluxes %>% 
-  ggplot(mapping = aes(x = passage, y = estimate, color = treat)) +
-  geom_jitter(width = 0.2) +
-  #geom_smooth(method = 'lm') +
-  labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
-  scale_color_discrete(name = "Selection Treatment", labels = c('Neutral', 'Positive')) +
-  theme_bw() + 
-  geom_boxplot(aes(x = passage, y = estimate, color = treat, group = interaction(treat, passage)))
-```
-
-```{r test_response_rank, eval=FALSE, include=FALSE}
-
-fluxes$estimate_rank <- rank(fluxes$estimate)
-rank_fit <- lm(estimate_rank ~ treat * passage, data = fluxes)
-
-rank_fit
-summary(rank_fit)
-anova(rank_fit)
-
-plot(fit$residuals ~ fluxes$estimate_rank)
-
-```
-
-```{r eval=FALSE, include=FALSE}
-selection_table <- tidy(anova(rank_fit))
-selection_table[1, 1] <- "Treatment"
-selection_table[2, 1] <- "Passage"
-selection_table[3, 1] <- "Treatment:Passage"
-selection_table[4, 1] <- "Residuals"
-selection_table %>% 
-  kable(col.names = c('Term', 'Df', 'Sum Sq', 'Mean Sq', 'F Value', 'p-value')) %>% 
-  kable_styling()
-
-selection_table <- tidy(car::Anova(rank_fit, type = "II"))
-selection_table[1, 1] <- "Treatment"
-selection_table[2, 1] <- "Passage"
-selection_table[3, 1] <- "Treatment:Passage"
-selection_table[4, 1] <- "Residuals"
-selection_table %>% 
-  kable(col.names = c('Term', 'Sum Sq', 'Df', 'F Value', 'p-value')) %>% 
-  kable_styling()
-
-selection_table <- tidy(car::Anova(rank_fit, type = "III"))
-selection_table[1, 1] <- "Intercept"
-selection_table[2, 1] <- "Treatment"
-selection_table[3, 1] <- "Passage"
-selection_table[4, 1] <- "Treatment:Passage"
-selection_table[5, 1] <- "Residuals"
-selection_table %>% 
-  kable(col.names = c('Term', 'Sum Sq', 'Df', 'F Value', 'p-value')) %>% 
-  kable_styling()
-
-selection_table <- tidy(summary(rank_fit))
-
-selection_table[1, 1] <- "Neutral"
-selection_table[2, 1] <- "Positive"
-selection_table[3, 1] <- "Passage"
-selection_table[4, 1] <- "Positive:Passage"
-
-selection_table %>% 
-  kable(col.names = c('Term', 'Estimate', 'Std Error', 't-statistic', 'p-value')) %>% 
-  kable_styling()
-
-```
-
-
-
-```{r selection_rank, eval=FALSE, include=FALSE}
-
-fluxes %>% 
-  ggplot(mapping = aes(x = passage, y = estimate_rank, color = treat)) +
-  geom_jitter(width = 0.2) +
-  geom_smooth(method = 'lm') +
-  labs(x = "Passage Number", y = "Rank Methane Oxidation Rate (-k)") +
-  scale_color_discrete(name = "Selection Treatment", labels = c('Neutral', 'Positive')) +
-  theme_bw()
-
-ggsave('selection.pdf', width = 6, height = 4)
-ggsave('selection.png', width = 6, height = 4)
-```
-
-
 
 # Deviance from mean
 
-```{r}
 deviance_se <- 
   fluxes %>% 
   select(treat, passage, estimate) %>% 
@@ -370,10 +175,10 @@ deviance_se <-
   pivot_wider(names_from = treat, values_from = se) %>% 
   mutate(deviance_se = p + n) %>% 
   pull(deviance_se)
-  
+
 
 deviance <-
-fluxes %>% 
+  fluxes %>% 
   select(treat, passage, estimate) %>% 
   group_by(passage, treat) %>% 
   summarize(mean = mean(estimate), .groups = "drop") %>% 
@@ -391,23 +196,21 @@ ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = dev
   geom_abline(intercept = fit$beta[1], slope = fit$beta[2], color = 'blue')
 
 rma_output <- data.frame(
-Estimate = fit$beta,
-se = fit$se,
-z.value = fit$zval,
-p.value = fit$pval,
-upper.ci = fit$ci.lb,
-lower.ci = fit$ci.ub
+  Estimate = fit$beta,
+  se = fit$se,
+  z.value = fit$zval,
+  p.value = fit$pval,
+  upper.ci = fit$ci.lb,
+  lower.ci = fit$ci.ub
 )
 rma_output %>% 
   kable() %>% 
   kable_styling()
-```
 
 
 # Heritability
 
-```{r heritability, message=FALSE, warning=FALSE}
-selected_jars <- read_csv('../Data/selected.csv')
+selected_jars <- read_csv('Data/selected.csv')
 
 parental <- 
   fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>% 
@@ -423,10 +226,6 @@ offspring <-
   fluxes %>% 
   ungroup() %>%
   select(treat, rep, estimate, passage)
-
-```
-
-```{r}
 
 ggplot(offspring, aes(x = estimate, fill = factor(passage))) +
   geom_histogram(position = "identity", alpha = 0.5)
@@ -451,7 +250,7 @@ heritability$passage <- factor(heritability$passage)
 heritability$treat <- factor(heritability$treat)
 # heritability$parental <- rank(heritability$parental)
 
-write_tsv(heritability, '../Output/heritability.tsv')
+write_tsv(heritability, 'Output/heritability.tsv')
 
 ggplot(heritability, aes(x = parental, y = offspring)) +
   geom_point(aes(color = treat)) +
@@ -463,9 +262,6 @@ ggplot(heritability, aes(x = parental, y = offspring)) +
 ggsave('heritability.pdf', width = 4, height = 3)
 ggsave('heritability.png', width = 4, height = 3)
 
-```
-
-```{r}
 
 heritability$parental_sq <- heritability$parental^2
 fit <- lm(sqrt(offspring) ~ parental, data = heritability)
@@ -493,5 +289,4 @@ ggplot(heritability, aes(x = offspring)) +
 ggplot(heritability, aes(x = parental)) +
   geom_histogram(position = 'identity', alpha = 0.5)
 
-```
 
