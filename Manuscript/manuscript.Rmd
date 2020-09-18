@@ -18,7 +18,7 @@ library(broman)
 library(morris)
 library(metafor)
 figures <- captioner()
-figures("deviance", "Deviance of CH~4~ oxidation rate for the Positive selection treatment relative to the Neutral selection treatment. Deviance is calculated as the mean of P within each passage minus the mean of N within each passage. Errorbars are the sums of the standard errors for P and N for each passage. The best fit line is an ordinary least squares fit taking into account the standard errors of the deviations. The gray ribbon is the 95% confidence interval for the regression.")
+figures("deviance", "Deviance of CH~4~ oxidation rate for the Positive selection treatment relative to the Neutral selection treatment. Deviance is calculated as the mean of P within each passage minus the mean of N within each passage. Errorbars are the standard error of the difference between P and N for each passage. The best fit line is an ordinary least squares fit taking into account the standard errors of the deviations. The gray ribbon is the 95% confidence interval for the regression.")
 figures("herit", "Regression of offspring CH~4~ flux on mid-parent CH~4~ flux. Mid-parent is the mean of jars selected to inoculate the next passage. The mid-offsprings are the mean of all twelve jars produced in one passage. The best fit line is an ordinary least squares regression line and the gray ribbon is the 95% confidence interval for the regression coefficient.")
 
 ```
@@ -27,11 +27,14 @@ figures("herit", "Regression of offspring CH~4~ flux on mid-parent CH~4~ flux. M
 
 # Introduction 
 
-Ecosystem functions that humans depend on are largely controlled by biodiversity in terms of the diversity and function of organisms in an ecosystem. Therefore, to understand the impact of human alterations of the environment and to manage environments for future generations requires that we understand the effects of species on ecosystem processes (Hooper et al. 2005). The vast majority of research on the connections between biodiversity and ecosystem function have been conducted in temperate grassland ecosystems evaluating the connection between manipulated plant richness and productivity. This research has demonstrated a positive, asymptotic relationship between species richness and productivity. However, it remains unclear whether this mapping is generalizable to other functions or to other taxonomic groups.
+## Determining the mapping between microbial community structure and ecosystem function
 
-In evolutionary biology, genotype-phenotype mapping provides a way to understand the fitness effects of a genotype. While selection typically acts on phenotype, the genotypic changes are the fundamental driver of phenotypic differences and thus fitness differences (Stadler and Stephes 2005). A similar analogy can be drawn for biodiversity-ecosystem function relationships. Traits of a community are what drive community assembly, not the taxa or genotypes themselves (Inkpen et al. 2017). However, as ecologists, we wish to understand the effects of species on ecosystem function. In a similar way that evolutionary biologists want to deduce the genotype-phenoype map to understand the genetic basis of fitness, community ecologists must describe the biodiversity-ecoystem function map to understand what drives communty assembly, and ultimately, ecosystem function. 
+Microbial communities mediate ecosystem nutrient cycling via decomposition, greenhouse gas cycling,
+carbon storage, and other processes. Despite the central role of bacteria in performing these processes, we have not found a consistent relationship between the composition of a microbial community and the rate of an ecosystem process across habitats. Typically, research in this area has followed the model of macroorganismal biodiversity-ecosystem function studies such as grassland productivity studies that measure or manipulate the diversity of plant species and correlate that with the rate of primary productivity. By analogy, microbial ecologists use microbial sequencing data to create taxonomic relative abundance tables and then infer diversity or relative abundance from the whole archaeal/bacterial community and correlate that with the rate of a microbial process. Alternatively, they estimate the abundance of a putative functional gene (such as *pmoA* for methane oxidation) and correlate abundance with function. These approaches only rarely show significant, positive relationships between biodiversity and ecosystem function. In my first chapter published in Phil Trans I lay out philosophically why this approach shouldn’t work – namely that marker gene sequences are not analogous to plant species counts, but are more analogous to measurements of gene markers as in evolutionary biology studies.  
 
-The relationship that ecologists have described between plant diversity and productivity represents a relatively simple map between taxonomy and function. The number of unique members of a functional group (i.e., plant species) is correlated with the rate of the function performed by that group. However, for microbial communities that mapping is not quite as clear. For many microbial traits, there is not a clear coupling between taxonomy and function, except for in the case of highly conserved traits involving many genes (Martiny et al. 2013). In addition, most microbial taxa have not been sampled and so we don't have a full picture of which taxa are members of a particular functional group (citation). It's much harder to identify methanotrophic prokaryotes in soil than it is to identify photosynthetic eukaryotes in a prairie. Finally, even for highly conserved traits with a putative functional marker, for example methane oxidation and the gene *pmoA*, functional group abundance is not correlated with the rate of the function performed by that group in most ecosystems (Rocca et al. 2016). Because of these differences between macroorganisms and microorganisms, it may be more useful to approach microbial biodiversity-ecosystem function in a way analogus to genotype-phenotype mapping in organisms (Morris et al. 2020). 
+In evolutionary biology, genotype-phenotype mapping provides a way to understand the fitness effects of a genotype. While selection typically acts on phenotype, the genotypic changes are the fundamental driver of phenotypic differences and thus fitness differences (Stadler and Stephes 2005). A similar analogy can be drawn for biodiversity-ecosystem function relationships. Traits of a community are what drive community assembly, not the taxa or genotypes themselves (Inkpen et al. 2017). However, as ecologists, we wish to understand the effects of species on ecosystem function. Therefore, in a similar way that evolutionary biologists want to deduce the genotype-phenoype map to understand the genetic basis of fitness, community ecologists must describe the "mapping" between community genotype and ecoystem function to understand what drives communty assembly, and ultimately, ecosystem function. 
+
+The relationship that ecologists have described between plant diversity and productivity represents a relatively simple map between taxonomy and function. The number of unique members of a functional group (i.e., plant species) is correlated with the rate of the function performed by that group. However, for microbial communities that mapping is not quite as clear. For many microbial traits, there is not a clear coupling between taxonomy and function, except for in the case of highly conserved traits involving many genes (Martiny et al. 2013). In addition, most microbial taxa have not been sampled and so we don't have a full picture of which taxa are members of a particular functional group (citation). Put another way, it's much harder to identify methanotrophic prokaryotes in soil than it is to identify plants in a prairie. Finally, even for highly conserved traits with a putative functional marker, for example methane oxidation and the gene *pmoA*, functional group abundance is not correlated with the rate of the function performed by that group in most ecosystems (Rocca et al. 2016). Because of these differences between macroorganisms and microorganisms, it may be more useful to approach microbial biodiversity-ecosystem function in a way analogus to genotype-phenotype mapping in organisms (Morris et al. 2020). 
 
 One approach to deducing the genotype-phenotype map in organisms is through artificial selection (Fuller et al. 2005). In this approach, selection for a trait is imposed in a contrived laboratory environment and compared to laboratory environment without selection on that trait. By comparing the genetic respones between these two treatments, you can remove the environment-fitness connection that would be present in a comparative study and identify genes that are evolving in response to selection only on the trait of interest. It has been shown that whole communities can respond to artifical selection on traits of the ecosystem (Goodnight et al. 1997, Williams and Lenton 2007). And it has been proposed that this could be a suitable approach for identify communities of organisms that are capable of performing a particular function at a high rate (Swenson et al. 2000). Therefore, artificial ecosystem selection is a potentially fruitful approach to identifying the map between biodiversity and ecosystem function in microbial communities.
 
@@ -68,7 +71,7 @@ Bioinformatic analyses were conducted using the `QIIME2` bioinformatics platform
 
 ### Response to selection
 
-To test whether there was a significant change in CH~4~ oxidation rate (k) as a response to selection, we tested the deviation between the positive and neutral selection lines over multiple passages. We calculated deviation as the difference in the mean oxidation rate between the positive and neutral treatment within each passage. The standard errors of the deviations were calculated as the sum of the standard errors of the mean for each of the positive and neutral lines. We then fit an ordinary least squares regression model taking into account the standard errors of the deviations. The model was fit using the `rma` function from the `metafor` package in `r` (Viechtbauer 2010).
+To test whether there was a significant change in CH~4~ oxidation rate (k) as a response to selection, we tested the deviation between the positive and neutral selection lines over multiple passages. We calculated deviation as the difference in the mean oxidation rate between the positive and neutral treatment within each passage. The standard errors of the deviations were calculated as the square root of the sum of the squared errors of the positive and neutral lines. We then fit an ordinary least squares regression model taking into account the standard errors of the deviations. The model was fit using the `rma` function from the `metafor` package in `r` (Viechtbauer 2010).
 
 ### Ecosystem heritability
 
@@ -93,34 +96,38 @@ To identify taxa that responded to selection on CH~4~ oxidation rate, we tested 
 
 ```{r dev_model}
 fluxes <- read_tsv('../Output/fluxes.tsv')
-
-
-deviance_se <- 
+deviance <-
   fluxes %>% 
   select(treat, passage, estimate) %>% 
   group_by(passage, treat) %>% 
-  summarize(se = se(estimate)) %>% 
-  pivot_wider(names_from = treat, values_from = se) %>% 
-  mutate(deviance_se = p + n) %>% 
-  pull(deviance_se)
-  
-
-deviance <-
-fluxes %>% 
-  select(treat, passage, estimate) %>% 
-  group_by(passage, treat) %>% 
-  summarize(mean = mean(estimate)) %>% 
+  summarize(mean = mean(estimate), .groups = "drop") %>% 
   pivot_wider(names_from = treat, values_from = mean) %>% 
   mutate(deviance = p - n)
 
-deviance$se <- deviance_se
+se <- function(x, na.rm = FALSE){
+  sqrt(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
+    na.rm = na.rm)) / sqrt(length(if (na.rm == TRUE) na.omit(x) else x))
+}
+
+sed <- function(p, n, na.rm = FALSE) {
+  sqrt(se(p, na.rm = na.rm) ^ 2 + se(n, na.rm = na.rm)^ 2)
+}
+
+deviance$se <-
+  fluxes %>% 
+  select(treat, passage, estimate) %>% 
+  mutate(x = 1:nrow(fluxes)) %>% 
+  pivot_wider(names_from = treat, values_from = estimate) %>% 
+  group_by(passage) %>% 
+  summarize(sed = sed(p, n, na.rm = TRUE), .groups = "drop") %>% 
+  pull(sed)
 
 dev_fit <- rma(deviance~passage, se^2, method="FE", data = deviance)
 
 flux_per_psg <-
   fluxes %>% 
   group_by(passage) %>% 
-  summarize(mean = mean(estimate), se = se(estimate))
+  summarize(mean = mean(estimate), se = morris::se(estimate))
 
 dev_pred <- predict(dev_fit)
 ```
@@ -131,11 +138,11 @@ This can be seen in the increase in deviation between the Positive and Neutral s
 Mean CH~4~ oxidation rate for the Positive treatment increased by `r myround(dev_fit$beta[2], 3)` $\pm$ `r myround(dev_fit$se[2], 3)` per passage relative to the Neutral treatment. The mean flux across all jars in all treatments in the first passage was `r myround(flux_per_psg[1, 2], 3)` $\pm$ `r myround(flux_per_psg[1, 3], 3)` so this represents a doubling of CH~4~ consumption in every passage due to selection. 
 
 ```{r dev_fig, fig.width=4, fig.height=3, fig.cap=figures("deviance")}
-
+passages <- length(deviance$passage)
 ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
   geom_ribbon(aes(ymin = dev_pred$ci.lb, ymax = dev_pred$ci.ub), alpha = 0.2) +
   geom_pointrange(color = 'darkorange2') + 
-      geom_segment(aes(x = 1, xend = 6, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*5), color = 'darkorange2', size = 1) +
+      geom_segment(aes(x = 1, xend = passages, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*passages), color = 'darkorange2', size = 1) +
   labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
   theme_bw()
 
@@ -150,6 +157,7 @@ ggsave('new_select_fig.pdf', width = 4, height = 3)
 
 ```{r herit_model}
 heritability <- read_tsv('../Output/heritability.tsv')
+
 her_fit <- lm(offspring ~ parental, data = heritability)
 her_sum <- tidy(summary(her_fit))
 her_aov <- tidy(anova(her_fit))
@@ -165,7 +173,7 @@ F = 1 - (1 - 1 / (2 * N)) ^ T
 Methane oxidation rate was heritable between consecutive passages (`r figures("herit", display="cite")`). Specifically, the narrow-sense heritability, calculated as the slope of the mid-parent and mid-offspring, was $h^2$ = `r myround(her_sum[2, 2], 2)` $\pm$ `r myround(her_sum[2, 3], 2)` (t = `r myround(her_sum[2, 4], 2)`, p = `r myround(her_sum[2, 5], 3)`). With an inbreeding coefficient of `r myround(F, 2)`, 
 
 
-```{r herit_fig, fig.width=5, fig.height=4, fig.cap=figures("herit")}
+```{r herit_fig, fig.width=5, fig.height=3, fig.cap=figures("herit")}
 ggplot(heritability, aes(x = parental, y = offspring)) +
   geom_point(aes(color = treat)) +
   stat_smooth(method = 'lm', formula = y ~ x, color = "black") + 
@@ -173,7 +181,7 @@ ggplot(heritability, aes(x = parental, y = offspring)) +
     scale_color_manual(name = "Selection\nTreatment", labels = c('Neutral', 'Positive'), values = c("gray60", "darkorange2")) +
   theme_bw()
 
-ggsave('new_herit_fig.pdf', width = 5, height = 4)
+ggsave('new_herit_fig.pdf', width = 5, height = 3)
 
 ```
 

@@ -155,6 +155,13 @@ ggplot(fluxes, aes(x = estimate, fill = treat)) +
   facet_wrap(~ flux_date, scales = "free") +
   geom_histogram(position = 'identity', alpha = 0.5, bins = 20)
 
+fluxes %>% 
+  filter(passage == 4) %>% 
+  ggplot(., aes(x = estimate)) +
+  geom_histogram(bins = 10, fill = "darkorange2") +
+  labs(x = "Methane oxidation rate (-k)", y = "Count") +
+  theme_bw()
+
 ggplot(fluxes, aes(y = estimate, x = treat, color = treat)) +
   facet_wrap(~ flux_date, scales = "free") +
   geom_boxplot(outlier.shape = NA) +
@@ -163,7 +170,43 @@ ggplot(fluxes, aes(y = estimate, x = treat, color = treat)) +
 
 # Response to Selection
 
-fluxes$passage <- as.numeric(fluxes$flux_date)
+# Mixed model response to selection
+
+library(lme4)
+
+fit_full <- lmer(estimate ~ passage * treat + (passage|treat), data = fluxes)
+fit_no_int <- lmer(estimate ~ passage * treat + (0+passage|treat), data = fluxes)
+anova(fit_no_int, fit_full, test = "LRT")
+fit_lm <- lm(estimate ~ passage * treat, data = fluxes)
+anova(fit_no_int, fit_lm)
+summary(fit)
+fit_lm_no_interaction <- lm(estimate ~ passage + treat, data = fluxes)
+anova(fit_lm, fit_lm_no_interaction, test = "LRT")
+coef(fit)
+tidy(fit)
+fit_no_treat <- lm(estimate ~ passage, data = fluxes)
+fit_treat <- lm(estimate ~ passage * treat, data = fluxes)
+anova(fit_no_treat, fit_treat, test = "LRT")
+tidy(fit_treat)
+
+ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) +
+  theme_bw() +
+  geom_point() +
+  scale_color_manual(values = c('gray60', 'darkorange2')) +
+  geom_abline(slope = tidy(fit_treat)[[2, 2]], intercept = tidy(fit_treat)[[1, 2]],
+              color = "gray60") +
+  geom_abline(slope = tidy(fit_treat)[[4, 2]], intercept = tidy(fit_treat)[[3, 2]],
+              color = "darkorange2") +
+  geom_ribbon(aes(ymin = tidy(fit_treat)[[2, 3]], ymax = tidy(fit_treat)[[2, 3]]), alpha = 0.2) +
+  geom_ribbon(aes(ymin = tidy(fit_treat)[[2, 3]], ymax = tidy(fit_treat)[[2, 3]]), alpha = 0.2)
+              
+ggplot(deviance, aes(x = passage, y = estimate, ymin = deviance - se, ymax = deviance + se)) + 
+  geom_ribbon(aes(ymin = dev_pred$ci.lb, ymax = dev_pred$ci.ub), alpha = 0.2) +
+  geom_pointrange(color = 'darkorange2') + 
+  geom_segment(aes(x = 1, xend = passages, y = dev_fit$beta[1] + dev_fit$beta[2], 
+                   yend = dev_fit$beta[1] + dev_fit$beta[2]*passages), color = 'darkorange2', size = 1) +
+  labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
+  theme_bw()
 
 # Deviance from mean
 
