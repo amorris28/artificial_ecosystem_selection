@@ -184,7 +184,8 @@ ggplot(fluxes, aes(y = estimate, x = treat, color = treat)) +
 
 # Response to Selection
 
-```{r eval=FALSE, include=FALSE}
+```{r deviance, eval=FALSE, include=FALSE}
+# Calculate deviance as p - n
 deviance <-
   fluxes %>% 
   select(treat, passage, estimate) %>% 
@@ -193,31 +194,36 @@ deviance <-
   pivot_wider(names_from = treat, values_from = mean) %>% 
   mutate(deviance = p - n)
 
+# Create se function that can handle NAs
 se <- function(x, na.rm = FALSE){
   sqrt(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
     na.rm = na.rm)) / sqrt(length(if (na.rm == TRUE) na.omit(x) else x))
 }
 
+# Standard error of the difference function
 sed <- function(p, n, na.rm = FALSE) {
   sqrt(se(p, na.rm = na.rm) ^ 2 + se(n, na.rm = na.rm)^ 2)
 }
 
+# Calculate variance of deviance as SED
 deviance$se <-
   fluxes %>% 
   select(treat, passage, estimate) %>% 
   mutate(x = 1:nrow(fluxes)) %>% 
   pivot_wider(names_from = treat, values_from = estimate) %>% 
   group_by(passage) %>% 
-  summarize(sed = sed(p, n, na.rm = TRUE), .groups = "drop") %>% 
+  summarize(sed = sed(p, n, na.rm = TRUE), .groups = "drop") %>%
   pull(sed)
 
-
+# Fit deviance model
 fit <- rma(deviance ~ passage, se^2, method="FE", data = deviance)
 
+# Plot deviance
 ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
   geom_pointrange(color = 'darkorange2') + 
-  geom_abline(intercept = fit$beta[1], slope = fit$beta[2], color = 'blue')
+  geom_abline(intercept = fit$beta[1], slope = fit$beta[2])
 
+# Take deviance model parameters and export into a data.frame
 rma_output <- data.frame(
 Estimate = fit$beta,
 se = fit$se,
@@ -226,158 +232,217 @@ p.value = fit$pval,
 upper.ci = fit$ci.lb,
 lower.ci = fit$ci.ub
 )
+
+# Fit deviance model without passage 2
+fit_no2 <- 
+filter(deviance, passage != 2) %>% 
+rma(deviance ~ passage, se^2, method="FE", data = .)
+
+# Take deviance model withou passage 2 parameters and export into a data.frame
+
+rma_output_no2 <- data.frame(
+Estimate = fit$beta,
+se = fit$se,
+z.value = fit$zval,
+p.value = fit$pval,
+upper.ci = fit$ci.lb,
+lower.ci = fit$ci.ub
+)
+
+# R (response to selection) for the no2 model
+R_no2 <- rma_output_no2[[2, 1]]
+R <- rma_output[[2, 1]]
+
+# Plot the no2 model
+filter(deviance, passage != 2) %>% 
+ggplot(., aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
+  geom_pointrange(color = 'darkorange2') + 
+  geom_abline(intercept = fit_no2$beta[1], slope = fit_no2$beta[2])
+
+# Print the full model
 rma_output %>% 
   kable() %>% 
   kable_styling()
 
-write.csv(deviance, 
+write.csv(deviance, '../Output/deviance.tsv')
 ```
-
 
 # Heritability
 
-
-
-```{r heritability, message=FALSE, warning=FALSE}
+```{r create_heritability_data, message=FALSE, warning=FALSE}
 selected_jars <- read_csv('../Data/selected.csv')
 
-parental <- 
-  fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>% 
-  ungroup() %>% 
-  select(treat, rep, estimate, passage)
+# Pull out the selected parental jars
+selected <- 
+  fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
+  select(treat, estimate, passage)
 
-# Mean parental (selected) flux for each passage
+# Pull out all parental jars
 parental <-
-  parental %>% 
-  group_by(passage, treat) %>% 
-  summarize(parental = mean(estimate), .groups = "drop")
-
-offspring <- 
   fluxes %>% 
-  ungroup() %>%
-  select(treat, rep, estimate, passage)
+  select(passage, treat, estimate)
 
-# Mean offspring flux for each passage
-offspring <-
-  offspring %>% 
-  group_by(passage, treat) %>%
-  summarize(offspring = mean(estimate), .groups = "drop") %>%
+# Pull out all offspring jars
+offspring <- 
+  fluxes %>%
+  select(treat, estimate, passage) %>% 
   filter(passage != 1) %>% 
   mutate(passage = passage - 1)
 ```
 
 
+```{r heritability_mean}
 
-```{r}
+# Calculate means for east generation
+parental_mean <-
+  parental %>% 
+  group_by(passage, treat) %>% 
+  summarize(parental = mean(estimate), .groups = "drop")
 
-###################################################
-# This is the nest place you stopped
-# You need to calculate the slope of midoffspring
-# on midparent for the Positive treatments to get R
-# and then calculate the selection differential
-# as above S. S doesn't make sense for the neutral
-# treatment.
-###################################################
+offspring_mean <-
+  offspring %>% 
+  group_by(passage, treat) %>% 
+  summarize(offspring = mean(estimate), .groups = "drop")
 
-# offspring <-
-#   fluxes %>%
-#   ungroup() %>%
-#   select(estimate, passage, treat) %>%
-#   mutate(offspring = rank(estimate))
+selected_mean <-
+  selected %>% 
+  group_by(passage, treat) %>% 
+  summarize(selected = mean(estimate), .groups = "drop")
 
-heritability <- left_join(parental, offspring, by = c("passage", "treat"))
-heritability$passage <- factor(heritability$passage)
-heritability$treat <- factor(heritability$treat)
-heritability <-
-  filter(heritability, passage != 5)
-# heritability$parental <- rank(heritability$parental)
+# Combine all parent/offspring data into one data frame
+heritability <- 
+  parental_mean %>% 
+  left_join(offspring_mean, by = c("passage", "treat")) %>% 
+  left_join(selected_mean, by = c("passage", "treat")) %>% 
+  #filter(treat == "p") %>% 
+  filter(passage != 5) %>% # Remove passage 5, which has no offspring
+  ungroup()
+
 
 write_tsv(heritability, '../Output/heritability.tsv')
 
-ggplot(heritability, aes(x = parental, y = offspring)) +
-  geom_point(aes(color = treat)) +
-  stat_smooth(method = 'lm') + 
-  labs(x = "Parental Mean Flux (-k)", y = "Offspring Flux (-k)") +
-  scale_color_discrete(name = "Selection\nTreatment", labels = c('Neutral', 'Positive')) +
-  theme_bw()
-
-# ggsave('heritability.pdf', width = 4, height = 3)
-# ggsave('heritability.png', width = 4, height = 3)
-
-```
-```{r}
-# This chunk calculates the slope of mid-offspring on mid-parent for all generations and all treatments
-
-fluxes
 ```
 
 
-```{r breeders}
+``` {r generation_h2}
 
-h2 <- function(R, S) {
+
+######################################################################
+# This is where you stopped
+# Figure out why h2 is different from h2_calc_method
+# Finish writing your email to brendan about heritability
+######################################################################
+
+# Function for the Breeder's equation
+
+breeders <- function(R, S) {
   R / S
 }
 
-# R = Response to selection, difference in mean between offspring of selected parents and all of the parents
-
-# S = Selection differental, difference in mean between selected parents and all of the parents
-
-parental_all <-
-  fluxes %>% 
-  select(passage, treat, estimate) %>% 
-  group_by(passage, treat) %>% 
-  summarize(all = mean(estimate), .groups = "drop")
-
-
-parental_selected <- parental
-
-selection_diff <- 
-  left_join(parental_selected, parental_all) %>% 
-  rename(selected = parental) %>% 
-  mutate(S = selected - all)
-
-heritability_ns <- 
-  parental_all %>% 
-  left_join(parental_selected) %>% 
-  left_join(offspring) %>% 
-  filter(passage != 5)
-
-heritability_only_p <- 
-  heritability_ns %>% 
-  filter(treat == 'p') 
-
-R <- tidy(lm(offspring ~ all, data = heritability_only_p))[[2, 2]]
-S <- tidy(lm(parental ~ all, data = heritability_only_p))[[2, 2]]
-h2(R, S)
-
-# Generational R, S, global h2, 0.82
-heritability_only_p %>% 
-  mutate(R = offspring - all,
-         S = parental - all) %>% 
-  summarize(R = mean(R),
-            S = mean(S)) %>%
-  mutate(h2 = h2(R, S))
-
-# Generational R, S, h2, 0.73
-heritability_only_p %>% 
-  #filter(passage != 2) %>% 
-  mutate(R = offspring - all,
-         S = parental - all,
-         h2 = h2(R, S)) %>% 
-  summarize(se = se(h2),
+# Calculate h2 (heritability) using math, not regression
+# For each generation and then calculate the mean/se
+h2_calc_method <-
+  heritability %>%
+  filter(treat == "p") %>%
+  mutate(S = selected - parental) %>%
+  mutate(R = offspring - parental) %>%
+  mutate(h2 = breeders(R, S)) %>%
+  summarize(S = mean(S),
+            R = mean(R),
+            se = se(h2),
             h2 = mean(h2))
 
-# Global R, S, h2, 0.82
-heritability_only_p %>% 
-  summarize(offspring = mean(offspring),
-         all = mean(all),
-         parental = mean(parental)) %>% 
-  mutate(R = offspring - all,
-         S = parental - all,
-         h2 = h2(R, S))
-heritability_ns %>% 
-  pivot_longer(all:offspring, names_to = "group", values_to = "mean") %>% 
-ggplot(., aes(x = passage, y = mean, color = group)) +
-  facet_wrap(~ treat) +
-  geom_point()
+h2_calc_method_no_2 <-
+  heritability %>%
+  filter(treat == "p") %>%  
+  filter(passage != 2) %>%
+  mutate(S = selected - parental) %>%
+  mutate(R = offspring - parental) %>%
+  mutate(h2 = breeders(R, S)) %>%
+  summarize(S = mean(S),
+            R = mean(R),
+            se = se(h2),
+            h2 = mean(h2))
+h2 <- 
+  h2_calc_method %>% 
+  mutate(method = "calc p")
+h2_no2 <- 
+  h2_calc_method_no_2 %>% 
+  mutate(method = "calc p no 2")
+
+h2 <- rbind(h2, h2_no2)
 ```
+
+```{r h2_slope_method}
+
+# Calculate S (selection differential) with/without passage 2
+
+S <-
+  heritability %>%
+  filter(treat == "p") %>%
+  mutate(S = abs(selected - parental)) %>%
+  summarize(S = mean(S)) %>% 
+  pull()
+S_no2 <-
+  heritability %>%
+  filter(treat == "p") %>%
+  filter(passage != 2) %>% 
+  mutate(S = abs(selected - parental)) %>%
+  summarize(S = mean(S)) %>% 
+  pull()
+
+# For the equivalent plot of Falconer and MacKay
+# Scale and center all fluxes
+heritability_scaled <-
+  heritability %>% 
+  pivot_longer(parental:selected) %>% 
+  mutate(value = scale(value)) %>% 
+  pivot_wider(names_from = "name", values_from = "value")
+
+# Calculate R and S 
+R_and_S <-
+  heritability_scaled %>% 
+  filter(treat == "p") %>% 
+  summarize(R = mean(offspring),
+            S = mean(selected))
+
+# Calculate scaled h2
+R <- R_and_S[[1, 'R']]
+S <- R_and_S[[1, 'S']]
+h2 <- breeders(R, S)
+
+# Plot scaled h2
+ggplot(data = heritability_scaled, aes(x = selected, y = offspring)) +
+  geom_point(aes(shape = treat)) +
+  scale_shape_manual(values = c(1,19), name = "Treatment", labels = c('Neutral', 'Positive')) +
+  stat_smooth(se = FALSE, method = "lm", formula = y ~ x, color = 'black') +
+  labs(x = "Selected Parents", y = "Offspring") +
+  geom_segment(aes(x = 0, y = R, xend = S, yend = R), linetype = 3) +
+  geom_segment(aes(x = S, y = 0, xend = S, yend = R), linetype = 3) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  geom_text(label = "R", x = -0.1, y = R) +
+    geom_text(label = "S", x = S, y = -0.2)
+
+
+```
+
+```{r}
+heritability %>% 
+  ggplot(aes(parental, offspring, color = treat)) +
+  geom_point() +
+  labs(x = "Parental", y = "Offspring") +
+  theme_bw() +
+  scale_color_discrete(name = "Treatment", labels = c('Neutral', 'Positive'))
+
+summary(lm(offspring ~ parental, data = heritability))
+```
+```{r}
+heritability %>% 
+  ggplot(aes(selected, offspring, color = treat)) +
+  geom_point() +
+  labs(x = "Selected", y = "Offspring") +
+  theme_bw() +
+  scale_color_discrete(name = "Treatment", labels = c('Neutral', 'Positive'))
+```
+
