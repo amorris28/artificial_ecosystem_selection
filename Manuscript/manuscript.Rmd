@@ -2,7 +2,6 @@
 title: Artificial ecosystem selection to deduce the mapping between microbial community structure and ecosystem function
 author: "Andrew H. Morris and Brendan J. M. Bohannan"
 output:
-  html_document: default
   word_document:
     reference_docx: reference.docx
 editor_options:
@@ -159,7 +158,7 @@ ggsave('new_select_fig.pdf', width = 4, height = 3)
 heritability <- read_tsv('../Output/heritability.tsv')
 
 her_fit <- lm(offspring ~ parental, data = heritability)
-her_sum <- tidy(summary(her_fit))
+her_sum <- tidy(her_fit)
 her_aov <- tidy(anova(her_fit))
 
 ```

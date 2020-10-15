@@ -1,13 +1,9 @@
 
-output/asv_table.csv: 1_rarefy_otu_table.R
+Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx Output/fluxes.tsv Output/heritability.tsv Output/deviance.tsv
+	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
 
-R_OPTS=--no-save --no-restore --no-init-file --no-site-file
-
-manuscript/main.pdf: manuscript/main.tex
-	cd $(<D); latexmk -pdf -M -MP -MF $*.deps $(<F)
-
-tables/sig_taxa%: R/id_taxa.R
-	cd $(<D);R CMD BATCH $(R_OPTS) $(<F)
+Output/heritability.tsv: R/04-heritability.R
+	cd $(<D);Rscript $
 
 R/id_taxa.R: output/lowk_fits%.rds
 
