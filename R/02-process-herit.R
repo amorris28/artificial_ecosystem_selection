@@ -4,6 +4,7 @@
 library(tidyverse)
 
 selected_jars <- read_csv('../Data/selected.csv')
+fluxes <- read_tsv('../Output/fluxes.tsv')
 
 # Pull out the selected parental jars
 selected <- 
@@ -21,10 +22,6 @@ offspring <-
   select(treat, estimate, passage) %>% 
   filter(passage != 1) %>% 
   mutate(passage = passage - 1)
-```
-
-
-```{r heritability_mean}
 
 # Calculate means for east generation
 parental_mean <-

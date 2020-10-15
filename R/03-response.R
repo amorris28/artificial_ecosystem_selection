@@ -64,15 +64,15 @@ rma(deviance ~ passage, se^2, method="FE", data = .)
 # Take deviance model withou passage 2 parameters and export into a data.frame
 
 rma_output_no2 <- data.frame(
-Estimate = fit$beta,
-se = fit$se,
-z.value = fit$zval,
-p.value = fit$pval,
-upper.ci = fit$ci.lb,
-lower.ci = fit$ci.ub
+Estimate = fit_no2$beta,
+se = fit_no2$se,
+z.value = fit_no2$zval,
+p.value = fit_no2$pval,
+upper.ci = fit_no2$ci.lb,
+lower.ci = fit_no2$ci.ub
 )
 
-# R (response to selection) for the no2 model
+# R (response to selection) for the model w/o sample 2
 R_no2 <- rma_output_no2[[2, 1]]
 R <- rma_output[[2, 1]]
 
@@ -82,10 +82,6 @@ ggplot(., aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance +
   geom_pointrange(color = 'darkorange2') + 
   geom_abline(intercept = fit_no2$beta[1], slope = fit_no2$beta[2])
 
-# Print the full model
-rma_output %>% 
-  kable() %>% 
-  kable_styling()
-
-write.csv(deviance, '../Output/deviance.tsv')
-```
+write_tsv(deviance, '../Output/deviance.tsv')
+saveRDS(rma_output, '../Output/response.rds')
+saveRDS(fit, '../Output/dev_fit.rds')
