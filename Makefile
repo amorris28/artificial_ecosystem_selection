@@ -1,7 +1,7 @@
 .PHONY: manuscript
 manuscript: Manuscript/manuscript.docx
 
-Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx Output/fluxes.tsv Output/heritability.tsv Output/deviance.tsv
+Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx Output/fluxes.tsv Output/heritability.tsv Output/deviance.tsv Output/dev_fit.rds Output/response.rds
 	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
 
 Output/deviance.tsv: R/03-response.R Output/fluxes.tsv
