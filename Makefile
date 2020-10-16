@@ -14,4 +14,4 @@ Output/fluxes.tsv: R/01-process-flux.R Data/conc_data.csv Data/sc_dates.csv Data
 	cd $(<D);Rscript $(<F)
 
 clean:
-	rm *.pdf *.html *.docx Output/*
+	\rm -f *.pdf *.html *.docx Output/*

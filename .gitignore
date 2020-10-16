@@ -6,8 +6,10 @@
 Permits/
 Figures/
 Presentation/
+Output/
 *.html
 R/*.md
 R/Figs/*
 *.doc
 *.png
+*.docx
