@@ -1,10 +1,12 @@
 # Inpot: selected.csv, fluxes.tsv
-# Output: heritability, heritability plot???
+# Output: heritability.tsv
 
+library(tidyverse)
+library(morris)
+
+fluxes <- read_tsv('../Output/fluxes.tsv')
 
 # Heritability
-
-```{r create_heritability_data, message=FALSE, warning=FALSE}
 selected_jars <- read_csv('../Data/selected.csv')
 
 # Pull out the selected parental jars
@@ -23,10 +25,6 @@ offspring <-
   select(treat, estimate, passage) %>% 
   filter(passage != 1) %>% 
   mutate(passage = passage - 1)
-```
-
-
-```{r heritability_mean}
 
 # Calculate means for east generation
 parental_mean <-
@@ -55,11 +53,6 @@ heritability <-
 
 
 write_tsv(heritability, '../Output/heritability.tsv')
-
-```
-
-
-``` {r generation_h2}
 
 
 ######################################################################
@@ -106,9 +99,6 @@ h2_no2 <-
   mutate(method = "calc p no 2")
 
 h2 <- rbind(h2, h2_no2)
-```
-
-```{r h2_slope_method}
 
 # Calculate S (selection differential) with/without passage 2
 
@@ -160,9 +150,6 @@ ggplot(data = heritability_scaled, aes(x = selected, y = offspring)) +
     geom_text(label = "S", x = S, y = -0.2)
 
 
-```
-
-```{r}
 heritability %>% 
   ggplot(aes(parental, offspring, color = treat)) +
   geom_point() +
@@ -171,13 +158,11 @@ heritability %>%
   scale_color_discrete(name = "Treatment", labels = c('Neutral', 'Positive'))
 
 summary(lm(offspring ~ parental, data = heritability))
-```
-```{r}
+
 heritability %>% 
   ggplot(aes(selected, offspring, color = treat)) +
   geom_point() +
   labs(x = "Selected", y = "Offspring") +
   theme_bw() +
   scale_color_discrete(name = "Treatment", labels = c('Neutral', 'Positive'))
-```
 
