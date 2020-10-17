@@ -1,17 +1,18 @@
+# This scripts imports the raw methane oxidation rate data as manually entered.
+# This includes the date of each standard curve and the measures Areas for each
+# Concentration of the standard curve. It then calculates the slope of the
+# relationship Methane ~ Area for each date a standard curve was taken.
+#
+# Next, this script imports the time point data and concentration (Area) data
+# for each jar in each passage. It then computes an exponential decay function
+#
+# and extracts the exponential decay rate (k).
 # Input: standard_curve.csv, sc_dates.csv, time_data.csv, conc_data.csv, selected.csv
 # Output: fluxes.tsv
 
-
 library(tidyverse)
-#library(knitr)
-#library(kableExtra)
 library(broom)
-#library(modelr)
 library(lubridate)
-#library(morris)
-#library(magrittr)
-#library(metafor)
-#library(lme4)
 
 # Standard Curves
 

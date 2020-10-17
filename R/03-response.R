@@ -1,5 +1,12 @@
+# This script intakes the flux data from script 01. It then calculates deviance
+# as the difference between the positive line and the neutral line in each
+# passage. The errors can either be calculated as the sum of the errors for
+# each line or the standard error of difference, that is, the square root of
+# the sum of the squared errors, which is slightly smaller than the sum. In
+# this case, I have chosen the SED.
+
 # input: fluxes.tsv
-# output: deviance.tsv, deviance figure
+# output: deviance.tsv, response.rds
 
 library(tidyverse)
 library(metafor)

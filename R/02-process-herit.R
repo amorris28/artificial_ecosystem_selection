@@ -1,3 +1,8 @@
+# This script takes in the flux data from script 01 and the data on which jars
+# were selected in each passage. It then aligns these data so that for each
+# passage there is a mean flux for all parents, the selected parents, and all
+# offspring. 
+
 # input: fluxes.tsv, selected.csv
 # output: heritability.tsv
 
