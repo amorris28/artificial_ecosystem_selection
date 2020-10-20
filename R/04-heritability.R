@@ -21,8 +21,10 @@
 
 library(tidyverse)
 library(morris)
+library(broom)
 
 heritability <- read_tsv('../Output/heritability.tsv')
+fluxes <- read_tsv('../Output/fluxes.tsv')
 
 # Function for the Breeder's equation
 
@@ -30,6 +32,16 @@ breeders <- function(R, S) {
   R / S
 }
 
+# Matt's approach: h2 for each generation
+h2_per_gen  <- 
+heritability %>% 
+  filter(treat == 'p') %>% 
+  mutate(R = offspring - parental) %>% 
+  mutate(S = selected - parental) %>% 
+  mutate(h2 = breeders(R, S))
+
+ggplot(h2_per_gen, aes(x = passage, y = h2)) +
+  geom_point()
 
 # Calculate R using regression of deviance over time.
 # Calculate S using math.
@@ -41,7 +53,19 @@ S <-
   heritability %>%
   filter(treat == "p") %>%
   mutate(S = abs(selected - parental)) %>%
-  summarize(S = mean(S))
+  summarize(S = mean(S))  %>% 
+  pull()
+
+h2_reg_dev <- breeders(R, S)
+
+lm_fit <- 
+  fluxes %>% 
+  filter(treat == 'p') %>% 
+  select(treat, passage, estimate) %>% 
+  lm(estimate ~ passage, data = .) 
+
+R_not_dev <- pull(tidy(lm_fit)[2, 2])
+h2_reg_abs <- breeders(R_not_dev, S)
 
 # Calculate h2 (heritability) using math, not regression
 # For each generation and then calculate the mean/se
@@ -75,6 +99,7 @@ h2 <-
 h2_no2 <- 
   h2_calc_method_no_2 %>% 
   mutate(method = "calc p no 2")
+
 
 h2 <- rbind(h2, h2_no2)
 

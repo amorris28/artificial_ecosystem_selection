@@ -1,0 +1,146 @@
+---
+title: "Artificial Ecosystem Selection Update"
+author: "Andrew Morris"
+date: "10/21/2020"
+output: 
+  revealjs::revealjs_presentation:
+    transition: fade
+    reveal_options:
+      slideNumber: true
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+library(tidyverse)
+library(metafor)
+library(morris)
+library(broman)
+```
+
+# Outline
+
+## What I'm hoping to get out of this
+
+- Show you what I've been working on
+- Hear your questions to see if that guides me down any path
+- ???
+
+# The Question
+
+## 
+One of the fundamental questions in ecology is, "How does the biodiversity
+  that we observe influence ecosystem functions?"
+
+## 
+Historically, attempts to address this question have focused on alpha
+  diversity as it relates to the *rate* or *stability* of an ecosystem function
+  
+##
+For certain functions, this works pretty well. For example, the stability of
+  primary productivity in temperate plant communities in the face of drought is
+  correlated with species richness of plants.
+
+## 
+However, microbial community data exhibit certain limitations that cause this
+  approach to fail:
+
+  1. Without a consistent species concept, it is not obvious at what level of
+     biological organization to evaluate this relationship. (the ASV? the
+     genus? the family?)
+  2. It is not always clear which members of a community are members of a
+     particular functional group. (This can be determiend morpholigically for
+     plants, but must be determined genetically in natural microbial
+     communities.)
+  3. Microbial communities are immensely diverse and without solutions to the
+     previous two problems, sifting through that diversity is challenging.
+
+## When we apply this BEF approach to microbial communities, there are limited
+  gains in terms of our knowlegde of the controls on ecosystem function
+ 
+# A new approach to linking microbial communities to ecosystem function
+
+## An alternative approach
+
+- One way to think about microbial communities and ecosystem functions is as assemblages of genes within an ecosystem and a trait at the ecosystem level.
+- In fact, this often the only way we can measure microbial communities in natural ecosystems.
+
+## Experiment
+
+I collected a single soil core from near UO campus and used sterile potting mix as the subtrate. Ecosystems were created in 500 mL mason jars with 45 g of sterile potting mix and 5 g of living soil and were brought to 60% of field capacity (the optimal level for aerobic processes such as methane oxidation). I created 24 jars in this way and randomly assigned them to a Positive or Neutral selection line. 
+
+# Is there a response to selection at the ecosystem level on soil methane oxidation rate? 
+
+##
+
+```{r, fig.width=4, fig.height=3, out.width=6e2, out.height=4.5e2}
+
+fluxes <- read_tsv('../Output/fluxes.tsv')
+ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) + 
+  geom_jitter() +
+  scale_color_manual(name = 'Treatment', labels = c('Neutral', 'Positive'),
+                     values = c('gray60', 'darkorange2')) +
+  labs(x = "Passage", y = 'Flux (-k)') +
+  theme_bw()
+
+```
+
+##
+
+```{r, fig.width=4, fig.height=3, out.width=6e2, out.height=4.5e2}
+
+fluxes %>% 
+  select(treat, passage, estimate) %>% 
+  group_by(passage, treat) %>% 
+  summarize(mean = mean(estimate),
+            se = se(estimate)) %>% 
+ggplot(mapping = aes(x = passage, y = mean, ymin = mean - se, ymax = mean + se,
+                     color = treat)) + 
+  geom_pointrange() +
+  scale_color_manual(name = 'Treatment', values = c('gray60', 'darkorange2')) +
+  theme_bw()
+```
+
+##
+
+There was a response to selection on soil methane oxidation rate in the positive treatment relative to the neutral treatment.
+
+```{r, fig.width=4, fig.height=3, out.width=6e2, out.height=4.5e2}
+
+deviance <- read_tsv('../Output/deviance.tsv')
+dev_fit <- readRDS('../Output/dev_fit.rds')
+dev_pred <- predict(dev_fit)
+passages <- length(deviance$passage)
+
+ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
+  geom_ribbon(aes(ymin = dev_pred$ci.lb, ymax = dev_pred$ci.ub), alpha = 0.2) +
+  geom_pointrange(color = 'darkorange2') + 
+      geom_segment(aes(x = 1, xend = passages, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*passages), color = 'darkorange2', size = 1) +
+  labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
+  theme_bw()
+
+```
+
+```{r}
+init <- 
+  fluxes %>% 
+  group_by(passage) %>% 
+  summarize(mean = mean(estimate)) %>% 
+  filter(passage == 1) %>% 
+  pull()
+
+init_se <- 
+  fluxes %>% 
+  group_by(passage) %>% 
+  summarize(se = se(estimate)) %>% 
+  filter(passage == 1) %>% 
+  pull()
+```
+
+
+
+z = `r myround(dev_fit$zval[2], 2)`, p = `r myround(dev_fit$pval[2], 3)` 
+
+slope = `r myround(dev_fit$beta[2], 3)` $\pm$ `r myround(dev_fit$se[2], 3)`
+
+(initial mean flux  = `r myround(init, 3)` $\pm$ `r myround(init_se, 3)`)
