@@ -152,8 +152,6 @@ ggplot(heritability, aes(x = parental, y = offspring)) +
     scale_color_manual(name = "Selection\nTreatment", labels = c('Neutral', 'Positive'), values = c("gray60", "darkorange2")) +
   theme_bw()
 
-ggsave('new_herit_fig.pdf', width = 5, height = 3)
-
 ```
 
 

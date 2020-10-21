@@ -20,29 +20,26 @@ library(broman)
 
 ## What I'm hoping to get out of this
 
-- Present my results so far and see if you have any questions that might guide future steps.
+- Give the rationale/motivation for this project, what I've learned so far, and what I could learn from future data.
+- Hear  your questions and comments that might guide future steps.
 - Talk about what "heritability" means in a community context.
 
-# How does biodiversity influence ecosystem functions?
+# How does biodiversity influence ecosystem function?
 
-## 
-Historically, attempts to address this question have focused on alpha
-  diversity as it relates to the *rate* or *stability* of an ecosystem function
+## One approach
+Relating alpha diversity within a functional group to the *rate* or *stability* of an ecosystem function
 
 ```{r, fig.width=4, fig.height=3, out.width=6e2, out.height=4.5e2}
 knitr::include_graphics('draught-stability.png')
 ```
 
-##
-Reasons this works:
+## Reasons this works
 
 1. There's a clear unit of biological organization - the species. 
 2. It's obvious what a "plant" is.
 3. Communities are relatively simple - (1-25 species).
 
-## 
-However, microbial community data exhibit certain limitations that cause this
-  approach to fail:
+## Limitations of microbial community data
 
   1. Without a consistent species concept, it is not obvious at what level of
      biological organization to evaluate this relationship. (the ASV? the
@@ -54,33 +51,47 @@ However, microbial community data exhibit certain limitations that cause this
      without solutions to the
      previous two problems, sifting through that diversity is challenging.
 
-# A new approach to linking microbial communities to ecosystem function
 
-## An alternative approach
+## An alternative conceptualization of communities
 
-- One way to think about microbial communities and ecosystem functions is as assemblages of genes within an ecosystem and a trait at the ecosystem level.
-- In fact, this often the only way we can measure microbial communities in natural ecosystems.
-- Considering them this way, they resemble an organism with a phenotype. (In a way that is dangerously Clementsian) 
-- Using that metaphor, we can think about ways of identifying genes or organisms that are associated with the presence or rate of particular functions.
+A community is a pool of genes analogous to a genome (the metagenome) and that community exhibits a phenotype (ecosystem function).
+
+Thinking about it this way, an ecosystem function might exhibit similar properties to an organismal trait.
+
+
+$V_P = V_G + V_E$
+
+## Heritability is "the relative importance of heredity in determining phenotypic values" 
+
+"A character can be 'hereditary' in the sense of being **determined by
+the genotype**[1] or in the sense of being **transmitted from parents to offspring**[2]."
+
+[1] Broad-sense heritability,  $H^2 = V_G / V_P$
+
+[2] Narrow-sense heritability, $h^2 = V_A / V_P$
+
+<small>Falconer and MacKay, 1996</small>
+
+# An alternative approach to linking microbial communities to ecosystem function
 
 ## Artificial Ecosystem Selection
 
-A *comparative* approach to this problem would be to go out and sample lets of
-ecosystems for their functions and their communities. And do lots of
-correlations. That's fine, but it's more of a hypothesis generating tool. A
-somewhat more *experimental* approach would be to manipulate the community by
-generating lots of different communities under very similar environmental
-conditions. And then testing which combinations produce the greatest function.
+- Generate lots of communities with different combinations of taxa.
+- Put them into a common environment to minimize environmental variation.
+- Test which combinations generate the greatest function.
+- Reshuffle the best communities and test again.
+- Similar to dilution to extinction or enrichment culturing.
 
-## Artificial Ecosystem Selection
+## Method
+
+
 
 To do this, I generated 24 ecosystems.
 
+```{r, fig.width=4, fig.height=3, out.width=9e2*0.8, out.height=4.5e2*0.8}
+knitr::include_graphics('aes_design.png')
+```
 
-
-## Experiment
-
-I collected a single soil core from near UO campus and used sterile potting mix as the subtrate. Ecosystems were created in 500 mL mason jars with 45 g of sterile potting mix and 5 g of living soil and were brought to 60% of field capacity (the optimal level for aerobic processes such as methane oxidation). I created 24 jars in this way and randomly assigned them to a Positive or Neutral selection line. 
 
 # Is there a response to selection at the ecosystem level on soil methane oxidation rate? 
 
@@ -93,8 +104,8 @@ ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) +
   geom_jitter() +
   scale_color_manual(name = 'Treatment', labels = c('Neutral', 'Positive'),
                      values = c('gray60', 'darkorange2')) +
-  labs(x = "Passage", y = 'Flux (-k)') +
-  theme_bw()
+  labs(x = "Passage", y = 'Methane Oxidation Rate (-k)') +
+  theme_classic()
 
 ```
 
@@ -112,15 +123,26 @@ ggplot(mapping = aes(x = passage, y = mean, ymin = mean - se, ymax = mean + se,
   geom_pointrange() +
   scale_color_manual(name = 'Treatment', labels = c('Neutral', 'Positive'),
                      values = c('gray60', 'darkorange2')) +
-  labs(x = "Passage", y = 'Flux (-k)') +
-  theme_bw()
+  labs(x = "Passage", y = 'Methane Oxidation Rate (-k)') +
+  theme_classic()
 ```
 
 ##
 
 There was a response to selection on soil methane oxidation rate in the positive treatment relative to the neutral treatment.
+<style>
+.container{
+    display: flex;
+}
+.col{
+    flex: 1;
+}
+</style>
 
-```{r, fig.width=4, fig.height=3, out.width=6e2, out.height=4.5e2}
+<div class="container">
+
+<div class="col">
+```{r, fig.width=4, fig.height=3, out.width=6e2*0.8, out.height=4.5e2*0.8}
 
 deviance <- read_tsv('../Output/deviance.tsv')
 dev_fit <- readRDS('../Output/dev_fit.rds')
@@ -132,10 +154,12 @@ ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = dev
   geom_pointrange(color = 'darkorange2') + 
       geom_segment(aes(x = 1, xend = passages, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*passages), color = 'darkorange2', size = 1) +
   labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
-  theme_bw()
+  theme_classic()
 
 ```
+</div>
 
+<div class="col">
 ```{r}
 init <- 
   fluxes %>% 
@@ -159,38 +183,45 @@ z = `r myround(dev_fit$zval[2], 2)`, p = `r myround(dev_fit$pval[2], 3)`
 slope = `r myround(dev_fit$beta[2], 3)` $\pm$ `r myround(dev_fit$se[2], 3)`
 
 (initial mean flux  = `r myround(init, 3)` $\pm$ `r myround(init_se, 3)`)
+</div>
+
+</div>
+
 
 # How *heritable* is soil methane oxidation rate as an ecosystem trait?
 
+
+## Broad- vs. Narrow-sense heritability
+
+$V_G/V_P$ is the extent to which phenotype is determined by the genotype.
+
+$V_A/V_P$ is the extent to which phenotype is determined by the genes transmitted from the parents.
+
+## Broad- vs. Narrow-sense heritability
+
+$V_G/V_P$ is the extent to which phenotype is determined by the genotype.
+
+**$V_A/V_P$ is the extent to which phenotype is determined by the genes transmitted from the parents.**
+
+## Narrow-sense heritability
+
+$h^2 = R / S$
+
+$R$ = Response to selection, difference between parents and offspring
+
+$S$ = Selection differential, difference between selected parents and all parents
+
 ##
 
-Heritability is "the relative importance of heredity in determining phenotypic
-values" 
-
-"A character can be 'hereditary' in the sense of being **determined by
-the genotype**[1] or in the sense of being **transmitted from parents to offspring**[2]."
-
-[1] Broad-sense heritability $= V_G / V_P$
-
-[2] Narrow-sense heritability $= V_A / V_P$
-
-<small>Falconer and MacKay, 1996</small>
-
-##
-
-$V_G$ is quite are to estimate, but is of considerable theoretical interest. Estimating $V_G$ would answer the question, "How much of an ecosystem function is determined by the genes in that ecosystem vs. the environmetal conditions in that ecosystem?"
-
-$V_A$ is easier to estimate and is of more practical value in population genetics for its use in breeding programs. It is the ratio of breeding value to phenotype value and determines whether selecting a parent for their traits can produce offspring with those traits.
-
-##
-
-```{r, fig.width=2, fig.height=3, out.width=3e2, out.height=4.5e2}
+```{r}
 h2_per_gen <- read_tsv('../Output/h2_per_gen.tsv')
 
 h2_per_gen_sum  <-
   h2_per_gen %>% 
   summarize(h2_med = median(h2), h2_mad = mad(h2))
+```
 
+```{r, fig.width=2.5, fig.height=2.5, out.width=3e2, out.height=3e2}
 ggplot(h2_per_gen, aes(x = passage, y = h2)) +
   geom_point() +
   geom_pointrange(aes(x = 2.5, y = h2_med, 
@@ -199,8 +230,57 @@ ggplot(h2_per_gen, aes(x = passage, y = h2)) +
   data = h2_per_gen_sum) +
   labs(x = 'Passage Number', y = expression(paste("Narrow-sense Heritability (",
                                                 h^2, ")"))) +
-  theme_bw()
+  theme_classic()
 
 ```
 
-Each small point is the h2 for that passage and its offspring. The larger central point is the median h2 (+/- median absolute difference) across all four passages.
+Each small point is the $h^2$ for that passage and its offspring. The
+larger central point is the median $h^2$ (+/- median absolute difference)
+across all four passages. $h^2$ =  `r myround(h2_per_gen_sum$h2_med, 2)` $\pm$ `r myround(h2_per_gen_sum$h2_mad, 2)`.
+
+
+# Conclusions and interpetation
+
+## Community composition impacts the rate of this ecosystem function
+
+```{r, fig.width=4, fig.height=3, out.width=6e2*.8, out.height=4.5e2*.8}
+
+deviance <- read_tsv('../Output/deviance.tsv')
+dev_fit <- readRDS('../Output/dev_fit.rds')
+dev_pred <- predict(dev_fit)
+passages <- length(deviance$passage)
+
+ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
+  geom_ribbon(aes(ymin = dev_pred$ci.lb, ymax = dev_pred$ci.ub), alpha = 0.2) +
+  geom_pointrange(color = 'darkorange2') + 
+      geom_segment(aes(x = 1, xend = passages, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*passages), color = 'darkorange2', size = 1) +
+  labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
+  theme_classic()
+
+```
+
+## `r myround(h2_per_gen_sum$h2_med, 2)` of the variation in methane oxidation rate is attributable to the additive effect of taxa passed from the parents
+
+The remaining `r 1 - as.numeric(myround(h2_per_gen_sum$h2_med, 2))` is due to
+environmental variation not controlled for experimentally or with the neutral
+treatment, interactions among taxa, ...?
+
+Caveat: this doesn't account for cor
+
+```{r, fig.width=2.5, fig.height=2.5, out.width=3e2, out.height=3e2}
+ggplot(h2_per_gen, aes(x = passage, y = h2)) +
+  geom_point() +
+  geom_pointrange(aes(x = 2.5, y = h2_med, 
+                                  ymax = h2_med + h2_mad,
+                                  ymin = h2_med - h2_mad),
+  data = h2_per_gen_sum) +
+  labs(x = 'Passage Number', y = expression(paste("Narrow-sense Heritability (",
+                                                h^2, ")"))) +
+  theme_classic()
+
+```
+
+
+## Next: Which taxa changed as a response to selection?
+
+
