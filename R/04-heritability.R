@@ -40,8 +40,7 @@ heritability %>%
   mutate(S = selected - parental) %>% 
   mutate(h2 = breeders(R, S))
 
-ggplot(h2_per_gen, aes(x = passage, y = h2)) +
-  geom_point()
+write_tsv(h2_per_gen, '../Output/h2_per_gen.tsv')
 
 # Calculate R using regression of deviance over time.
 # Calculate S using math.

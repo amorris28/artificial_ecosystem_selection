@@ -10,6 +10,13 @@
 
 library(tidyverse)
 library(metafor)
+library(morris)
+
+# Standard error of the difference function
+sed <- function(p, n, na.rm = FALSE) {
+  sqrt(se(p, na.rm = na.rm) ^ 2 + se(n, na.rm = na.rm)^ 2)
+}
+
 
 # Response to Selection
 
@@ -24,17 +31,6 @@ deviance <-
   pivot_wider(names_from = treat, values_from = mean) %>% 
   mutate(deviance = p - n)
 
-# Create se function that can handle NAs
-se <- function(x, na.rm = FALSE){
-  sqrt(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
-    na.rm = na.rm)) / sqrt(length(if (na.rm == TRUE) na.omit(x) else x))
-}
-
-# Standard error of the difference function
-sed <- function(p, n, na.rm = FALSE) {
-  sqrt(se(p, na.rm = na.rm) ^ 2 + se(n, na.rm = na.rm)^ 2)
-}
-
 # Calculate variance of deviance as SED
 deviance$se <-
   fluxes %>% 
@@ -47,6 +43,8 @@ deviance$se <-
 
 # Fit deviance model
 fit <- rma(deviance ~ passage, se^2, method="FE", data = deviance)
+
+plot(fit)
 
 # Plot deviance
 ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
@@ -92,3 +90,4 @@ ggplot(., aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance +
 write_tsv(deviance, '../Output/deviance.tsv')
 saveRDS(rma_output, '../Output/response.rds')
 saveRDS(fit, '../Output/dev_fit.rds')
+
