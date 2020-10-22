@@ -20,8 +20,8 @@ library(broman)
 
 ## What I'm hoping to get out of this
 
-- Give the rationale/motivation for this project, what I've learned so far, and what I could learn from future data.
-- Hear  your questions and comments that might guide future steps.
+- Practice talking about why I'm doing what I'm doing and what we can learn from it.
+- Hear your questions and comments that might guide future steps.
 - Talk about what "heritability" means in a community context.
 
 # How does biodiversity influence ecosystem function?
@@ -29,7 +29,7 @@ library(broman)
 ## One approach
 Relating alpha diversity within a functional group to the *rate* or *stability* of an ecosystem function
 
-```{r, fig.width=4, fig.height=3, out.width=6e2, out.height=4.5e2}
+```{r, fig.width=4, fig.height=3, out.width=6e2*.8, out.height=4.5e2*0.8}
 knitr::include_graphics('draught-stability.png')
 ```
 
@@ -37,20 +37,13 @@ knitr::include_graphics('draught-stability.png')
 
 1. There's a clear unit of biological organization - the species. 
 2. It's obvious what a "plant" is.
-3. Communities are relatively simple - (1-25 species).
+3. Communities are relatively simple (1-25 species).
 
 ## Limitations of microbial community data
 
-  1. Without a consistent species concept, it is not obvious at what level of
-     biological organization to evaluate this relationship. (the ASV? the
-     genus? the family?)
-  2. It is not always clear which members of a community are members of a
-     particular functional group. Further, in a metabolic network, it's not
-     always obvious which functional group is limiting the end product.
-  3. Microbial communities are immensely diverse (100s-1000s of ASVs) and
-     without solutions to the
-     previous two problems, sifting through that diversity is challenging.
-
+  1. No consistent species concept.
+  2. What's a plant?
+  3. Diversity can be 100s to 10,000s.
 
 ## An alternative conceptualization of communities
 
@@ -76,22 +69,17 @@ the genotype**[1] or in the sense of being **transmitted from parents to offspri
 
 ## Artificial Ecosystem Selection
 
-- Generate lots of communities with different combinations of taxa.
-- Put them into a common environment to minimize environmental variation.
-- Test which combinations generate the greatest function.
-- Reshuffle the best communities and test again.
-- Similar to dilution to extinction or enrichment culturing.
+1. Generate lots of communities with different combinations of taxa.
+2. Put them into a common environment to minimize environmental variation.
+3. Test which combinations generate the greatest function.
+4. Reshuffle the best communities and test again.
+5. Investigate which taxa respond to selection.
 
-## Method
-
-
-
-To do this, I generated 24 ecosystems.
+## Design
 
 ```{r, fig.width=4, fig.height=3, out.width=9e2*0.8, out.height=4.5e2*0.8}
 knitr::include_graphics('aes_design.png')
 ```
-
 
 # Is there a response to selection at the ecosystem level on soil methane oxidation rate? 
 
@@ -127,9 +115,8 @@ ggplot(mapping = aes(x = passage, y = mean, ymin = mean - se, ymax = mean + se,
   theme_classic()
 ```
 
-##
+## Community composition impacts the rate of this ecosystem function
 
-There was a response to selection on soil methane oxidation rate in the positive treatment relative to the neutral treatment.
 <style>
 .container{
     display: flex;
@@ -177,6 +164,7 @@ init_se <-
 ```
 
 
+There was a response to selection on soil methane oxidation rate in the positive treatment relative to the neutral treatment.
 
 z = `r myround(dev_fit$zval[2], 2)`, p = `r myround(dev_fit$pval[2], 3)` 
 
@@ -211,76 +199,82 @@ $R$ = Response to selection, difference between parents and offspring
 
 $S$ = Selection differential, difference between selected parents and all parents
 
-##
-
 ```{r}
 h2_per_gen <- read_tsv('../Output/h2_per_gen.tsv')
 
-h2_per_gen_sum  <-
+h2_per_gen_sum <-
   h2_per_gen %>% 
-  summarize(h2_med = median(h2), h2_mad = mad(h2))
+  group_by(treat) %>% 
+  summarize(h2_med = median(h2), h2_mad = mad(h2), .groups = 'drop')
 ```
 
-```{r, fig.width=2.5, fig.height=2.5, out.width=3e2, out.height=3e2}
-ggplot(h2_per_gen, aes(x = passage, y = h2)) +
-  geom_point() +
-  geom_pointrange(aes(x = 2.5, y = h2_med, 
-                                  ymax = h2_med + h2_mad,
-                                  ymin = h2_med - h2_mad),
-  data = h2_per_gen_sum) +
-  labs(x = 'Passage Number', y = expression(paste("Narrow-sense Heritability (",
-                                                h^2, ")"))) +
-  theme_classic()
 
-```
-
-Each small point is the $h^2$ for that passage and its offspring. The
-larger central point is the median $h^2$ (+/- median absolute difference)
-across all four passages. $h^2$ =  `r myround(h2_per_gen_sum$h2_med, 2)` $\pm$ `r myround(h2_per_gen_sum$h2_mad, 2)`.
+## Half of the variation in methane oxidation rate is attributable to the additive effect of genes passed from the parents
 
 
-# Conclusions and interpetation
+Positive: `r as.numeric(myround(h2_per_gen_sum$h2_med[2], 2))` 
+$\pm$
+`r as.numeric(myround(h2_per_gen_sum$h2_mad[2], 2))`
 
-## Community composition impacts the rate of this ecosystem function
+Neutral: `r as.numeric(myround(h2_per_gen_sum$h2_med[1], 2))` 
+$\pm$
+`r as.numeric(myround(h2_per_gen_sum$h2_mad[1], 2))`
 
-```{r, fig.width=4, fig.height=3, out.width=6e2*.8, out.height=4.5e2*.8}
-
-deviance <- read_tsv('../Output/deviance.tsv')
-dev_fit <- readRDS('../Output/dev_fit.rds')
-dev_pred <- predict(dev_fit)
-passages <- length(deviance$passage)
-
-ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
-  geom_ribbon(aes(ymin = dev_pred$ci.lb, ymax = dev_pred$ci.ub), alpha = 0.2) +
-  geom_pointrange(color = 'darkorange2') + 
-      geom_segment(aes(x = 1, xend = passages, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*passages), color = 'darkorange2', size = 1) +
-  labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
-  theme_classic()
-
-```
-
-## `r myround(h2_per_gen_sum$h2_med, 2)` of the variation in methane oxidation rate is attributable to the additive effect of taxa passed from the parents
-
-The remaining `r 1 - as.numeric(myround(h2_per_gen_sum$h2_med, 2))` is due to
+The remainder is due to
 environmental variation not controlled for experimentally or with the neutral
 treatment, interactions among taxa, ...?
 
-Caveat: this doesn't account for cor
+Caveat: $h^2$ may be affected by correlated traits also under selection.
 
-```{r, fig.width=2.5, fig.height=2.5, out.width=3e2, out.height=3e2}
-ggplot(h2_per_gen, aes(x = passage, y = h2)) +
+## Heritability for the positive and neutral lines
+
+<style>
+.container{
+    display: flex;
+}
+.col{
+    flex: 1;
+}
+</style>
+
+<div class="container">
+<div class="col">
+```{r, warning=FALSE, fig.width=4, fig.height=3, out.width=6e2*0.8, out.height=4.5e2*0.8}
+ggplot(h2_per_gen, aes(x = passage, y = h2, color = treat)) +
   geom_point() +
-  geom_pointrange(aes(x = 2.5, y = h2_med, 
-                                  ymax = h2_med + h2_mad,
-                                  ymin = h2_med - h2_mad),
-  data = h2_per_gen_sum) +
   labs(x = 'Passage Number', y = expression(paste("Narrow-sense Heritability (",
                                                 h^2, ")"))) +
+  scale_color_manual(name = 'Treatment', labels = c('Neutral', 'Positive'),
+                     values = c('gray60', 'darkorange2')) +
   theme_classic()
 
 ```
 
 
-## Next: Which taxa changed as a response to selection?
+</div>
 
+<div class="col">
+
+
+```{r, warning=FALSE, fig.width=4, fig.height=3, out.width=6e2*0.8, out.height=4.5e2*0.8}
+ggplot(h2_per_gen, aes(x = passage, y = h2, color = treat)) +
+  geom_point() +
+  labs(x = 'Passage Number', y = expression(paste("Narrow-sense Heritability (",
+                                                h^2, ")"))) +
+  scale_color_manual(name = 'Treatment', labels = c('Neutral', 'Positive'),
+                     values = c('gray60', 'darkorange2')) +
+  theme_classic() +
+  ylim(-0.683, 1.56)
+
+```
+</div>
+
+</div>
+
+# Which taxa respond to selection? Are correlated with flux?
+
+## In progress:
+
+- Sequencing *pmoA* to characterize the diversity of methane oxidizers.
+- Sequencing 16S to look broadly at bacterial/archaeal taxa.
 

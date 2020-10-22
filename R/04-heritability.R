@@ -35,12 +35,14 @@ breeders <- function(R, S) {
 # Matt's approach: h2 for each generation
 h2_per_gen  <- 
 heritability %>% 
-  filter(treat == 'p') %>% 
   mutate(R = offspring - parental) %>% 
   mutate(S = selected - parental) %>% 
   mutate(h2 = breeders(R, S))
 
 write_tsv(h2_per_gen, '../Output/h2_per_gen.tsv')
+
+ggplot(h2_per_gen, aes(x = passage, color = treat, y = R)) +
+  geom_point()
 
 # Calculate R using regression of deviance over time.
 # Calculate S using math.
