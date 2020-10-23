@@ -11,6 +11,7 @@
 library(tidyverse)
 library(metafor)
 library(morris)
+library(broom)
 
 # Standard error of the difference function
 sed <- function(p, n, na.rm = FALSE) {
@@ -91,3 +92,66 @@ write_tsv(deviance, '../Output/deviance.tsv')
 saveRDS(rma_output, '../Output/response.rds')
 saveRDS(fit, '../Output/dev_fit.rds')
 
+
+
+# Calculate deviance as percentage of p - n
+deviance <-
+  fluxes %>% 
+  select(treat, passage, estimate) %>% 
+  group_by(passage, treat) %>% 
+  summarize(mean = mean(estimate), .groups = "drop") %>% 
+  pivot_wider(names_from = treat, values_from = mean) %>% 
+  mutate(deviance = (p - n) / n)
+
+# Calculate variance of deviance as SED
+deviance$se <-
+  fluxes %>% 
+  select(treat, passage, estimate) %>% 
+  mutate(x = 1:nrow(fluxes)) %>% 
+  pivot_wider(names_from = treat, values_from = estimate) %>% 
+  group_by(passage) %>% 
+  summarize(sed = sed(p, n, na.rm = TRUE), .groups = "drop") %>%
+  pull(sed)
+
+# Fit deviance model
+fit <- rma(deviance ~ passage, se^2, method="FE", data = deviance)
+
+plot(fit)
+
+# Plot deviance
+ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = deviance + se)) + 
+  geom_pointrange(color = 'darkorange2') + 
+  geom_abline(intercept = fit$beta[1], slope = fit$beta[2])
+
+# Take deviance model parameters and export into a data.frame
+rma_output <- data.frame(
+Estimate = fit$beta,
+se = fit$se,
+z.value = fit$zval,
+p.value = fit$pval,
+upper.ci = fit$ci.lb,
+lower.ci = fit$ci.ub
+)
+
+# Fit separte slopes for Positive and Neutral with robust M-estimator regression
+
+library(MASS)
+
+fit <- rlm(estimate ~ passage * treat, data = fluxes)
+
+summary(fit)
+anova(fit)
+new_data <- cbind(fluxes, predict(fit, interval = 'confidence'))
+colnames(new_data) 
+ggplot(new_data, aes(x = passage, y = estimate, color = treat)) +
+  theme_bw() +
+  geom_jitter() +
+  geom_line(aes(passage, fit)) +
+  geom_ribbon(aes(ymin=lwr,ymax=upr), alpha=0.3)
+
+ggplot(new_data, aes(x = passage, y = estimate)) +
+  theme_bw() +
+  geom_jitter(aes(color = treat)) +
+  geom_line(aes(passage, fit, color = treat)) +
+  geom_ribbon(aes(ymin=lwr,ymax=upr, group = treat), alpha=0.3) +
+  ylim(-0.01, 0.08)
