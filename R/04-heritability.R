@@ -104,3 +104,19 @@ h2_no2 <-
 
 h2 <- rbind(h2, h2_no2)
 
+# Cumulative response to selection
+
+parent <- heritability[[1, 3]]
+offspr <- heritability[[8, 4]]
+select <- heritability[[8, 5]]
+R = offspr - parent
+S = select - parent
+h2 = breeders(R, S)
+
+heritability$cum_res <- NULL
+heritability$cum_sel <- c()
+for (i in nrow(heritability)) {
+  cum_res <- cbind(cum_res, heritability[i, 4] - heritability[i, 3])
+  cum_sel <- cbind(cum_sel, heritability[i, 5] - heritability[i, 3])
+}
+cum_res
