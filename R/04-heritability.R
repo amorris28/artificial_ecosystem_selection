@@ -68,6 +68,12 @@ lm_fit <-
 R_not_dev <- pull(tidy(lm_fit)[2, 2])
 h2_reg_abs <- breeders(R_not_dev, S)
 
+# Calculate R as regression of offspring on parents
+
+ggplot(heritability, aes(x = parental, y = offspring)) +
+  geom_point() + 
+  stat_smooth(method = 'lm', se = FALSE)
+summary(lm(offspring ~ parental, data = heritability, subset = treat == 'p'))
 # Calculate h2 (heritability) using math, not regression
 # For each generation and then calculate the mean/se
 h2_calc_method <-
@@ -113,10 +119,22 @@ R = offspr - parent
 S = select - parent
 h2 = breeders(R, S)
 
-heritability$cum_res <- NULL
-heritability$cum_sel <- c()
-for (i in nrow(heritability)) {
-  cum_res <- cbind(cum_res, heritability[i, 4] - heritability[i, 3])
-  cum_sel <- cbind(cum_sel, heritability[i, 5] - heritability[i, 3])
+heritability[,'cum_res'] <- NA
+heritability$cum_sel <- NA
+herit_p <- filter(heritability, treat == 'p')
+for (i in seq(nrow(herit_p))) {
+  off <- sum(herit_p$offspring[1:i])
+  par <- sum(herit_p$parental[1:i])
+  sel <- sum(herit_p$selected[1:i])
+  herit_p$cum_res[i] <- off - par
+  herit_p$cum_sel[i] <- sel - par
 }
-cum_res
+herit_p$cum_h2 <- herit_p$cum_res / herit_p$cum_sel
+
+ggplot(herit_p, aes(x = cum_sel, y = cum_res)) + 
+  geom_point() + 
+  stat_smooth(method = 'lm', se = FALSE)
+
+summary(lm(cum_res ~ cum_sel, data = herit_p))
+
+
