@@ -132,9 +132,11 @@ for (i in seq(nrow(herit_p))) {
 herit_p$cum_h2 <- herit_p$cum_res / herit_p$cum_sel
 
 ggplot(herit_p, aes(x = cum_sel, y = cum_res)) + 
+  theme_classic() +
+  labs(x = 'Cumulative selection differential',
+       y = 'Cumulative response to selection') +
   geom_point() + 
   stat_smooth(method = 'lm', se = FALSE)
-
 summary(lm(cum_res ~ cum_sel, data = herit_p))
 
 
