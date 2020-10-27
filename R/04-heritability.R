@@ -139,4 +139,41 @@ ggplot(herit_p, aes(x = cum_sel, y = cum_res)) +
   stat_smooth(method = 'lm', se = FALSE)
 summary(lm(cum_res ~ cum_sel, data = herit_p))
 
+# Regression of offspring on mid-parent
 
+selected_jars <- read_csv('../Data/selected.csv')
+fluxes <- read_tsv('../Output/fluxes.tsv')
+
+# Pull out the selected parental jars
+selected <- 
+  fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
+  select(treat, estimate, passage) %>% 
+  group_by(treat, passage) %>% 
+  summarize(parental = mean(estimate), .groups = 'drop')
+
+offspring <- 
+  fluxes %>% 
+  select(passage, treat, estimate) %>% 
+  filter(passage != 1) %>% 
+  mutate(passage = passage - 1) %>% 
+  rename(offspring = estimate)
+
+heritability <- 
+  offspring %>% 
+  left_join(selected, by = c('passage', 'treat'))
+
+heritability
+
+ggplot(heritability, aes(parental, offspring)) +
+  theme_classic() +
+  geom_point() + 
+  stat_smooth(method = 'lm', se = FALSE)
+
+summary(lm(offspring ~ parental, data = heritability))
+
+ggplot(heritability, aes(parental, offspring, color = treat)) +
+  theme_classic() +
+  geom_point() + 
+  stat_smooth(method = 'lm', se = FALSE)
+summary(lm(offspring ~ parental, data = heritability, subset = treat == 'p'))
+summary(lm(offspring ~ parental, data = heritability, subset = treat == 'n'))
