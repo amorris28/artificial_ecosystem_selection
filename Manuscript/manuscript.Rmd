@@ -273,7 +273,7 @@ ggplot(deviance, aes(x = passage, y = deviance, ymin = deviance - se, ymax = dev
       geom_segment(aes(x = 1, xend = passages, y = dev_fit$beta[1] + dev_fit$beta[2], yend = dev_fit$beta[1] + dev_fit$beta[2]*passages), color = 'darkorange2', size = 1) +
   labs(x = "Passage Number", y = "Deviation from Control (P - N)")+
   theme_bw()
-
+ggsave('deviance.pdf')
 ```
 
 

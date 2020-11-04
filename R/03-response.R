@@ -136,8 +136,9 @@ lower.ci = fit$ci.ub
 # Fit separte slopes for Positive and Neutral with robust M-estimator regression
 
 library(MASS)
-
-fit <- rlm(estimate ~ passage * treat, data = fluxes)
+anova(
+fit <- rlm(estimate ~ passage * treat, data = fluxes),
+fit <- rlm(estimate ~ passage + treat, data = fluxes))
 
 summary(fit)
 anova(fit)
@@ -155,3 +156,7 @@ ggplot(new_data, aes(x = passage, y = estimate)) +
   geom_line(aes(passage, fit, color = treat)) +
   geom_ribbon(aes(ymin=lwr,ymax=upr, group = treat), alpha=0.3) +
   ylim(-0.01, 0.08)
+ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) + 
+  geom_point() + 
+  stat_smooth(method='lm')
+ggsave('raw_fluxes.pdf')

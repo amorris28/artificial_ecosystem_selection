@@ -175,5 +175,4 @@ ggplot(heritability, aes(parental, offspring, color = treat)) +
   theme_classic() +
   geom_point() + 
   stat_smooth(method = 'lm', se = FALSE)
-summary(lm(offspring ~ parental, data = heritability, subset = treat == 'p'))
-summary(lm(offspring ~ parental, data = heritability, subset = treat == 'n'))
+summary(lm(offspring ~ parental * treat, data = heritability))
