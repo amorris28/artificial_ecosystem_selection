@@ -125,6 +125,6 @@ fluxes <-
   ungroup() %>% 
   mutate(passage = as.numeric(flux_date)) %>% 
   mutate(estimate_rank = rank(estimate)) %>% 
-  filter(passage != 6)
-
+  filter(passage != 6) %>% 
+  select(-std.error, -statistic, -p.value)
 write_tsv(fluxes, '../Output/fluxes.tsv')
