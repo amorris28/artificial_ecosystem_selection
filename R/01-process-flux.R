@@ -127,4 +127,8 @@ fluxes <-
   mutate(estimate_rank = rank(estimate)) %>% 
   filter(passage != 6) %>% 
   select(-std.error, -statistic, -p.value)
+
+
+fluxes$estimate_log10 <- log10(fluxes$estimate + abs(min(fluxes$estimate)) + 0.001)
+
 write_tsv(fluxes, '../Output/fluxes.tsv')

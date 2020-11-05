@@ -23,6 +23,70 @@ sed <- function(p, n, na.rm = FALSE) {
 
 fluxes <- read_tsv('../Output/fluxes.tsv')
 
+#####################################################################
+# Okay here to deviance is how I should really be doing it
+###############################################################
+
+# 1. Plot the raw data
+ratio.values <- (max(fluxes$passage)-min(fluxes$passage))/(max(fluxes$estimate)-min(fluxes$estimate))
+
+ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) +
+  theme_classic() +
+  geom_jitter(width = 0.1) +
+  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+#  coord_fixed(ratio.values) +
+  labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
+  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+
+ggsave('fluxes_raw.pdf', width = 5, height = 4)
+
+# 2. Transform it to make it more normal
+
+# 3. Plot the transformed data
+
+ratio.values <- (max(fluxes$passage)-min(fluxes$passage))/(max(fluxes$estimate_log10)-min(fluxes$estimate_log10))
+
+ggplot(fluxes, aes(x = passage, y = estimate_log10, color = treat)) +
+  theme_classic() +
+  geom_jitter(width = 0.1) +
+  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+#  coord_fixed(ratio.values) +
+  labs(x = "Passage Number", y = "log10(Methane Oxidation Rate (-k))") +
+  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+
+ggsave('fluxes_log.pdf', width = 5, height = 4)
+
+
+
+# 3. Test a difference of slopes
+
+fit <- lm(estimate_log10 ~ passage * treat, data = fluxes)
+summary(fit)
+
+fit1 <- lm(estimate_log10 ~ passage + treat, data = fluxes)
+summary(fit1)
+anova(
+      lm(estimate_log10 ~ passage * treat, data = fluxes),
+      lm(estimate_log10 ~ passage + treat, data = fluxes)
+)
+
+# 4. Plot the back-transformed slope
+
+summary(fit)
+fit$coef[[3]]
+fit$coef[[4]]
+
+ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) +
+  theme_classic() +
+  geom_jitter() +
+  geom_abline(intercept = fit$coef[[3]], slope = fit$coef[[4]]^10) +
+  labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
+  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+
+####################################################################
+# End the correct way to do it
+################################################################
+
 # Calculate deviance as p - n
 deviance <-
   fluxes %>% 

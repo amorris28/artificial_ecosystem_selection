@@ -25,6 +25,61 @@ library(broom)
 
 heritability <- read_tsv('../Output/heritability.tsv')
 fluxes <- read_tsv('../Output/fluxes.tsv')
+selected_jars <- read_csv('../Data/selected.csv')
+
+#######################################################################
+# The way I should be doing
+########################################################################
+# Pull out the selected parental jars
+selected <- 
+  fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
+  select(treat, estimate_log10, passage) %>% 
+  group_by(treat, passage) %>% 
+  summarize(parental = mean(estimate_log10), .groups = 'drop')
+
+offspring <- 
+  fluxes %>% 
+  select(passage, treat, estimate_log10) %>% 
+  filter(passage != 1) %>% 
+  mutate(passage = passage - 1) %>% 
+  rename(offspring = estimate_log10)
+
+heritability <- 
+  offspring %>% 
+  left_join(selected, by = c('passage', 'treat'))
+
+
+ggplot(heritability, aes(parental, offspring)) +
+  theme_classic() +
+  geom_jitter(width = 0.01) + 
+  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+  labs(x = "Mid-parent (mean(log10(Flux (-k))))", y = "Offspring (log10(Flux (-k)))")
+ggsave('herit_all.pdf', width = 5, height = 4)
+
+summary(lm(offspring ~ parental, data = heritability))
+
+ggplot(heritability, aes(parental, offspring, color = treat)) +
+  theme_classic() +
+  geom_jitter(width = 0.01) + 
+  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+  labs(x = "Mid-parent (mean(log10(Flux (-k))))", y = "Offspring (log10(Flux (-k)))") +
+  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+
+ggsave('herit_treat.pdf', width = 5, height = 4)
+
+summary(lm(offspring ~ parental * treat, data = heritability))
+
+anova(
+      lm(offspring ~ parental * treat, data = heritability),
+      lm(offspring ~ parental + treat, data = heritability)
+)
+
+      summary(lm(offspring ~ parental * treat, data = heritability))
+      summary(lm(offspring ~ parental + treat, data = heritability))
+
+######################################################################
+# End of the way I should be doing it
+################################################################
 
 # Function for the Breeder's equation
 
