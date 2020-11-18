@@ -131,4 +131,11 @@ fluxes <-
 
 fluxes$estimate_log10 <- log10(fluxes$estimate + abs(min(fluxes$estimate)) + 0.001)
 
+selected <- read_csv('../Data/selected.csv')
+
+selected$selected <- TRUE
+
+fluxes <- left_join(fluxes, selected, by = c('passage', 'jar'))
+fluxes$selected <- !is.na(fluxes$selected)
+
 write_tsv(fluxes, '../Output/fluxes.tsv')
