@@ -46,13 +46,21 @@ ggsave('fluxes_raw.pdf', width = 5, height = 4)
 
 ratio.values <- (max(fluxes$passage)-min(fluxes$passage))/(max(fluxes$estimate_log10)-min(fluxes$estimate_log10))
 
+selected$selected <- TRUE
+
+selected_data <- 
+fluxes %>% 
+  left_join(selected, by = c('passage', 'jar')) %>% 
+  filter(selected == TRUE)
+
 ggplot(fluxes, aes(x = passage, y = estimate_log10, color = treat)) +
   theme_classic() +
-  geom_jitter(width = 0.1) +
-  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+  geom_jitter(aes(alpha = selected), width = 0.2) +
+  stat_smooth(aes(group = treat), method = 'lm', se = FALSE, formula = 'y ~ x') +
 #  coord_fixed(ratio.values) +
   labs(x = "Passage Number", y = "log10(Methane Oxidation Rate (-k))") +
-  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2')) +
+  scale_alpha_manual(name = "Selected", labels = c('Not', 'Selected'), values = c(0.5, 1))
 
 ggsave('fluxes_log.pdf', width = 5, height = 4)
 
