@@ -4,10 +4,11 @@
 .Ruserdata
 *.pdf
 *.png
+*.jpg
+*.gif
 Permits/
 Figures/
 Output/
 R/*.md
 R/Figs/
-Data/*
 Archive/
