@@ -3,8 +3,10 @@
 .RData
 .Ruserdata
 *.pdf
+*.png
 Permits/
 Figures/
 Output/
 R/*.md
 R/Figs/
+Data/*

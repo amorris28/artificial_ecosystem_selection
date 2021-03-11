@@ -21,7 +21,7 @@ sed <- function(p, n, na.rm = FALSE) {
 
 # Response to Selection
 
-fluxes <- read_tsv('../Output/fluxes.tsv')
+fluxes <- read_tsv('Output/fluxes.tsv')
 
 #####################################################################
 # Okay here to deviance is how I should really be doing it
@@ -44,14 +44,14 @@ ggsave('fluxes_raw.pdf', width = 5, height = 4)
 
 # 3. Plot the transformed data
 
-ratio.values <- (max(fluxes$passage)-min(fluxes$passage))/(max(fluxes$estimate_log10)-min(fluxes$estimate_log10))
-
-selected$selected <- TRUE
-
-selected_data <- 
-fluxes %>% 
-  left_join(selected, by = c('passage', 'jar')) %>% 
-  filter(selected == TRUE)
+# ratio.values <- (max(fluxes$passage)-min(fluxes$passage))/(max(fluxes$estimate_log10)-min(fluxes$estimate_log10))
+# 
+# selected$selected <- TRUE
+# 
+# selected_data <- 
+# fluxes %>% 
+#   left_join(selected, by = c('passage', 'jar')) %>% 
+#   filter(selected == TRUE)
 
 ggplot(fluxes, aes(x = passage, y = estimate_log10, color = treat)) +
   theme_classic() +
@@ -65,11 +65,22 @@ ggplot(fluxes, aes(x = passage, y = estimate_log10, color = treat)) +
 ggsave('fluxes_log.pdf', width = 5, height = 4)
 
 
+ggplot(fluxes, aes(x = passage, y = estimate_log10, color = treat)) +
+  theme_classic() +
+  geom_jitter(width = 0.2) +
+  stat_smooth(aes(group = treat), method = 'lm', se = FALSE, formula = 'y ~ x') +
+  #  coord_fixed(ratio.values) +
+  labs(x = "Passage Number", y = expression(log[10] * "(Methane Consumption Rate (-k))")) +
+  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+
+ggsave('fluxes_log.png', width = 5, height = 4)
 
 # 3. Test a difference of slopes
 
-fit <- lm(estimate_log10 ~ passage * treat, data = fluxes)
+fit <- lm(estimate_log10 ~ 0 + passage * treat, data = fluxes)
 summary(fit)
+fit
+10^fit$coef["passage:treatp"]
 
 fit1 <- lm(estimate_log10 ~ passage + treat, data = fluxes)
 summary(fit1)

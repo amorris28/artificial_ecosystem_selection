@@ -23,9 +23,9 @@ library(tidyverse)
 library(morris)
 library(broom)
 
-heritability <- read_tsv('../Output/heritability.tsv')
-fluxes <- read_tsv('../Output/fluxes.tsv')
-selected_jars <- read_csv('../Data/selected.csv')
+heritability <- read_tsv('Output/heritability.tsv')
+fluxes <- read_tsv('Output/fluxes.tsv')
+selected_jars <- read_csv('Data/selected.csv')
 
 #######################################################################
 # The way I should be doing
