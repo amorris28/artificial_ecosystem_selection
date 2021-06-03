@@ -23,4 +23,4 @@ Output/fluxes.tsv: R/01-process-flux.R Data/conc_data.csv Data/sc_dates.csv Data
 	cd $(<D);Rscript $(<F)
 	
 Output/barcode_master.tsv Output/barcode_gc3f.tsv: R/create-barcode-key.R Data/sample_key.tsv Data/primer_sequence_key.tsv
-	cd $(<D);Rscript $()<F)
+	cd $(<D);Rscript $(<F)

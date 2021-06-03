@@ -12,8 +12,8 @@
 
 library(tidyverse)
 
-sample_key <- read_tsv('Data/sample_key.tsv')
-primer_key <- read_tsv('Data/primer_sequence_key.tsv')
+sample_key <- read_tsv('../Data/sample_key.tsv')
+primer_key <- read_tsv('../Data/primer_sequence_key.tsv')
 
 sample_key %>% 
   separate(primer_well, c('row', 'col'), 1) %>%  
@@ -21,11 +21,11 @@ sample_key %>%
   rename(r_barcode = sequence) %>% 
   left_join(primer_key, by = c('row' = 'key')) %>% 
   rename(f_barcode = sequence) %>%
-  write_tsv('Output/barcode_master.tsv')
+  write_tsv('../Output/barcode_master.tsv')
 
-read_tsv('Output/barcode_master.tsv') %>% 
+read_tsv('../Output/barcode_master.tsv') %>% 
   select(`Library Name / ID` = gc3f_id, 
          `Index 1 (i7) sequence` = r_barcode, 
          `Index 2 (i5) sequence` = f_barcode) %>% 
-  write_tsv('Output/barcode_gc3f.tsv')
+  write_tsv('../Output/barcode_gc3f.tsv')
   
