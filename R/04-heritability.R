@@ -54,7 +54,7 @@ ggplot(heritability, aes(parental, offspring)) +
   geom_jitter(width = 0.01) + 
   stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
   labs(x = "Mid-parent (mean(log10(Flux (-k))))", y = "Offspring (log10(Flux (-k)))")
-ggsave('herit_all.pdf', width = 5, height = 4)
+ggsave('herit_all.png', width = 5, height = 4)
 
 summary(lm(offspring ~ parental, data = heritability))
 
@@ -65,17 +65,17 @@ ggplot(heritability, aes(parental, offspring, color = treat)) +
   labs(x = "Mid-parent (mean(log10(Flux (-k))))", y = "Offspring (log10(Flux (-k)))") +
   scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
 
-ggsave('herit_treat.pdf', width = 5, height = 4)
+ggsave('herit_treat.png', width = 5, height = 4)
 
-summary(lm(offspring ~ parental * treat, data = heritability))
+summary(lm(offspring ~ 0 + parental * treat, data = heritability))
 
 anova(
       lm(offspring ~ parental * treat, data = heritability),
       lm(offspring ~ parental + treat, data = heritability)
 )
 
-      summary(lm(offspring ~ parental * treat, data = heritability))
-      summary(lm(offspring ~ parental + treat, data = heritability))
+summary(lm(offspring ~ parental * treat, data = heritability))
+summary(lm(offspring ~ parental + treat, data = heritability))
 
 ######################################################################
 # End of the way I should be doing it
@@ -87,6 +87,33 @@ breeders <- function(R, S) {
   R / S
 }
 
+#
+
+selected <- 
+  fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
+  select(treat, estimate_log10, passage) %>% 
+  group_by(treat, passage) %>% 
+  summarize(selected = mean(estimate_log10), .groups = 'drop')
+
+parents <- 
+  fluxes %>%
+  select(treat, estimate_log10, passage) %>% 
+  group_by(treat, passage) %>% 
+  summarize(parental = mean(estimate_log10), .groups = 'drop')
+
+offspring <- 
+  fluxes %>% 
+  select(passage, treat, estimate_log10) %>% 
+  filter(passage != 1) %>% 
+  mutate(passage = passage - 1) %>% 
+  group_by(treat, passage) %>% 
+  summarize(offspring = mean(estimate_log10), .groups = 'drop')
+
+heritability <- 
+  offspring %>% 
+  left_join(selected, by = c('passage', 'treat')) %>% 
+  left_join(parents, by = c('passage', 'treat'))
+      
 # Matt's approach: h2 for each generation
 h2_per_gen  <- 
 heritability %>% 
@@ -94,10 +121,18 @@ heritability %>%
   mutate(S = selected - parental) %>% 
   mutate(h2 = breeders(R, S))
 
-write_tsv(h2_per_gen, '../Output/h2_per_gen.tsv')
+write_tsv(h2_per_gen, 'Output/h2_per_gen.tsv')
 
-ggplot(h2_per_gen, aes(x = passage, color = treat, y = R)) +
+ggplot(h2_per_gen, aes(x = passage, color = treat, y = h2)) +
   geom_point()
+
+h2_per_gen %>% 
+  select(treat, passage, h2)
+
+h2_per_gen %>% 
+  select(treat, passage, h2) %>% 
+  group_by(treat) %>% 
+  summarize(mean_h2 = mean(h2), sd_h2 = sd(h2), .groups = 'drop')
 
 # Calculate R using regression of deviance over time.
 # Calculate S using math.
