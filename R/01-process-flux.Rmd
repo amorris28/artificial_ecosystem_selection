@@ -1,12 +1,13 @@
 ---
-title: "Process Flux Date"
-author: "Andrew"
-date: "6/15/2021"
+title: "Process Flux Data"
+author: "Andrew Morris"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
+This script processes the standard curve data from the GC on each sample date. It then converts area to methane concentration using the standard curves for every sample. Finally, it computes fluxes (change in concentration over time) as a first-order exponential decay function.
 
-```{r initialize_packages}
+```{r initialize_packages, message=FALSE}
 library(tidyverse)
 library(broom)
 library(lubridate)
@@ -14,8 +15,7 @@ library(knitr)
 ```
 
 ```{r initialize_variables}
-raw_dir <- '../Data/'
-der_dir <- '../Output/'
+source('functions.R')
 ```
 
 
@@ -24,12 +24,8 @@ sc <- read.csv(paste0(raw_dir, 'standard_curve.csv'))
 sc_dates <- read.csv(paste0(raw_dir, 'sc_dates.csv'))
 time_data <- data.table::fread(paste0(raw_dir, 'time_data.csv'))
 conc_data <- data.table::fread(paste0(raw_dir, 'conc_data.csv'))
-selected <- read_csv(paste0(raw_dir, 'selected.csv'))
+selected <- read.csv(paste0(raw_dir, 'selected.csv'))
 ```
-
-# Overview
-
-This script processes the standard curve data from the GC on each sample date. It then converts area to methane concentration using the standard curves for every sample. Finally, it computes fluxes (change in concentration over time) as a first-order exponential decay function. These are exported into the `r der_dir` directory.
 
 This dataset includes `r length(unique(substr(conc_data$jar, 1, 1)))` treatments across `r length(unique(conc_data$flux_date))` passages (generations). This includes a total of n = `r nrow(conc_data)` samples. However, passage 6 will not be included in the analyzed dataset, because that passage was sampled much later due to covid and used different potting mix so has too many confounding factors. The samples are broken down across passages and treatments as in the following table:
 
@@ -44,12 +40,14 @@ conc_data %>%
 ```
 
 
-# Standard Curves
+## Standard Curves
 
-This script first imports the values for the standard curves. It then calculates the slope of Methane on Area for each sample date.
+This step first imports the values for the standard curves then calculates the slope of Methane on Area for each sample date.
 
 ```{r standard_curves}
 sc_model <- function(df) {lm(injection_ppm ~ area, data = df)}
+
+# fit a separate model for each date
 standard_curves <- 
   sc %>% 
   filter(molecule == 'ch4') %>% 
@@ -58,27 +56,34 @@ standard_curves <-
   mutate(model = map(data, sc_model),
          glance = map(model, glance),
          tidy = map(model, tidy)) 
+
 sc_r2 <- 
   standard_curves %>% 
   unnest(glance) %>% 
   select(flux_date, sc_date, r.squared)
+
 sc_equation <- 
   standard_curves %>% 
   unnest(tidy) %>%
   select(flux_date, sc_date, term, estimate) %>% 
   spread(term, estimate) %>% 
   rename(intercept = `(Intercept)`, slope = area)
+
 sc_ch4 <- left_join(sc_r2, sc_equation, by = c("flux_date", "sc_date"))
 
+# These are the final slopes for each Methane~Area standard curve 
+# model for each date
 sc_ch4 <- 
   sc_ch4 %>% 
   left_join(sc_dates, by = "sc_date") %>% 
   select(flux_date:sc_date, t, r.squared:slope)
 ```
 
-# Compute Fluxes
+## Compute Fluxes
 
-```{r compute_fluxes}
+This step turns the time point data to time intervals in units of days.
+
+```{r compute_time_intervals}
 
 time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')] <- 
   lapply(time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')],
@@ -95,7 +100,11 @@ time_data <-
   gather(t, days, t1:t5) %>% 
   mutate(flux_date = factor(flux_date))
 
+```
 
+This step takes the raw gas chromatograph area data and calculates methane concentration for each time point in units of ppm.
+
+```{r compute_ch4_conc}
 conc_data <- 
   conc_data %>% 
   filter(molecule == 'ch4') %>% 
@@ -105,7 +114,11 @@ conc_data <-
   mutate(ppm = area * slope + intercept) %>% 
   select(flux_date, jar, t, ppm) %>% 
   spread(t, ppm)
+```
 
+Finally, this step takes the time intervals and ch4 concentrations and fits a first-order exponential decay function to compute methane flux as `k` which is the rate-constant for the first-order exponential decay function.
+
+```{r fit_flux}
 ln_ch0_chn <- function(t0, tn) {
   log(t0/tn)
 }
@@ -157,14 +170,15 @@ fluxes <-
   filter(passage != 6) %>% 
   select(-std.error, -statistic, -p.value)
 
-
 fluxes$estimate_log10 <- log10(fluxes$estimate + abs(min(fluxes$estimate)) + 0.001)
 
+# Identify the selected jars in the fluxes dataframe
 selected$selected <- TRUE
-
 fluxes <- left_join(fluxes, selected, by = c('passage', 'jar'))
 fluxes$selected <- !is.na(fluxes$selected)
+```
 
+```{r export_data}
 write_tsv(fluxes, paste0(der_dir, 'fluxes.tsv'))
 ```
 

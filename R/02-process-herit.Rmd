@@ -1,23 +1,31 @@
 ---
 title: "Process Heritability Data"
 author: "Andrew Morris"
-date: "6/17/2021"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
-# This script takes in the flux data from script 01 and the data on which jars
-# were selected in each passage. It then aligns these data so that for each
-# passage there is a mean flux for all parents, the selected parents, and all
-# offspring. 
+This script takes in the flux data from script 01 and the data on which jars
+were selected in each passage. It then aligns these data so that for each
+passage there is a mean flux for all parents, the selected parents, and all
+offspring. 
 
-# input: fluxes.tsv, selected.csv
-# output: heritability.tsv
-
+```{r initialize_packages, message=FALSE}
 library(tidyverse)
+```
 
-selected_jars <- read_csv('../Data/selected.csv')
-fluxes <- read_tsv('../Output/fluxes.tsv')
+```{r initialize_variables}
+source('functions.R')
+```
 
+```{r import_data, message=FALSE}
+selected_jars <- read_csv(paste0(raw_dir, 'selected.csv'))
+fluxes <- read_tsv(paste0(der_dir, 'fluxes.tsv'))
+```
+
+## Organize parent/offspring values
+
+```{r process_herit_data}
 # Pull out the selected parental jars
 selected <- 
   fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
@@ -29,13 +37,16 @@ parental <-
   select(passage, treat, estimate)
 
 # Pull out all offspring jars
+# The `passage - 1` function sets the value of generation `n + 1` 
+# as the "offspring" value for generation `n`. 
 offspring <- 
   fluxes %>%
   select(treat, estimate, passage) %>% 
   filter(passage != 1) %>% 
   mutate(passage = passage - 1)
 
-# Calculate means for east generation
+# Calculate means within each generation for all parental jars,
+# all offspring jars, and all selected parental jars
 parental_mean <-
   parental %>% 
   group_by(passage, treat) %>% 
@@ -57,8 +68,10 @@ heritability <-
   left_join(offspring_mean, by = c("passage", "treat")) %>% 
   left_join(selected_mean, by = c("passage", "treat")) %>% 
   #filter(treat == "p") %>% 
-  filter(passage != 5) %>% # Remove passage 5, which has no offspring
+  filter(passage != 5) %>% # Remove passage 5, which has no offspring,
+  # because it's the last generation
   ungroup()
 
 
-write_tsv(heritability, '../Output/heritability.tsv')
+write_tsv(heritability, paste0(der_dir, 'heritability.tsv'))
+```
