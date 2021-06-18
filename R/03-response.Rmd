@@ -13,11 +13,10 @@ the sum of the squared errors, which is slightly smaller than the sum. In
 this case, I have chosen the SED.
 ```{r initialize_packages, message=FALSE}
 library(tidyverse)
-library(metafor)
 library(morris)
 library(broom)
+library(knitr)
 ```
-
 
 ```{r initialize_variables}
 source('functions.R')
@@ -27,122 +26,70 @@ source('functions.R')
 fluxes <- read_tsv(paste0(der_dir, 'fluxes.tsv'))
 ```
 
-Standard error of the difference function
-
-```{r functions}
-# Standard error of the difference
-sed <- function(p, n, na.rm = FALSE) {
-  sqrt(se(p, na.rm = na.rm) ^ 2 + se(n, na.rm = na.rm)^ 2)
-}
-```
-
 ## Plot the raw data
 
-```{r}
-ratio.values <- (max(fluxes$passage)-min(fluxes$passage))/(max(fluxes$estimate)-min(fluxes$estimate))
-
-plot_flux <- function(fluxes, passage, estimate) {
-ggplot(fluxes, aes(x = {{passage}}, y = {{estimate}}, color = treat)) +
-  theme_classic() +
-  geom_jitter(aes(alpha = selected), width = 0.1) +
-  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
-  labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
-  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2')) +
-  scale_alpha_manual(name = "Selected", labels = c('Not', 'Selected'), values = c(0.3, 1))
-}
-
-
-plot_log_flux <- function(fluxes, passage, estimate_log10) {
-ggplot(fluxes, aes(x = {{passage}}, y = {{estimate_log10}}, color = treat)) +
-  theme_classic() +
-  geom_jitter(aes(alpha = selected), width = 0.1) +
-  stat_smooth(aes(group = treat), method = 'lm', se = FALSE, formula = 'y ~ x') +
-  #  coord_fixed(ratio.values) +
-  labs(x = "Passage Number", y = expression(log[10] * "(Methane Consumption Rate (-k))")) +
-  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2')) +
-  scale_alpha_manual(name = "Selected", labels = c('Not', 'Selected'), values = c(0.3, 1))
-}
-
-plot_flux(fluxes, passage, estimate)
-
-#ggsave('fluxes_raw.pdf', width = 5, height = 4)
+```{r calc_plot_ratios}
 
 ```
 
-## 3. Plot the log-transformed data
+```{r plot_raw}
+ratio <- calc_plot_ratios(fluxes$passage, fluxes$estimate)
 
-```{r}
-# ratio.values <- (max(fluxes$passage)-min(fluxes$passage))/(max(fluxes$estimate_log10)-min(fluxes$estimate_log10))
-# 
-# selected$selected <- TRUE
-# 
-# selected_data <- 
-# fluxes %>% 
-#   left_join(selected, by = c('passage', 'jar')) %>% 
-#   filter(selected == TRUE)
+plot_flux(fluxes, passage, estimate, ratio)
+#ggsave('fluxes_raw.pdf', width = 5, height = 4)
+```
 
-plot_log_flux(fluxes, passage, estimate_log10)
+## Plot the log-transformed data
 
-ggplot(fluxes, aes(x = passage, y = estimate_log10, color = treat)) +
-  theme_classic() +
-  geom_jitter(aes(alpha = selected), width = 0.2) +
-  stat_smooth(aes(group = treat), method = 'lm', se = FALSE, formula = 'y ~ x') +
-#  coord_fixed(ratio.values) +
-  labs(x = "Passage Number", y = "log10(Methane Oxidation Rate (-k))") +
-  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2')) +
-  scale_alpha_manual(name = "Selected", labels = c('Not', 'Selected'), values = c(0.5, 1))
+```{r plot_log10}
+ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$estimate_log10)
+
+plot_flux(fluxes, passage, estimate_log10, ratio_log10, log10 = TRUE)
 
 #ggsave('fluxes_log.pdf', width = 5, height = 4)
 ```
 
-```{r}
-ggplot(fluxes, aes(x = passage, y = estimate_log10, color = treat)) +
-  theme_classic() +
-  geom_jitter(width = 0.2) +
-  stat_smooth(aes(group = treat), method = 'lm', se = FALSE, formula = 'y ~ x') +
-  #  coord_fixed(ratio.values) +
-  labs(x = "Passage Number", y = expression(log[10] * "(Methane Consumption Rate (-k))")) +
-  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+## Test a difference of slopes
 
-#ggsave('fluxes_log.png', width = 5, height = 4)
+```{r response_model}
+# Fit full interaction model
+inter_model <- lm(estimate_log10 ~ 0 + passage * treat, data = fluxes)
+
+# Fit additive model
+addit_model <- lm(estimate_log10 ~ passage + treat, data = fluxes)
+
+
+# Back calculate the slope of the positive treatment
+pos_slope <- 10^inter_model$coef["passage:treatp"]
 ```
 
-# 3. Test a difference of slopes
+Here I fit two models with flux as the dependent variable and passage and treatment as the independent variables. The first is the interaction model, which includes an interaction between passage and treatment. The second is an additive model that lacks this interaction. Here is the model comparison using `anova`, which indicates the full model is somewhat better:
 
-```{r}
-fit <- lm(estimate_log10 ~ 0 + passage * treat, data = fluxes)
-summary(fit)
-fit
-10^fit$coef["passage:treatp"]
-
-fit1 <- lm(estimate_log10 ~ passage + treat, data = fluxes)
-summary(fit1)
-anova(
-      lm(estimate_log10 ~ passage * treat, data = fluxes),
-      lm(estimate_log10 ~ passage + treat, data = fluxes)
-)
+```{r compare_models}
+# Compare interaction to no interaction
+compare_mods <- anova(inter_model, addit_model)
+kable(tidy(compare_mods))
 ```
 
-4. Plot the back-transformed slope
+Here is the full interaction model:
 
-```{r}
-summary(fit)
-fit$coef[[3]]
-fit$coef[[4]]
-
-ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) +
-  theme_classic() +
-  geom_jitter() +
-  geom_abline(intercept = fit$coef[[3]], slope = fit$coef[[4]]^10) +
-  labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)") +
-  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+```{r inter_model}
+kable(tidy(inter_model))
 ```
 
-```{r}
-####################################################################
-# End the correct way to do it
-################################################################
+The term `passage` was not significant, which is the y-intercept of the neutral treatment So This treatment did not change. 
 
+## Previous Method
+
+Previously, I was using the `metafor` package to test the slope of the difference between the positive and neutral line. 
+
+```{r eval=FALSE}
+
+library(metafor)
+# Standard error of the difference
+sed <- function(p, n, na.rm = FALSE) {
+  sqrt(se(p, na.rm = na.rm) ^ 2 + se(n, na.rm = na.rm)^ 2)
+}
 # Calculate deviance as p - n
 deviance <-
   fluxes %>% 
