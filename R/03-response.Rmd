@@ -5,17 +5,13 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-This script intakes the flux data from script 01. It then calculates deviance
-as the difference between the positive line and the neutral line in each
-passage. The errors can either be calculated as the sum of the errors for
-each line or the standard error of difference, that is, the square root of
-the sum of the squared errors, which is slightly smaller than the sum. In
-this case, I have chosen the SED.
+This script intakes the flux data from script 01. It then fits a linear model to the flux data over time per treatment and tests a difference of slope between the positive and the neutral treatment. Finally, it 
 ```{r initialize_packages, message=FALSE}
 library(tidyverse)
 library(morris)
 library(broom)
 library(knitr)
+#library(broman)
 ```
 
 ```{r initialize_variables}
@@ -24,27 +20,27 @@ source('functions.R')
 
 ```{r import_data, message=FALSE}
 fluxes <- read_tsv(paste0(der_dir, 'fluxes.tsv'))
+
+fluxes <-
+  fluxes %>% 
+  mutate(passage = passage - 1)
 ```
 
 ## Plot the raw data
 
-```{r calc_plot_ratios}
-
-```
-
 ```{r plot_raw}
-ratio <- calc_plot_ratios(fluxes$passage, fluxes$estimate)
+ratio <- calc_plot_ratios(fluxes$passage, fluxes$ch4)
 
-plot_flux(fluxes, passage, estimate, ratio)
+plot_flux(fluxes, passage, ch4, ratio)
 #ggsave('fluxes_raw.pdf', width = 5, height = 4)
 ```
 
 ## Plot the log-transformed data
 
 ```{r plot_log10}
-ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$estimate_log10)
+ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
 
-plot_flux(fluxes, passage, estimate_log10, ratio_log10, log10 = TRUE)
+plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
 
 #ggsave('fluxes_log.pdf', width = 5, height = 4)
 ```
@@ -53,21 +49,21 @@ plot_flux(fluxes, passage, estimate_log10, ratio_log10, log10 = TRUE)
 
 ```{r response_model}
 # Fit full interaction model
-inter_model <- lm(estimate_log10 ~ 0 + passage * treat, data = fluxes)
+inter_model <- lm(log_ch4 ~ passage * treat, data = fluxes)
 
-# Fit additive model
-addit_model <- lm(estimate_log10 ~ passage + treat, data = fluxes)
-
+# No treatment model
+no_treat_model <- lm(log_ch4 ~ passage, data = fluxes)
 
 # Back calculate the slope of the positive treatment
 pos_slope <- 10^inter_model$coef["passage:treatp"]
+
 ```
 
 Here I fit two models with flux as the dependent variable and passage and treatment as the independent variables. The first is the interaction model, which includes an interaction between passage and treatment. The second is an additive model that lacks this interaction. Here is the model comparison using `anova`, which indicates the full model is somewhat better:
 
 ```{r compare_models}
 # Compare interaction to no interaction
-compare_mods <- anova(inter_model, addit_model)
+compare_mods <- anova(inter_model, no_treat_model)
 kable(tidy(compare_mods))
 ```
 
@@ -75,13 +71,14 @@ Here is the full interaction model:
 
 ```{r inter_model}
 kable(tidy(inter_model))
+
 ```
 
-The term `passage` was not significant, which is the y-intercept of the neutral treatment So This treatment did not change. 
+The intercept for the Neutral treatment was significantly different from zero at `r round(tidy(inter_model)[[1, 2]], 2)` (SE = `r round(tidy(inter_model)[[1, 3]], 2)`, t = `r round(tidy(inter_model)[[1, 4]], 2)`, p = `r round(tidy(inter_model)[[1, 5]], 2)`). The Positive treatment started at a significantly lower methane oxidation rate than the Neutral treatment with a y-intercept of `r round(tidy(inter_model)[[3, 2]], 2)` relative to Neutral (SE = `r round(tidy(inter_model)[[3, 3]], 2)`, t = `r round(tidy(inter_model)[[3, 4]], 2)`, p = `r round(tidy(inter_model)[[3, 5]], 2)`). There was no change in methane oxidation rate of the Neutral treatment over the five passages (slope = `r round(tidy(inter_model)[[2, 2]], 2)`, SE = `r round(tidy(inter_model)[[2, 3]], 2)`, t = `r round(tidy(inter_model)[[2, 4]], 2)`, p = `r round(tidy(inter_model)[[2, 5]], 2)`). By contrast, there was a significant increase in the Positive treatment of `r round(tidy(inter_model)[[4, 2]], 2)` per passage which is approximately a `r round((pos_slope - 1) * 100, 0)`% increase in methane oxidation rate per passage (SE = `r round(tidy(inter_model)[[4, 3]], 2)`, t = `r round(tidy(inter_model)[[4, 4]], 2)`, p = `r round(tidy(inter_model)[[4, 5]], 2)`).
 
 ## Previous Method
 
-Previously, I was using the `metafor` package to test the slope of the difference between the positive and neutral line. 
+Previously, I was using the `metafor` package to test the slope of the difference between the positive and neutral line. For this model, I calculate the difference between the Positive and Neutral treatment and fit that difference as the response. I also calculate the standard error of the difference and included that variance in the model. I then fit the model `difference ~ passage` to test the slope of the difference over time.
 
 ```{r eval=FALSE}
 
