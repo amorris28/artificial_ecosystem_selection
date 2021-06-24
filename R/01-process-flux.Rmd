@@ -166,16 +166,27 @@ fluxes <-
   select(-data, -model, -term) %>% 
   ungroup() %>% 
   mutate(passage = as.numeric(flux_date)) %>% 
-  mutate(estimate_rank = rank(estimate)) %>% 
+  mutate(ch4 = estimate,
+         rank_ch4 = rank(ch4),
+         log_ch4 = log10(ch4 + abs(min(ch4)) + 0.001)) %>% 
   filter(passage != 6) %>% 
-  select(-std.error, -statistic, -p.value)
+  select(-std.error, -statistic, -p.value, -estimate)
+```
 
-fluxes$estimate_log10 <- log10(fluxes$estimate + abs(min(fluxes$estimate)) + 0.001)
+```{r identify_selected}
 
 # Identify the selected jars in the fluxes dataframe
 selected$selected <- TRUE
-fluxes <- left_join(fluxes, selected, by = c('passage', 'jar'))
-fluxes$selected <- !is.na(fluxes$selected)
+fluxes <- 
+  fluxes %>% 
+  left_join(selected, by = c('passage', 'jar')) %>% 
+  mutate(selected = !is.na(selected)) %>% 
+  select(-jar) %>% 
+  select(flux_date, passage, treat, rep, ch4:selected)
+```
+
+```{r print_data}
+kable(fluxes)
 ```
 
 ```{r export_data}

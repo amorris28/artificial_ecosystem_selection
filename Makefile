@@ -10,10 +10,7 @@ Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx 
 Presentation/presentation.html: Presentation/presentation.Rmd Output/fluxes.tsv Output/heritability.tsv Output/deviance.tsv Output/dev_fit.rds Output/response.rds
 	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
 
-Output/deviance.tsv R/03-response.html: R/03-response.Rmd Output/fluxes.tsv
-	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
-
-Output/deviance.tsv R/03-response.html: R/03-response.Rmd Output/fluxes.tsv
+R/03-response.html: R/03-response.Rmd Output/fluxes.tsv
 	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
 
 Output/heritability.tsv R/02-process-herit.html: R/02-process-herit.Rmd Output/fluxes.tsv Data/selected.csv
