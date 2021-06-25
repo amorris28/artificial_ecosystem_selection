@@ -1,88 +1,64 @@
-# This script imports the heritability data, which includes, for each passage,
-# the mean for all parents, the selected parents, and the offspring (of the
-# selected parents). It then calculates S, the selection differential, as the
-# mean difference between the selected parents and all parents. Because passage
-# 2 was accidentaly selected for the lowest methane oxidation rate, I take the
-# absolute value of this difference, i.e. |S|. 
-#
-# Next, it imports the deviance data and calculates R, the respones to
-# selection, as the slope of mean difference in flux (positive - neutral) over
-# time. 
-# 
-# An alternative approach would be to calculate R directly instead of
-# approximating it using the slope as in the equation offspring - parent. In
-# this case, I would not be using the deviance, but instead the raw fluxes. I
-# can do that with the heritability dataset.
-# 
-# Once I have R through one of the above approaches, 
-# 
-# Inpot: selected.csv, fluxes.tsv, heritability.tsv
-# Output: ???
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
 
+This script imports the heritability data. This dataset includes the mean flux withn treatment*generation for 1) all parents, 2) selected parents, and 3) offspring. Then, it plots offspring on the selection parents with the two treatments combined and then separately for the two treatments.
+
+
+
+```{r initialize_packages}
 library(tidyverse)
 library(morris)
 library(broom)
+library(knitr)
+library(broman)
+```
 
-heritability <- read_tsv('Output/heritability.tsv')
-fluxes <- read_tsv('Output/fluxes.tsv')
-selected_jars <- read_csv('Data/selected.csv')
+```{r initialize_variables}
+source('functions.R')
+```
 
-#######################################################################
-# The way I should be doing
-########################################################################
-# Pull out the selected parental jars
-selected <- 
-  fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
-  select(treat, estimate_log10, passage) %>% 
-  group_by(treat, passage) %>% 
-  summarize(parental = mean(estimate_log10), .groups = 'drop')
+```{r import_data}
+heritability <- read_tsv(paste0(der_dir, 'heritability.tsv'))
 
-offspring <- 
-  fluxes %>% 
-  select(passage, treat, estimate_log10) %>% 
-  filter(passage != 1) %>% 
-  mutate(passage = passage - 1) %>% 
-  rename(offspring = estimate_log10)
+```
+# Test heritability as mid-offspring on mid-parent
 
-heritability <- 
-  offspring %>% 
-  left_join(selected, by = c('passage', 'treat'))
+```{r test_treatment}
+fit_no_treat <- lm(offspring ~ selected, data = heritability)
+kable(tidy(fit_no_treat))
+fit_treat <- lm(offspring ~ selected * treat, data = heritability)
+kable(tidy(fit_treat))
+kable(tidy(anova(fit_no_treat, fit_treat)))
+```
 
+Here, I fit two models. The first is simply offspring flux on selected parent flux, ignoring treatment. There is no correlation `r print_model(fit_no_treat, 2)`. Next, I added treatment and the interaction between treatment and parental flux. Here, there is a significant correlation between parent and offspring for both the Neutral treatment `r print_model(fit_treat, 2)` and the Positive treatment `r print_model(fit_treat, 4)`. Notably, the sign of the effect is reversed: negative for the Neutral treatment and positive for the Positive treatment.
 
-ggplot(heritability, aes(parental, offspring)) +
-  theme_classic() +
-  geom_jitter(width = 0.01) + 
-  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
-  labs(x = "Mid-parent (mean(log10(Flux (-k))))", y = "Offspring (log10(Flux (-k)))")
-ggsave('herit_all.png', width = 5, height = 4)
+The negative heritability of methane oxidation rate in the Neutral selection treatment may result from selection on alternative characters in those populations. The strong, positive heritability in the Positive treatment ... . It seems strange that the 
 
-summary(lm(offspring ~ parental, data = heritability))
+```{r plot_herit}
 
-ggplot(heritability, aes(parental, offspring, color = treat)) +
-  theme_classic() +
-  geom_jitter(width = 0.01) + 
-  stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
-  labs(x = "Mid-parent (mean(log10(Flux (-k))))", y = "Offspring (log10(Flux (-k)))") +
-  scale_color_manual(name = "Treatment", labels = c('Neutral', 'Positive'), values = c('gray40', 'darkorange2'))
+plot_herit(heritability)
 
-ggsave('herit_treat.png', width = 5, height = 4)
-
-summary(lm(offspring ~ 0 + parental * treat, data = heritability))
-
-anova(
-      lm(offspring ~ parental * treat, data = heritability),
-      lm(offspring ~ parental + treat, data = heritability)
-)
-
-summary(lm(offspring ~ parental * treat, data = heritability))
-summary(lm(offspring ~ parental + treat, data = heritability))
+```
 
 ######################################################################
 # End of the way I should be doing it
 ################################################################
 
+
+The Old way:
+
+It then calculates S, the selection differential, as the mean difference between the selected parents and all parents. Because passage 2 was accidentaly selected for the lowest methane oxidation rate, I take the absolute value of this difference, i.e. |S|. Next, it imports the deviance data and calculates R, the respones to selection, as the slope of mean difference in flux (positive - neutral) over time. 
+ 
+An alternative approach would be to calculate R directly instead of approximating it using the slope as in the equation offspring - parent. In this case, I would not be using the deviance, but instead the raw fluxes. I can do that with the heritability dataset.
+
 # Function for the Breeder's equation
 
+```{r eval=FALSE, include=FALSE}
 breeders <- function(R, S) {
   R / S
 }
@@ -91,23 +67,23 @@ breeders <- function(R, S) {
 
 selected <- 
   fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
-  select(treat, estimate_log10, passage) %>% 
+  select(treat, log_ch4, passage) %>% 
   group_by(treat, passage) %>% 
-  summarize(selected = mean(estimate_log10), .groups = 'drop')
+  summarize(selected = mean(log_ch4), .groups = 'drop')
 
 parents <- 
   fluxes %>%
-  select(treat, estimate_log10, passage) %>% 
+  select(treat, log_ch4, passage) %>% 
   group_by(treat, passage) %>% 
-  summarize(parental = mean(estimate_log10), .groups = 'drop')
+  summarize(parental = mean(log_ch4), .groups = 'drop')
 
 offspring <- 
   fluxes %>% 
-  select(passage, treat, estimate_log10) %>% 
+  select(passage, treat, log_ch4) %>% 
   filter(passage != 1) %>% 
   mutate(passage = passage - 1) %>% 
   group_by(treat, passage) %>% 
-  summarize(offspring = mean(estimate_log10), .groups = 'drop')
+  summarize(offspring = mean(log_ch4), .groups = 'drop')
 
 heritability <- 
   offspring %>% 
@@ -152,8 +128,8 @@ h2_reg_dev <- breeders(R, S)
 lm_fit <- 
   fluxes %>% 
   filter(treat == 'p') %>% 
-  select(treat, passage, estimate) %>% 
-  lm(estimate ~ passage, data = .) 
+  select(treat, passage, ch4) %>% 
+  lm(ch4 ~ passage, data = .) 
 
 R_not_dev <- pull(tidy(lm_fit)[2, 2])
 h2_reg_abs <- breeders(R_not_dev, S)
@@ -237,16 +213,16 @@ fluxes <- read_tsv('../Output/fluxes.tsv')
 # Pull out the selected parental jars
 selected <- 
   fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
-  select(treat, estimate, passage) %>% 
+  select(treat, ch4, passage) %>% 
   group_by(treat, passage) %>% 
-  summarize(parental = mean(estimate), .groups = 'drop')
+  summarize(parental = mean(ch4), .groups = 'drop')
 
 offspring <- 
   fluxes %>% 
-  select(passage, treat, estimate) %>% 
+  select(passage, treat, ch4) %>% 
   filter(passage != 1) %>% 
   mutate(passage = passage - 1) %>% 
-  rename(offspring = estimate)
+  rename(offspring = ch4)
 
 heritability <- 
   offspring %>% 
@@ -266,3 +242,6 @@ ggplot(heritability, aes(parental, offspring, color = treat)) +
   geom_point() + 
   stat_smooth(method = 'lm', se = FALSE)
 summary(lm(offspring ~ parental * treat, data = heritability))
+```
+
+

@@ -12,6 +12,7 @@ offspring.
 
 ```{r initialize_packages, message=FALSE}
 library(tidyverse)
+library(knitr)
 ```
 
 ```{r initialize_variables}
@@ -28,20 +29,22 @@ fluxes <- read_tsv(paste0(der_dir, 'fluxes.tsv'))
 ```{r process_herit_data}
 # Pull out the selected parental jars
 selected <- 
-  fluxes[paste0(fluxes$passage, fluxes$jar) %in% paste0(selected_jars$passage, selected_jars$jar), ] %>%
-  select(treat, estimate, passage)
+  fluxes %>% 
+  filter(selected) %>% 
+  select(passage, treat, log_ch4)
+  
 
 # Pull out all parental jars
 parental <-
   fluxes %>% 
-  select(passage, treat, estimate)
+  select(passage, treat, log_ch4)
 
 # Pull out all offspring jars
 # The `passage - 1` function sets the value of generation `n + 1` 
 # as the "offspring" value for generation `n`. 
 offspring <- 
   fluxes %>%
-  select(treat, estimate, passage) %>% 
+  select(treat, log_ch4, passage) %>% 
   filter(passage != 1) %>% 
   mutate(passage = passage - 1)
 
@@ -50,17 +53,17 @@ offspring <-
 parental_mean <-
   parental %>% 
   group_by(passage, treat) %>% 
-  summarize(parental = mean(estimate), .groups = "drop")
+  summarize(parental = mean(log_ch4), .groups = "drop")
 
 offspring_mean <-
   offspring %>% 
   group_by(passage, treat) %>% 
-  summarize(offspring = mean(estimate), .groups = "drop")
+  summarize(offspring = mean(log_ch4), .groups = "drop")
 
 selected_mean <-
   selected %>% 
   group_by(passage, treat) %>% 
-  summarize(selected = mean(estimate), .groups = "drop")
+  summarize(selected = mean(log_ch4), .groups = "drop")
 
 # Combine all parent/offspring data into one data frame
 heritability <- 
@@ -71,7 +74,12 @@ heritability <-
   filter(passage != 5) %>% # Remove passage 5, which has no offspring,
   # because it's the last generation
   ungroup()
+```
 
+```{r print_data}
+kable(heritability)
+```
 
+```{r export_data}
 write_tsv(heritability, paste0(der_dir, 'heritability.tsv'))
 ```
