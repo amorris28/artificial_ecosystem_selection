@@ -1,11 +1,14 @@
 ---
-title: "R Notebook"
-output:
-  html_document:
-    df_print: paged
+title: "Heritability"
+author: "Andrew Morris"
+date: "`r Sys.Date()`"
+output: html_document
 ---
 
-This script imports the heritability data. This dataset includes the mean flux withn treatment*generation for 1) all parents, 2) selected parents, and 3) offspring. Then, it plots offspring on the selection parents with the two treatments combined and then separately for the two treatments.
+This script imports the heritability data. This dataset includes the mean flux
+withn treatmentxgeneration for 1) all parents, 2) selected parents, and 3)
+offspring. Then, it plots offspring on the selection parents with the two
+treatments combined and then separately for the two treatments.
 
 
 
@@ -30,12 +33,12 @@ heritability <- read_tsv(paste0(der_dir, 'heritability.tsv'))
 ```{r test_treatment}
 fit_no_treat <- lm(offspring ~ selected, data = heritability)
 kable(tidy(fit_no_treat))
-fit_treat <- lm(offspring ~ selected * treat, data = heritability)
-kable(tidy(fit_treat))
-kable(tidy(anova(fit_no_treat, fit_treat)))
+herit_model <- lm(offspring ~ selected * treat, data = heritability)
+kable(tidy(herit_model))
+kable(tidy(anova(fit_no_treat, herit_model)))
 ```
 
-Here, I fit two models. The first is simply offspring flux on selected parent flux, ignoring treatment. There is no correlation `r print_model(fit_no_treat, 2)`. Next, I added treatment and the interaction between treatment and parental flux. Here, there is a significant correlation between parent and offspring for both the Neutral treatment `r print_model(fit_treat, 2)` and the Positive treatment `r print_model(fit_treat, 4)`. Notably, the sign of the effect is reversed: negative for the Neutral treatment and positive for the Positive treatment.
+Here, I fit two models. The first is simply offspring flux on selected parent flux, ignoring treatment. There is no correlation `r print_model(fit_no_treat, 2)`. Next, I added treatment and the interaction between treatment and parental flux. Here, there is a significant correlation between parent and offspring for both the Neutral treatment `r print_model(herit_model, 2)` and the Positive treatment `r print_model(herit_model, 4)`. Notably, the sign of the effect is reversed: negative for the Neutral treatment and positive for the Positive treatment.
 
 The negative heritability of methane oxidation rate in the Neutral selection treatment may result from selection on alternative characters in those populations. The strong, positive heritability in the Positive treatment ... . It seems strange that the 
 
@@ -44,6 +47,11 @@ The negative heritability of methane oxidation rate in the Neutral selection tre
 plot_herit(heritability)
 
 ```
+
+```{r save_heritability}
+save(herit_model, file = '../Output/herit_model.Rdata')
+```
+
 
 ######################################################################
 # End of the way I should be doing it

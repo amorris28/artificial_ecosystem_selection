@@ -5,13 +5,17 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-This script intakes the flux data from script 01. It then fits a linear model to the flux data over time per treatment and tests a difference of slope between the positive and the neutral treatment. Finally, it 
+This script takes in the flux data from script 01. It then plots the raw data
+and the log-transformed data. Finally, it fits a linear model to the flux data
+over time per treatment and tests a difference of slope between the positive
+and the neutral treatment.
+
 ```{r initialize_packages, message=FALSE}
 library(tidyverse)
 library(morris)
 library(broom)
 library(knitr)
-#library(broman)
+library(broman)
 ```
 
 ```{r initialize_variables}
@@ -21,6 +25,7 @@ source('functions.R')
 ```{r import_data, message=FALSE}
 fluxes <- read_tsv(paste0(der_dir, 'fluxes.tsv'))
 
+# Shift the passage numbers so the first passage becomes "Passage 0"
 fluxes <-
   fluxes %>% 
   mutate(passage = passage - 1)
@@ -49,32 +54,52 @@ plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
 
 ```{r response_model}
 # Fit full interaction model
-inter_model <- lm(log_ch4 ~ passage * treat, data = fluxes)
+response_model <- lm(log_ch4 ~ passage * treat, data = fluxes)
 
 # No treatment model
 no_treat_model <- lm(log_ch4 ~ passage, data = fluxes)
 
 # Back calculate the slope of the positive treatment
-pos_slope <- 10^inter_model$coef["passage:treatp"]
+pos_slope <- 10^response_model$coef["passage:treatp"]
 
 ```
 
-Here I fit two models with flux as the dependent variable and passage and treatment as the independent variables. The first is the interaction model, which includes an interaction between passage and treatment. The second is an additive model that lacks this interaction. Here is the model comparison using `anova`, which indicates the full model is somewhat better:
+Here I fit two models. The first is the full model which includes passage number, treatment, and the interaction between the two. The second model includes only passage with no effect of treatment. Comparing the models using `anova` 
 
 ```{r compare_models}
 # Compare interaction to no interaction
-compare_mods <- anova(inter_model, no_treat_model)
+compare_mods <- anova(response_model, no_treat_model)
 kable(tidy(compare_mods))
 ```
 
 Here is the full interaction model:
 
-```{r inter_model}
-kable(tidy(inter_model))
-
+```{r print_model}
+kable(tidy(response_model))
 ```
 
-The intercept for the Neutral treatment was significantly different from zero at `r round(tidy(inter_model)[[1, 2]], 2)` (SE = `r round(tidy(inter_model)[[1, 3]], 2)`, t = `r round(tidy(inter_model)[[1, 4]], 2)`, p = `r round(tidy(inter_model)[[1, 5]], 2)`). The Positive treatment started at a significantly lower methane oxidation rate than the Neutral treatment with a y-intercept of `r round(tidy(inter_model)[[3, 2]], 2)` relative to Neutral (SE = `r round(tidy(inter_model)[[3, 3]], 2)`, t = `r round(tidy(inter_model)[[3, 4]], 2)`, p = `r round(tidy(inter_model)[[3, 5]], 2)`). There was no change in methane oxidation rate of the Neutral treatment over the five passages (slope = `r round(tidy(inter_model)[[2, 2]], 2)`, SE = `r round(tidy(inter_model)[[2, 3]], 2)`, t = `r round(tidy(inter_model)[[2, 4]], 2)`, p = `r round(tidy(inter_model)[[2, 5]], 2)`). By contrast, there was a significant increase in the Positive treatment of `r round(tidy(inter_model)[[4, 2]], 2)` per passage which is approximately a `r round((pos_slope - 1) * 100, 0)`% increase in methane oxidation rate per passage (SE = `r round(tidy(inter_model)[[4, 3]], 2)`, t = `r round(tidy(inter_model)[[4, 4]], 2)`, p = `r round(tidy(inter_model)[[4, 5]], 2)`).
+```{r save_model}
+save(response_model, pos_slope, file = '../Output/response_model.Rdata')
+```
+
+The intercept for the Neutral treatment was significantly different from zero
+at `r myround(tidy(response_model)[[1, 2]], 2)` (SE = `r
+myround(tidy(response_model)[[1, 3]], 2)`, t = `r myround(tidy(response_model)[[1,
+4]], 2)`, p = `r myround(tidy(response_model)[[1, 5]], 2)`). The Positive
+treatment started at a significantly lower methane oxidation rate than the
+Neutral treatment with a y-intercept of `r myround(tidy(response_model)[[3, 2]],
+2)` relative to Neutral (SE = `r myround(tidy(response_model)[[3, 3]], 2)`, t = `r
+myround(tidy(response_model)[[3, 4]], 2)`, p = `r myround(tidy(response_model)[[3,
+5]], 2)`). There was no change in methane oxidation rate of the Neutral
+treatment over the five passages (slope = `r myround(tidy(response_model)[[2, 2]],
+2)`, SE = `r myround(tidy(response_model)[[2, 3]], 2)`, t = `r
+myround(tidy(response_model)[[2, 4]], 2)`, p = `r myround(tidy(response_model)[[2,
+5]], 2)`). By contrast, there was a significant increase in the Positive
+treatment of `r myround(tidy(response_model)[[4, 2]], 2)` per passage which is
+approximately a `r round((pos_slope - 1) * 100, 0)`% increase in methane
+oxidation rate per passage (SE = `r myround(tidy(response_model)[[4, 3]], 2)`, t =
+`r myround(tidy(response_model)[[4, 4]], 2)`, p = `r myround(tidy(response_model)[[4,
+5]], 2)`).
 
 ## Previous Method
 
