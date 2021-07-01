@@ -52,16 +52,27 @@ plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
 
 ## Test a difference of slopes
 
+```{r raw_model}
+raw_model <- lm(ch4 ~ passage * treat, data = fluxes)
+
+ggplot(raw_model, aes(x = .fitted, y = .resid)) + geom_point()
+
+```
+
 ```{r response_model}
-# Fit full interaction model
 response_model <- lm(log_ch4 ~ passage * treat, data = fluxes)
 
+ggplot(response_model, aes(x = .fitted, y = .resid)) + geom_point()
+
+```
+
+```{r no_treat_model}
 # No treatment model
 no_treat_model <- lm(log_ch4 ~ passage, data = fluxes)
 
 # Back calculate the slope of the positive treatment
 pos_slope <- 10^response_model$coef["passage:treatp"]
-
+per_slope <- (10^response_model$coef["passage:treatp"] - 1) * 100
 ```
 
 Here I fit two models. The first is the full model which includes passage number, treatment, and the interaction between the two. The second model includes only passage with no effect of treatment. Comparing the models using `anova` 
@@ -79,7 +90,7 @@ kable(tidy(response_model))
 ```
 
 ```{r save_model}
-save(response_model, pos_slope, file = '../Output/response_model.Rdata')
+save(response_model, per_slope, file = '../Output/response_model.Rdata')
 ```
 
 The intercept for the Neutral treatment was significantly different from zero
@@ -104,6 +115,8 @@ oxidation rate per passage (SE = `r myround(tidy(response_model)[[4, 3]], 2)`, t
 ## Previous Method
 
 Previously, I was using the `metafor` package to test the slope of the difference between the positive and neutral line. For this model, I calculate the difference between the Positive and Neutral treatment and fit that difference as the response. I also calculate the standard error of the difference and included that variance in the model. I then fit the model `difference ~ passage` to test the slope of the difference over time.
+
+
 
 ```{r eval=FALSE}
 
@@ -250,3 +263,5 @@ ggplot(fluxes, aes(x = passage, y = estimate, color = treat)) +
   stat_smooth(method='lm')
 #ggsave('raw_fluxes.pdf')
 ```
+
+

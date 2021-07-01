@@ -16,7 +16,7 @@ plot_flux <- function(fluxes, passage, estimate, ratio = NULL, log10 = FALSE) {
     p <- p + labs(x = "Passage Number", y = "Methane Oxidation Rate (-k)")
   } 
   else if (log10 == TRUE) {
-    p <- p + labs(x = "Passage Number", y = expression(log[10] * "(Methane Consumption Rate (-k))"))
+    p <- p + labs(x = "Passage Number", y = expression(log[10] * "(Methane Oxidation Rate (-k))"))
   } 
   
   if (!is.null(ratio)) {
@@ -51,4 +51,8 @@ plot_herit <- function(heritability, ratio) {
                        labels = c('Neutral', 'Positive'), 
                        values = c('gray40', 'darkorange2')) +
     coord_fixed(ratio)
+}
+
+percent_less <- function(initial, final) {
+  round(-100 * (final - initial)/abs(initial))
 }

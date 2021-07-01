@@ -45,45 +45,44 @@ figures("herit", "Regression of offspring CH~4~ flux on mid-parent CH~4~ flux. M
 # Introduction 
 
 One of the fundamental questions in Ecology is To what extent does biodiversity
-drive variation in ecosystem functioning? Variation in abiotic conditions
+drive variation in ecosystem function? Variation in abiotic conditions
 regulates the rate of ecosystem processes, but it remains unclear to what
 extent variation in community structure regulates the rate of ecosystem
 processes. Many ecosystem functions are mediated by organisms. In particular,
 microorganisms such as bacteria mediate the major biogeochemical cycles such
 as the carbon and nitrogen cycles. Despite the central role of bacteria in
 performing these processes, we have not found a consistent relationship between
-microbial community structure and the rate of any ecosystem process. In order
+microbial community structure and the rate of an ecosystem process. In order
 to understand the importance of biodiversity to ecosystem functioning and to
 better predict and manage specific ecosystem processes, we need to determine
 the relationship between microbial community structure and ecosystem function.
 
 In macroorganismal communities, there appears to be a relationship between the
-diversity of a community and the resilience of ecosystem functioning to
+diversity of a community and the resilience of ecosystem functions to
 environmental perturbations (Tilman, ????... Hooper). Typically, this is the
 diversity (or more specifically, the richness) of a particular functional
 group, such as photosynthetic plants. Similar studies in microbial communities
 rarely find a relationship between diversity and function (Graham, ). However,
 these studies typically define diversity much more broadly than plant diversity
 studies by looking at the phylogenetic diversity of the entire bacterial and
-archaeal community, not just of a particular functional group. Studies that
-focus more narrowly on a particular ecosystem process and a functional group
-involved in that process still rarely find a significant correlation between
-the abundance of a functional group (or a functional protein-coding gene) and
-the rate of the corresponding process (Rocca, ????). For certain ecosystem
+archaeal community. Studies that focus more narrowly on a particular ecosystem
+process and a functional group involved in that process still rarely find a
+significant correlation between the abundance of a functional group and the
+rate of the corresponding process (Rocca, ????). For certain ecosystem
 functions in certain ecosystems, these relationships can be informative. For
 example, the abundance of a single methanogenic species (*G. species*) is
-correlated with methane emissions in a permafrost ecosystem (cite). In addition,
-bacterial and archaeal community composition is correlated with methane
-emissions in forests and pastures of the Brazilian Amazon (Meyer et al. 2020).
-Therefore, there appears to be some indication that microbial community
+correlated with methane emissions in a permafrost ecosystem (cite). In
+addition, bacterial and archaeal community composition is correlated with
+methane emissions in forests and pastures of the Brazilian Amazon (Meyer et al.
+2020).  Therefore, there appears to be some indication that microbial community
 structure drives variation in methane cycling in soils.
 
 To further investigate the relationship between microbial community structure
 and the rate of methane cycling in soils, we want to determine which organisms
 are important for regulating methane cycling. This ecological question is
 analogous to the problem of genotype-phenotype mapping in quantitative genetics
-(Morris 2020). Variation in an organimsal trait is partially determined by
-environmental conditions and partially determined by genetic varition. One goal
+(Morris 2020). Variation in an organismal trait is partially determined by
+environmental conditions and partially determined by genetic variation. One goal
 of quantitative genetics is to determine the proportion of the variation
 attributable to genetics and to identify which alleles regulate the phenotypic
 trait. These goals are commonly achieved through artificial selection
@@ -94,30 +93,29 @@ to whole microbial communities. In this case, the "alleles" are different
 microbial taxa and the "phenotype" is the rate of ecosystem function at the
 whole-ecosystem level.
 
-To do this, we performed an artificial ecosystem selection experiment to
-identify communities of bacteria and archaea that collectively perform a high
-rate of methane oxidation (Swenson et al. 2000).  (Goodnight et al. 1997,
-Williams and Lenton 2007)we generated twenty-four soil ecosystems in the lab
-using a sterilized potting mix as the substrate. We then inoculated these
-ecosystems with a small amount of living soil to generate variation in
-community structure across the twenty-four ecosystems. These ecosystems were
-then assigned to one of two selection treatments: neutral selection with
-ecosystems chosen for reproduction at random or positive selection with
-ecosystems chosen for reproduction based on their methane oxidation rate. Each
-ecosystem was maintained at 1000 ppm CH4 over several weeks to allow for
-colonization and growth of the microbial community and to enrich for methane
-oxidizers. We then determined the methane oxidation rate for each ecosystem and
-selected three jars in each treatment to inoculate the next set of twenty-four
-jars. This process continued for five passages. At the end of the experiment,
-we extracted DNA from soils in the second and fifth passage for both the
-neutral and positive treatments. By comparing the response to selection within
-the community between the two treatments, we can identify microbial species
-that contribute to variation in ecosystem methane emissions.
+To identify communities of bacteria and archaea that collectively perform a
+high rate of methane oxidation, we performed an artificial ecosystem selection
+experiment  (Swenson et al. 2000).  We generated twenty-four soil ecosystems in the lab using a sterilized
+potting mix as the substrate. We then inoculated these ecosystems with a small
+amount of living soil to generate variation in community structure across the
+twenty-four ecosystems. These ecosystems were then assigned to one of two
+selection treatments: neutral selection or positive selection. Each ecosystem
+was maintained at 1000 ppm CH~4~ over several weeks to allow for colonization and
+growth of the microbial community and to enrich for methane oxidizers. We then
+determined the methane oxidation rate for each ecosystem. To impose selection,
+we selected three jars from the positive treatment with the highest rate of
+methane oxidation, homogenized them, and used that soil to inoculate the next
+set of jars. For the neutral treatment, we selected three jars at random to
+inoculate the next set of jars. This process continued for five passages. At
+the end of the experiment, we extracted DNA from soils in the second and fifth
+passage for both the neutral and positive treatments. By comparing the response
+to selection within the community between the two treatments, we can identify
+microbial species that contribute to variation in ecosystem methane emissions.
 
 This approach is powerful because by using a common soil substrate and
 maintaining a constant headspace concentration of methane, we can eliminate
 much of the environmental variation that would be present in an observational
-study in the wild. In addition, by applying selection on methane oxidation rate
+study. In addition, by applying selection on methane oxidation rate
 in the positive treatment, we can enrich for taxa involved in methane cycling
 making it easier to perform association mapping between microbial taxa and
 ecosystem methane emissions. In this paper, we address whether there is a
@@ -128,6 +126,9 @@ we identify microbial markers of soil methane cycling using association mapping
 in order to deduce the mapping between microbial community structure and
 ecosystem function.
 
+(Goodnight et al. 1997, Williams and Lenton
+2007)
+
 # Materials & Methods
 
 ## Selection experiment
@@ -136,67 +137,62 @@ al. (2000) by passaging replicate soil microbial communities. The trait we
 selected on was CH~4~ oxidation rate. Our experiment had two selection lines
 with twelve jars each for a total of twenty-four jars per passage. One line was
 a positive selection line where the two or three jars with the highest CH~4~
-oxidation rate were chosen to inoculate the next set of jars. The other line
-was a neutral selection line where an equal number of jars as the positive line
-were chosen at random among the twelve. The number of jars chosen was based on
-the distribution of fluxes among the positive jars, i.e., we chose the top
-three jars unless only two jars had considerably greater oxidation rates based
-on visual inspection of histograms.
+oxidation rate were chosen to inoculate the next set of positive jars. The
+other line was a neutral selection line where an equal number of jars as the
+positive line were chosen at random to inoculate the next set of neutral jars.
+The number of jars chosen was based on the distribution of fluxes among the
+positive jars, i.e., we chose the top three jars unless only two jars had
+considerably greater oxidation rates based on visual inspection of histograms.
+The experiment was carried out over five passages.
 
 The initial soil microbial community was sampled from the top 10 cm of an
 upland mineral soil under a deciduous forest ecosystem near the University of
-Oregon campus. Incubations were performed in 500 mL mason jars (Ball
-Corporation, Broomfield, Colorado, USA) with rubber septa installed in the
-lids. Jars were incubated at ambient temperature on the benchtop. To create the
-first set of jars, twenty-four jars were created in an identical manner and
-then randomly assigned to either the positive or negative selection line. Each
-jar was sterilized with 70% ethanol to which was added 45 g of autoclaved
-potting mix, 5 g of live soil, and 3.5 mL of sterile deionized water to bring
-them to <mark> 60%??? of field capacity </mark>. The jars were then
-homogenized, capped, and injected with 4.3 mL of 99% CH~4~ to bring the
-headspace concentration to approximately 1000 ppm CH~4~. Jars were flushed and
-respiked twice per week to maintain elevated CH~4~ concentrations until travel,
-holidays, and COVID-19 got in the way and then we just did it as often as we
-could. Jars were incubated for approximately three weeks and then flux
-measurements were taken.
+Oregon campus in Eugene, OR, USA. Incubations were performed in 500 mL mason
+jars (Ball Corporation, Broomfield, Colorado, USA) with rubber septa installed
+in the lids. Each jar was sterilized with 70% ethanol to which was added 45 g
+of autoclaved potting mix, 5 g of living soil, and 3.5 mL of sterile deionized
+water to bring them to <mark> 60%??? of field capacity</mark>. The jars were
+then homogenized, capped, and injected with 4.3 mL of 99% CH~4~ to bring the
+headspace concentration to approximately 1000 ppm CH~4~. To create the two
+treatment groups, twenty-four jars were created in an identical manner and then
+randomly assigned to either the positive or neutral selection line. Jars were
+flushed and respiked twice per week to maintain elevated CH~4~ concentrations
+and were incubated at ambient temperature for approximately three weeks.
+Methane oxidation rates were determined at the end of the incubation period.
+These values were then used to determine the jars selected to inoculate the
+next set of jars.
 
-Once CH~4~ oxidation rates were determined, the top two or three jars were
-chosen for selection in the positive line and an equal number of jars were
-randomly chosen from the neutral line. The selected jars for each line were
-homogenized and used as the 5 g live soil for the subsequent passage. Twelve
-new jars were created for each line in the same manner as above using the
-inoculum for that line. This procedure continued until a divergence was
-observed in the mean flux of each line for two consecutive generations. Jars in
-passage number 2 and 5 were homogenized and a sample was collected and stored
-at -80$^\circ$C for later DNA extraction.
+## Methane oxidation rate measurements 
 
-## Methane flux measurements Methane oxidation rates were determined after
-flushing and spiking jars to approximately 1000 ppm CH~4~. Head-space samples
-of 1 mL were collected from each jar immediately after spiking and then at time
-points 3, 6, 24, and 48 hours for a 5-point curve. Samples were immediately
-injected into a <mark>???</mark> gas chromatograph fitted with an electron
-capture detector (company, city, state, USA) to determine the headspace CH~4~
-concentration. Fluxes were calculated from a first-order exponential decay
-function as decay constant `k`. Oxidation rates are presented as the additive
+Methane oxidation rates were determined after flushing and spiking jars to
+approximately 1000 ppm CH~4~. Headspace samples of 1 mL were collected from
+each jar immediately after spiking and then at time points 3, 6, 24, and 48
+hours for a 5-point curve. Samples were immediately injected into a
+<mark>???</mark> gas chromatograph fitted with an electron capture detector
+(company, city, state, USA) to determine the headspace CH~4~ concentration.
+Fluxes were calculated from a first-order exponential decay function as decay
+constant `k` with units day^-1^. Oxidation rates are presented as the additive
 inverse of `k` (i.e., `-k`) so that a more positive value represents a faster
-oxidation rate.
+oxidation rate. The jars selected for the positive treatment in passage 2 had
+the lowest methane oxidation rate of the twelve jars due to a calculation error
+in the methane oxidation rate. All other passages correctly used the top three jars.
 
 ## Soil DNA extraction and sequencing
 
-Soil DNA was extracted from a 0.25 g subsample of soil from the starting
-inoculum and from each jar in passage 2 and 5. Negative controls were extracted
+A subsample of soil from the starting inoculum and from every jar in passages 2
+and 5 was collected and stored at -80$^\circ$C for later DNA extraction.
+Soil DNA was extracted from a 0.25 g subsample of soil. Negative controls were extracted
 from autoclaved potting mix and DNase-free water. Extractions were performed
 using the DNeasy PowerSoil kit (QIAGEN, Hilden, Germany) and quantified using
 Qubit (company, city, state). In order to estimate the diversity and relative
 abundance of the bacterial and archaeal taxa in our soil ecosystems, we
 sequenced the V3-V4 region of the 16S rRNA gene using the Earth Microbiome
-Project protocol and primers<mark>???</mark>. In addition, to estimate the
-diversity and relative abundance of CH~4~ oxidizing taxa, we sequenced the
-particulate methane monooxygenase subunit A gene (*pmoA*) using
-primers<mark>???</mark>. Sequencing was performed on the Illumina MiSeq in v3
-mode with 300 bp paired-end reads.
+Project protocol and primers<mark>???</mark>. Sequencing was performed on the
+Illumina NovaSeq 6000 with paired-end 150 bp reads.
 
-## Bioinformatics Bioinformatic analyses were conducted using the `QIIME2`
+## Bioinformatics
+
+Bioinformatic analyses were conducted using the `QIIME2`
 bioinformatics platform (Bolyen et al. 2019). Raw sequencing reads were
 demultiplexed using ??? (citation), denoised using `DADA2` (citation).
 Taxonomic assignment for the 16S reads was performed using ??? based on the
@@ -210,14 +206,20 @@ package (Willis et al. ???).
 ### Response to selection
 
 To test whether there was a significant change in CH~4~ oxidation rate (k) as a
-response to selection, we tested the deviation between the positive and neutral
-selection lines over multiple passages. We calculated deviation as the
-difference in the mean oxidation rate between the positive and neutral
-treatment within each passage. The standard errors of the difference were
-calculated as the square root of the sum of the squared errors of the positive
-and neutral lines. We then fit an ordinary least squares regression model
-taking into account the standard errors of the deviations. The model was fit
-using the `rma` function from the `metafor` package in `r` (Viechtbauer 2010).
+response to selection, we tested a difference in slopes between the positive
+and neutral selection lines. The CH~4~ oxidation rates were strongly right
+skewed with most values close to zero and few large, positive values. This
+resulted in residuals that did not meet the assumptions of constant variance
+and normal distribution. Therefore, methane oxidation rates were log~10~
+transformed to better meet the assumptions of a linear model and to make
+figures easier to interpret. First, we tested the effect of treatment by
+fitting two nested models with and without treatment using `lm` in `R`. The
+model formulation for the full model was `flux ~ passage * treatment` and the
+model formulation for the reduced model was `flux ~ passage`. We compared these
+models using the likelihood ratio test with the `anova` function in `R`. We
+then fit the full model to determine the slope of the positive line, which
+represents the change in methane oxidation rate per passage as a response to
+selection.
 
 ### Ecosystem heritability
 
@@ -252,33 +254,27 @@ Possible tests:
 
 ## Response to selection
 
-The intercept for the Neutral treatment was significantly different from zero
-at `r myround(tidy(response_model)[[1, 2]], 2)` (SE = `r
-myround(tidy(response_model)[[1, 3]], 2)`, t = `r myround(tidy(response_model)[[1,
-4]], 2)`, p = `r myround(tidy(response_model)[[1, 5]], 2)`). The Positive
-treatment started at a significantly lower methane oxidation rate than the
-Neutral treatment with a y-intercept of `r myround(tidy(response_model)[[3, 2]],
-2)` relative to Neutral (SE = `r myround(tidy(response_model)[[3, 3]], 2)`, t = `r
-myround(tidy(response_model)[[3, 4]], 2)`, p = `r myround(tidy(response_model)[[3,
-5]], 2)`). There was no change in methane oxidation rate of the Neutral
-treatment over the five passages (slope = `r myround(tidy(response_model)[[2, 2]],
-2)`, SE = `r myround(tidy(response_model)[[2, 3]], 2)`, t = `r
-myround(tidy(response_model)[[2, 4]], 2)`, p = `r myround(tidy(response_model)[[2,
-5]], 2)`). By contrast, there was a significant increase in the Positive
-treatment of `r myround(tidy(response_model)[[4, 2]], 2)` per passage which is
-approximately a `r round((pos_slope - 1) * 100, 0)`% increase in methane
-oxidation rate per passage (SE = `r myround(tidy(response_model)[[4, 3]], 2)`, t =
-`r myround(tidy(response_model)[[4, 4]], 2)`, p = `r myround(tidy(response_model)[[4,
-5]], 2)`).
-
-Methane oxidation rate increased as a response to selection in the Positive
-selection treatment (`r figures("deviance", display="cite")`).  This can be
-seen in the increase in deviation between the Positive and Neutral selection
-lines over the course of the experiment (z = , p = ).  Mean CH~4~ oxidation
-rate for the Positive treatment increased by  $\pm$ per passage relative to the
-Neutral treatment. The mean flux across all jars in all treatments in the first
-passage was  $\pm$  so this represents a doubling of CH~4~ consumption in every passage due
-to selection. 
+We observed a response to selection on soil methane oxidation rate at the whole
+ecosystem level (`r figures("response", display="cite")`).
+At the start of the experiment, the Positive
+treatment had a mean methane oxidation rate that was
+`r percent_less(initial = tidy(response_model)[[1, 2]], final = tidy(response_model)[[3, 2]] + tidy(response_model)[[1, 2]])`%
+lower than the
+Neutral treatment (SE = 
+`r myround(tidy(response_model)[[3, 3]], 2)`, t = 
+`r myround(tidy(response_model)[[3, 4]], 2)`, p = 
+`r myround(tidy(response_model)[[3, 5]], 2)`). There was no change in methane oxidation rate of the Neutral
+treatment over the five passages (slope = 
+`r myround(tidy(response_model)[[2, 2]], 2)`, SE = 
+`r myround(tidy(response_model)[[2, 3]], 2)`, t = 
+`r myround(tidy(response_model)[[2, 4]], 2)`, p = 
+`r myround(tidy(response_model)[[2, 5]], 2)`). By contrast, the Positive treatment had a
+`r round(per_slope)`% increase in methane
+oxidation rate per passage (slope = 
+`r myround(tidy(response_model)[[4, 2]], 2)`, SE = 
+`r myround(tidy(response_model)[[4, 3]], 2)`, t =
+`r myround(tidy(response_model)[[4, 4]], 2)`, p = 
+`r myround(tidy(response_model)[[4, 5]], 2)`).
 
 ```{r response_figure, fig.width=4, fig.height=3, fig.cap=figures("response")}
 ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
@@ -286,7 +282,6 @@ ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
 plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
 
 ```
-
 
 ## Ecosystem heritability
 
