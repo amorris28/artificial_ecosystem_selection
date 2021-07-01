@@ -44,100 +44,89 @@ figures("herit", "Regression of offspring CH~4~ flux on mid-parent CH~4~ flux. M
 
 # Introduction 
 
-## Determining the mapping between microbial community structure and ecosystem function
+One of the fundamental questions in Ecology is To what extent does biodiversity
+drive variation in ecosystem functioning? Variation in abiotic conditions
+regulates the rate of ecosystem processes, but it remains unclear to what
+extent variation in community structure regulates the rate of ecosystem
+processes. Many ecosystem functions are mediated by organisms. In particular,
+microorganisms such as bacteria mediate the major biogeochemical cycles such
+as the carbon and nitrogen cycles. Despite the central role of bacteria in
+performing these processes, we have not found a consistent relationship between
+microbial community structure and the rate of any ecosystem process. In order
+to understand the importance of biodiversity to ecosystem functioning and to
+better predict and manage specific ecosystem processes, we need to determine
+the relationship between microbial community structure and ecosystem function.
 
-Microbial communities mediate ecosystem nutrient cycling via decomposition,
-greenhouse gas cycling, carbon storage, and other processes. Despite the
-central role of bacteria in performing these processes, we have not found a
-consistent relationship between the composition of a microbial community and
-the rate of an ecosystem process across habitats. Typically, research in this
-area has followed the model of macroorganismal biodiversity-ecosystem function
-studies such as grassland productivity studies that measure or manipulate the
-diversity of plant species and correlate that with the rate of primary
-productivity. By analogy, microbial ecologists use microbial sequencing data to
-create taxonomic relative abundance tables and then infer diversity or relative
-abundance from the whole archaeal/bacterial community and correlate that with
-the rate of a microbial process. Alternatively, they estimate the abundance of
-a putative functional gene (such as *pmoA* for methane oxidation) and correlate
-abundance with function. These approaches only rarely show significant,
-positive relationships between biodiversity and ecosystem function. In my first
-chapter published in Phil Trans I lay out philosophically why this approach
-shouldn’t work – namely that marker gene sequences are not analogous to plant
-species counts, but are more analogous to measurements of gene markers as in
-evolutionary biology studies.  
+In macroorganismal communities, there appears to be a relationship between the
+diversity of a community and the resilience of ecosystem functioning to
+environmental perturbations (Tilman, ????... Hooper). Typically, this is the
+diversity (or more specifically, the richness) of a particular functional
+group, such as photosynthetic plants. Similar studies in microbial communities
+rarely find a relationship between diversity and function (Graham, ). However,
+these studies typically define diversity much more broadly than plant diversity
+studies by looking at the phylogenetic diversity of the entire bacterial and
+archaeal community, not just of a particular functional group. Studies that
+focus more narrowly on a particular ecosystem process and a functional group
+involved in that process still rarely find a significant correlation between
+the abundance of a functional group (or a functional protein-coding gene) and
+the rate of the corresponding process (Rocca, ????). For certain ecosystem
+functions in certain ecosystems, these relationships can be informative. For
+example, the abundance of a single methanogenic species (*G. species*) is
+correlated with methane emissions in a permafrost ecosystem (cite). In addition,
+bacterial and archaeal community composition is correlated with methane
+emissions in forests and pastures of the Brazilian Amazon (Meyer et al. 2020).
+Therefore, there appears to be some indication that microbial community
+structure drives variation in methane cycling in soils.
 
-In evolutionary biology, genotype-phenotype mapping provides a way to
-understand the fitness effects of a genotype. While selection typically acts on
-phenotype, the genotypic changes are the fundamental driver of phenotypic
-differences and thus fitness differences (Stadler and Stephes 2005). A similar
-analogy can be drawn for biodiversity-ecosystem function relationships. Traits
-of a community are what drive community assembly, not the taxa or genotypes
-themselves (Inkpen et al. 2017). However, as ecologists, we wish to understand
-the effects of species on ecosystem function. Therefore, in a similar way that
-evolutionary biologists want to deduce the genotype-phenoype map to understand
-the genetic basis of fitness, community ecologists must describe the "mapping"
-between community genotype and ecoystem function to understand what drives
-communty assembly, and ultimately, ecosystem function. 
+To further investigate the relationship between microbial community structure
+and the rate of methane cycling in soils, we want to determine which organisms
+are important for regulating methane cycling. This ecological question is
+analogous to the problem of genotype-phenotype mapping in quantitative genetics
+(Morris 2020). Variation in an organimsal trait is partially determined by
+environmental conditions and partially determined by genetic varition. One goal
+of quantitative genetics is to determine the proportion of the variation
+attributable to genetics and to identify which alleles regulate the phenotypic
+trait. These goals are commonly achieved through artificial selection
+experiments and association mapping studies, such as genome-wide association
+studies. To determine the mapping between microbial community structure and
+ecosystem function, we applied these approaches of genotype-phenotype mapping
+to whole microbial communities. In this case, the "alleles" are different
+microbial taxa and the "phenotype" is the rate of ecosystem function at the
+whole-ecosystem level.
 
-The relationship that ecologists have described between plant diversity and
-productivity represents a relatively simple map between taxonomy and function.
-The number of unique members of a functional group (i.e., plant species) is
-correlated with the rate of the function performed by that group. However, for
-microbial communities that mapping is not quite as clear. For many microbial
-traits, there is not a clear coupling between taxonomy and function, except for
-in the case of highly conserved traits involving many genes (Martiny et al.
-2013). In addition, most microbial taxa have not been sampled and so we don't
-have a full picture of which taxa are members of a particular functional group
-(citation). Put another way, it's much harder to identify methanotrophic
-prokaryotes in soil than it is to identify plants in a prairie. Finally, even
-for highly conserved traits with a putative functional marker, for example
-methane oxidation and the gene *pmoA*, functional group abundance is not
-correlated with the rate of the function performed by that group in most
-ecosystems (Rocca et al. 2016). Because of these differences between
-macroorganisms and microorganisms, it may be more useful to approach microbial
-biodiversity-ecosystem function in a way analogus to genotype-phenotype mapping
-in organisms (Morris et al. 2020). 
+To do this, we performed an artificial ecosystem selection experiment to
+identify communities of bacteria and archaea that collectively perform a high
+rate of methane oxidation (Swenson et al. 2000).  (Goodnight et al. 1997,
+Williams and Lenton 2007)we generated twenty-four soil ecosystems in the lab
+using a sterilized potting mix as the substrate. We then inoculated these
+ecosystems with a small amount of living soil to generate variation in
+community structure across the twenty-four ecosystems. These ecosystems were
+then assigned to one of two selection treatments: neutral selection with
+ecosystems chosen for reproduction at random or positive selection with
+ecosystems chosen for reproduction based on their methane oxidation rate. Each
+ecosystem was maintained at 1000 ppm CH4 over several weeks to allow for
+colonization and growth of the microbial community and to enrich for methane
+oxidizers. We then determined the methane oxidation rate for each ecosystem and
+selected three jars in each treatment to inoculate the next set of twenty-four
+jars. This process continued for five passages. At the end of the experiment,
+we extracted DNA from soils in the second and fifth passage for both the
+neutral and positive treatments. By comparing the response to selection within
+the community between the two treatments, we can identify microbial species
+that contribute to variation in ecosystem methane emissions.
 
-One approach to deducing the genotype-phenotype map in organisms is through
-artificial selection (Fuller et al. 2005). In this approach, selection for a
-trait is imposed in a contrived laboratory environment and compared to
-laboratory environment without selection on that trait. By comparing the
-genetic respones between these two treatments, you can remove the
-environment-fitness connection that would be present in a comparative study and
-identify genes that are evolving in response to selection only on the trait of
-interest. It has been shown that whole communities can respond to artifical
-selection on traits of the ecosystem (Goodnight et al. 1997, Williams and
-Lenton 2007). And it has been proposed that this could be a suitable approach
-for identify communities of organisms that are capable of performing a
-particular function at a high rate (Swenson et al. 2000). Therefore, artificial
-ecosystem selection is a potentially fruitful approach to identifying the map
-between biodiversity and ecosystem function in microbial communities.
-
-To identify the map between microbial community composition and ecosystem
-function, we imposed artificial ecosystem selection on methane oxidation rate
-of whole soil ecosystems. We prepared two lines of replicate ecosystems: one in
-which we imposed positive selection on methane oxidation by only using the top
-performing ecosystems to generate the next set of ecosystems and one in which
-we imposed neutral selection where a random set of ecosystems were chosen to
-generate the next set of ecosystems. We repated this process over multiple
-passages and then compared the resultant metacommunities in terms of their rate
-of ecosystem function and the composition of their communities. 
-
-With this experiment, we asked several questions. First, is there a response to
-selection on methane oxidation by soil ecosystems? And how strong is the
-response to selection? (i.e., how "heritable" is methane oxidation as a
-community trait in terms of the phenotypic resemblence of ecosystems to the
-ecosystems that generated them?) If methane oxidation is heritable, then what
-is the nature of the map between microbial community composition and methane
-oxidation? Is it the diversity of methane oxidizers, as it is for plants and
-productivity? Or is there a more complex map involving upstream metabolic
-regulation?
-
-Things this Intro doesn't yet discuss: 
-
-1. What a more complex map might look like. For example, maybe pmoA and methanotrophy aren't correlated, but maybe understand methanogenesis or nitrogen cycling is helpful.
-
-2. The idea of "heritability" for communities/ecosystems and why that relates to environmental vs. genetic control over ecosystem function.
+This approach is powerful because by using a common soil substrate and
+maintaining a constant headspace concentration of methane, we can eliminate
+much of the environmental variation that would be present in an observational
+study in the wild. In addition, by applying selection on methane oxidation rate
+in the positive treatment, we can enrich for taxa involved in methane cycling
+making it easier to perform association mapping between microbial taxa and
+ecosystem methane emissions. In this paper, we address whether there is a
+response to selection on methane oxidation rate at the whole ecosystem level. We
+then quantify the amount of variation in methane oxidation attributable to
+variation in community composition within our laboratory environment. Finally,
+we identify microbial markers of soil methane cycling using association mapping
+in order to deduce the mapping between microbial community structure and
+ecosystem function.
 
 # Materials & Methods
 
