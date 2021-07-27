@@ -74,8 +74,23 @@ example, the abundance of a single methanogenic species (*G. species*) is
 correlated with methane emissions in a permafrost ecosystem (cite). In
 addition, bacterial and archaeal community composition is correlated with
 methane emissions in forests and pastures of the Brazilian Amazon (Meyer et al.
-2020).  Therefore, there appears to be some indication that microbial community
+2020). Therefore, there appears to be some indication that microbial community
 structure drives variation in methane cycling in soils.
+
+Why haven't we been more successful in identifying relationships between
+microbial community structure and ecosystem functions? Microbial communities
+are super diverse, particularly in soil environments, and
+looking at the whole community using broad phylogenetic markers such as 16S
+makes it difficult to sift through all of that diversity to find informative
+markers. Looking at individual protein-coding genes manages to reduce that
+diversity, but it also assumes we know what limits the rate of a process in a
+particular ecosystem. Typically, we choose the gene that encodes the final step
+in a pathway - for example, the mcrA gene, which encodes a subunit of the
+enzyme the performs the final step in the methanogenesis pathway. However,
+regulation may happen further up stream within the pathway and therefore the
+abundance of the final gene wouldn't correlate with the rate of the process.
+In fact, the limitation may be in substrate creation by other functional groups
+unrelated to methanogens. To overcome these challenges, we chose a
 
 To further investigate the relationship between microbial community structure
 and the rate of methane cycling in soils, we want to determine which organisms
