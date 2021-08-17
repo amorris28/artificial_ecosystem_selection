@@ -79,8 +79,8 @@ Here I fit two models. The first is the full model which includes passage number
 
 ```{r compare_models}
 # Compare interaction to no interaction
-compare_mods <- anova(response_model, no_treat_model)
-kable(tidy(compare_mods))
+compare_response_mods <- anova(no_treat_model, response_model, test = 'LRT')
+kable(tidy(compare_response_mods))
 ```
 
 Here is the full interaction model:
@@ -90,7 +90,7 @@ kable(tidy(response_model))
 ```
 
 ```{r save_model}
-save(response_model, per_slope, file = '../Output/response_model.Rdata')
+save(response_model, compare_response_mods, per_slope, file = '../Output/response_model.Rdata')
 ```
 
 The intercept for the Neutral treatment was significantly different from zero

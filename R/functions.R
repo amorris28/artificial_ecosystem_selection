@@ -31,11 +31,17 @@ calc_plot_ratios <- function(x, y) {
 }
 
 
-print_model <- function(fit, term = 1) {
-  paste0('(slope = ', myround(tidy(fit)[term, 2], 2), 
+print_lm <- function(fit, term = 1, estimate = 'slope') {
+  paste0('(', estimate, ' = ', myround(tidy(fit)[term, 2], 2), 
         ', SE = ', myround(tidy(fit)[term, 3], 2), 
         ', t = ', myround(tidy(fit)[term, 4], 2), 
         ', p = ', myround(tidy(fit)[term, 5], 2), ')')
+}
+
+print_lrt <- function(fit, term = 2, test = "Likelihood ratio test") {
+  paste0('(', test, ': df = ', round(tidy(fit)[term, 3]), 
+         ', ss = ', myround(tidy(fit)[term, 4], 2), 
+         ', p = ', myround(tidy(fit)[term, 5], 2), ')')
 }
 
 
@@ -46,7 +52,7 @@ plot_herit <- function(heritability, ratio) {
     geom_jitter(width = 0.01) + 
     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
     labs(x = "Mid-parent (mean(log10(Flux (-k))))", 
-         y = "Offspring (log10(Flux (-k)))") +
+         y = "Mid-offspring (log10(Flux (-k)))") +
     scale_color_manual(name = "Treatment", 
                        labels = c('Neutral', 'Positive'), 
                        values = c('gray40', 'darkorange2')) +

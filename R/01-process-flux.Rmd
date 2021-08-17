@@ -83,6 +83,16 @@ sc_ch4 <-
 
 This step turns the time point data to time intervals in units of days.
 
+```{r remove_p6}
+conc_data <- 
+  conc_data %>% 
+  filter(flux_date != '2020-07-27')
+time_data <- 
+  time_data %>% 
+  filter(flux_date != '2020-07-27')
+
+```
+
 ```{r compute_time_intervals}
 
 time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')] <- 
@@ -116,6 +126,19 @@ conc_data <-
   spread(t, ppm)
 ```
 
+```{r plot_fractions}
+
+conc_data %>% 
+  select(flux_date, jar, t1, t4) %>% 
+  mutate(frac_cons = t4/t1) %>% 
+  mutate(treat = substring(jar,1,1)) %>% 
+  ggplot(aes(x = flux_date, y = frac_cons, color = treat)) +
+  geom_jitter(width = 0.2) +
+  geom_hline(yintercept = 0.90) +
+  geom_hline(yintercept = 0.05)
+
+```
+
 Finally, this step takes the time intervals and ch4 concentrations and fits a first-order exponential decay function to compute methane flux as `k` which is the rate-constant for the first-order exponential decay function.
 
 ```{r fit_flux}
@@ -140,12 +163,6 @@ flux_data <-
   mutate(rep = factor(substr(jar, 2, 3)),
          treat = factor(substr(jar, 1, 1)))
 
-#flux_data %>% 
-#  ggplot(aes(days, ppm)) + 
-#  facet_grid(flux_date + treat ~ rep, scales = "free") +
-#  geom_point() + 
-#  stat_smooth(method = 'lm', formula = y ~ x)
-
 lin_model <- function(dt) {
   lm(ppm ~ days, data = dt)
 }
@@ -169,8 +186,15 @@ fluxes <-
   mutate(ch4 = estimate,
          rank_ch4 = rank(ch4),
          log_ch4 = log10(ch4 + abs(min(ch4)) + 0.001)) %>% 
-  filter(passage != 6) %>% 
   select(-std.error, -statistic, -p.value, -estimate)
+```
+
+```{r plot_fluxes, fig.height=50}
+flux_data %>%
+ ggplot(aes(days, ppm)) +
+ facet_grid(passage + treat ~ rep, scales = "free") +
+ geom_point() +
+ stat_smooth(method = 'lm', formula = y ~ x)
 ```
 
 ```{r identify_selected}

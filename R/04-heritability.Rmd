@@ -38,7 +38,7 @@ kable(tidy(herit_model))
 kable(tidy(anova(fit_no_treat, herit_model)))
 ```
 
-Here, I fit two models. The first is simply offspring flux on selected parent flux, ignoring treatment. There is no correlation `r print_model(fit_no_treat, 2)`. Next, I added treatment and the interaction between treatment and parental flux. Here, there is a significant correlation between parent and offspring for both the Neutral treatment `r print_model(herit_model, 2)` and the Positive treatment `r print_model(herit_model, 4)`. Notably, the sign of the effect is reversed: negative for the Neutral treatment and positive for the Positive treatment.
+Here, I fit two models. The first is simply offspring flux on selected parent flux, ignoring treatment. There is no correlation `r print_lm(fit_no_treat, 2)`. Next, I added treatment and the interaction between treatment and parental flux. Here, there is a significant correlation between parent and offspring for both the Neutral treatment `r print_lm(herit_model, 2)` and the Positive treatment `r print_lm(herit_model, 4)`. Notably, the sign of the effect is reversed: negative for the Neutral treatment and positive for the Positive treatment.
 
 The negative heritability of methane oxidation rate in the Neutral selection treatment may result from selection on alternative characters in those populations. The strong, positive heritability in the Positive treatment ... . It seems strange that the 
 
