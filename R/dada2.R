@@ -95,7 +95,7 @@ table(nchar(getSequences(seqtab2)))
 
 # Remove chimeras
 
-seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=multithread, verbose=TRUE)
+seqtab.nochim <- removeBimeraDenovo(seqtab2, method="consensus", multithread=multithread, verbose=TRUE)
 dim(seqtab.nochim)
 
 sum(seqtab.nochim)/sum(seqtab)
@@ -108,9 +108,14 @@ colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "n
 rownames(track) <- sample.names
 head(track)
 
-save.image(file='myEnvironment.RData')
-
 # Assign taxonomy
 
+taxa <- assignTaxonomy(seqtab.nochim, "~/tax/silva_nr_v138.1_train_set.fa.gz", multithread=TRUE)
 
+taxa <- addSpecies(taxa, "~/tax/silva_species_assignment_v138.1.fa.gz")
 
+taxa.print <- taxa # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+
+save.image(file='myEnvironment.RData')
