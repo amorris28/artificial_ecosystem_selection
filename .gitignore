@@ -10,7 +10,6 @@
 *.html
 Permits/
 Figures/
-Output/
 R/*.md
 R/Figs/
 Archive/
