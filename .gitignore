@@ -17,3 +17,5 @@ Archive/
 Data/
 00_raw_seqs/
 01_filtered_seqs/
+tax/
+myEnvironment.RData

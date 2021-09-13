@@ -20,9 +20,9 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 # sample.names <- sapply(strsplit(basename(fnFs), "_"), function(x) {paste(x[1:4], collapse = '')})
 # sample.names[grepl('am', sample.names)] <- substr(sample.names[grepl('am', sample.names)], 1, 4)
 
-plotQualityProfile(fnFs[1:2])
+#plotQualityProfile(fnFs[1:2])
 
-plotQualityProfile(fnRs[1:2])
+#plotQualityProfile(fnRs[1:2])
 
 # Place filtered files in filtered/ subdirectory
 filtFs <- file.path("01_filtered_seqs", paste0(sample.names, "_F_filt.fastq.gz"))
@@ -52,20 +52,20 @@ fix_NS_error_rates <- function(error_rates) {
 # Learn forward error rates
 errF <- learnErrors(filtFs, nbases=1e8, multithread=multithread)
 
-plotErrors(errF, nominalQ=TRUE)
+#plotErrors(errF, nominalQ=TRUE)
 
 errF_fixed <- fix_NS_error_rates(errF)
 
-plotErrors(errF_fixed, nominalQ=TRUE)
+#plotErrors(errF_fixed, nominalQ=TRUE)
 
 # Learn reverse error rates
 errR <- learnErrors(filtRs, nbases=1e8, multithread=multithread)
 
-plotErrors(errR, nominalQ=TRUE)
+#plotErrors(errR, nominalQ=TRUE)
 
 errR_fixed <- fix_NS_error_rates(errR)
 
-plotErrors(errR_fixed, nominalQ=TRUE)
+#plotErrors(errR_fixed, nominalQ=TRUE)
 
 # Sample Inference
 
@@ -110,12 +110,15 @@ head(track)
 
 # Assign taxonomy
 
-taxa <- assignTaxonomy(seqtab.nochim, "~/tax/silva_nr_v138.1_train_set.fa.gz", multithread=TRUE)
+taxa <- assignTaxonomy(seqtab.nochim, "tax/silva_nr99_v138.1_train_set.fa.gz", multithread=multithread)
 
-taxa <- addSpecies(taxa, "~/tax/silva_species_assignment_v138.1.fa.gz")
+taxa <- addSpecies(taxa, "tax/silva_species_assignment_v138.1.fa.gz")
 
 taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 
 save.image(file='myEnvironment.RData')
+#load('myEnvironment.RData')
+
+
