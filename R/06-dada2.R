@@ -118,16 +118,4 @@ taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 
-save.image(file='myEnvironment.RData')
-#load('myEnvironment.RData')
-
-library(phyloseq); packageVersion("phyloseq")
-library(Biostrings); packageVersion("Biostrings")
-
-samples <- read_tsv('Output/barcode_master.tsv')
-fluxes <- read_tsv('Output/fluxes.tsv')
-
-ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
-               sample_data(samdf), 
-               tax_table(taxa))
-
+save(seqtab.nochim, taxa, file = "Output/dada2_output.RData")

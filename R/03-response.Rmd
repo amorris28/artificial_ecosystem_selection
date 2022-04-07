@@ -120,7 +120,6 @@ Previously, I was using the `metafor` package to test the slope of the differenc
 
 ```{r eval=FALSE}
 
-library(metafor)
 # Standard error of the difference
 sed <- function(p, n, na.rm = FALSE) {
   sqrt(se(p, na.rm = na.rm) ^ 2 + se(n, na.rm = na.rm)^ 2)

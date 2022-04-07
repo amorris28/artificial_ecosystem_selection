@@ -1,0 +1,363 @@
+---
+title: "Sequence data processing"
+author: "Andrew Morris"
+date: "9/13/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_knit$set(root.dir=normalizePath('../'))
+```
+
+
+```{r initialize_packages}
+library(tidyverse)
+library(phyloseq)
+library(decontam)
+library(microViz)
+library(knitr)
+```
+
+```{r import_data}
+load(file = "Output/dada2_output.RData")
+
+samples <- read_tsv('Output/barcode_master.tsv')
+fluxes <- read_tsv('Output/fluxes.tsv')
+qubit <- read_tsv('Data/post_pcr_qubit.tsv')
+
+```
+
+```{r setup_phyloseq}
+samples <-
+  samples %>% 
+  left_join(qubit, by = c("pcr_well" = "well"))
+
+samples <- as.data.frame(samples)
+rownames(samples) <- samples$sample_id
+rownames(seqtab.nochim) <- samples$sample_id
+samples$treatment <- substr(samples$sample_id, 1, 2)
+samples$treatment[59] <- samples$sample_id[59]
+samples$treatment[60] <- samples$sample_id[60] 
+samples$col <- as.character(samples$col)
+sample_subset <- 
+  as.data.frame(select(samples, sample_id, row, col, treatment, qubit_ngml))
+rownames(sample_subset) <- samples$sample_id
+
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+               sample_data(sample_subset),
+               tax_table(taxa))
+
+
+dna <- Biostrings::DNAStringSet(taxa_names(ps))
+names(dna) <- taxa_names(ps)
+ps <- merge_phyloseq(ps, dna)
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+
+```
+
+# Alpha Diversity for All Data
+
+Here is alpha diversity for each treatment, positive/negative control, etc.
+In addition, there is alpha diversity by row and column of the PCR plate. I don't see any relationship between PCR plate location and alpha diversity, which is good. It looks like the PCR positive control, which was a pure culture of E. Coli, has particularly low diversity, which is good. Let's pull that sample out and look at it.
+
+```{r plot_richness_all_data}
+
+plot_richness(ps, x = "treatment", color="treatment", measures=c("Observed", "Shannon", "Simpson"), title = "Alpha diversity by treatment and blanks")
+plot_richness(ps, x = "row", measures=c("Observed", "Shannon", "Simpson"), title = "Alpha diversity by PCR plate row")
+plot_richness(ps, x = "col", measures=c("Observed", "Shannon", "Simpson"), title = "Alpha diversity by PCR plate col")
+
+```
+
+
+## Specific Controls
+
+```{r}
+ps_pm <-
+ps %>% 
+  ps_filter(treatment == "PM")
+
+
+ps_pcrp_rich <- estimate_richness(ps_pm, measures="Observed")
+
+top20 <- names(sort(taxa_sums(ps_pm), decreasing=TRUE))[1:20]
+ps_pm.top20 <- transform_sample_counts(ps_pm, function(OTU) OTU/sum(OTU))
+ps_pm.top20 <- prune_taxa(top20, ps_pm.top20)
+plot_bar(ps_pm.top20, x="sample_id", fill="Family") + facet_wrap(~treatment, scales="free_x")
+tax_table(ps_pm.top20) %>% 
+  kable(caption = "Top 20 taxa from autoclaved potting mix")
+
+```
+
+
+```{r}
+ps_nc <-
+ps %>% 
+  ps_filter(treatment == "NC")
+
+
+ps_pcrp_rich <- estimate_richness(ps_nc, measures="Observed")
+
+top20 <- names(sort(taxa_sums(ps_nc), decreasing=TRUE))[1:20]
+ps_nc.top20 <- transform_sample_counts(ps_nc, function(OTU) OTU/sum(OTU))
+ps_nc.top20 <- prune_taxa(top20, ps_nc.top20)
+plot_bar(ps_nc.top20, x="sample_id", fill="Family") + facet_wrap(~treatment, scales="free_x")
+tax_table(ps_nc.top20) %>% 
+  kable(caption = "Top 20 taxa from negative controls")
+
+```
+
+
+## PCR Positive Control: E. Coli
+
+Here is a stacked bar chat and taxonomy of the top 20 OTUs from the positive control 
+
+```{r pcrp_top_20}
+
+ps_pcrp <- ps_filter(ps, treatment == "PCRP")
+
+ps_pcrp_rich <- estimate_richness(ps_pcrp, measures="Observed")
+
+top20 <- names(sort(taxa_sums(ps_pcrp), decreasing=TRUE))[1:20]
+ps_pcrp.top20 <- transform_sample_counts(ps_pcrp, function(OTU) OTU/sum(OTU))
+ps_pcrp.top20 <- prune_taxa(top20, ps_pcrp.top20)
+plot_bar(ps_pcrp.top20, x="sample_id", fill="Family") + facet_wrap(~treatment, scales="free_x")
+tax_table(ps_pcrp.top20) %>% 
+  kable(caption = "Top 20 taxa from positive control")
+
+top1 <- names(sort(taxa_sums(ps_pcrp), decreasing=TRUE))[1]
+ps_pcrp.top1 <- prune_taxa(top1, ps_pcrp)
+tax_table(ps_pcrp.top1) %>% 
+  kable(caption = "Top 1 taxon from positive control")
+
+
+```
+
+One Enterobacteriaceae is dominating the community. This is great: that OTU is E. Coli. However, there are `r ps_pcrp_rich[1,1]` OTUs in this sample. Looking at the top 20, many of them are also E coli., so it's probably just multiple 16S copies or variants. The rest are contaminants and we will hopefully remove these contaminates using the negative controls with DECONTAM in the next step. But first, let's remove the positive control.
+
+# Alpha + Beta Diversity for all minus the PCR positive control
+
+It looks like diversity decreases between Generation 2 and 5, which makes sense. The negative controls and PCR negative have close to zero ASVs, but some have closer to 500-1000. The potting mix is slightly higher at around 1000. The soil cores have the highest alpha diversity. 
+
+```{r ps_no_pcrp}
+
+ps_no_PCRP <- ps_filter(ps, treatment != "PCRP")
+
+ps <- ps_no_PCRP
+
+plot_richness(ps, x = "treatment", color="treatment", measures=c("Observed","Shannon", "Simpson"))
+ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+plot_ordination(ps.prop, ord.nmds.bray, color="treatment", title="Bray NMDS")
+plot_ordination(ps.prop, ord.nmds.bray, color="row", title="Bray NMDS")
+plot_ordination(ps.prop, ord.nmds.bray, color="col", title="Bray NMDS")
+
+```
+
+## Top 20 most dominant ASVs
+
+Interestingly, none of the most dominant ASVs are in the soil cores. The jars look quite different from the negative controls and the potting mix.
+
+```{r ps_top20}
+
+top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
+ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
+ps.top20 <- prune_taxa(top20, ps.top20)
+plot_bar(ps.top20, x="sample_id", fill="Family") + facet_wrap(~treatment, scales="free_x") + labs(title = "Stacked bars of top 20 taxa in all samples (minus PCRP)")
+
+ps_sc <- subset_samples(ps, treatment == "SC")
+
+top20 <- names(sort(taxa_sums(ps_sc), decreasing=TRUE))[1:20]
+ps_sc.top20 <- transform_sample_counts(ps_sc, function(OTU) OTU/sum(OTU))
+ps_sc.top20 <- prune_taxa(top20, ps_sc.top20)
+plot_bar(ps_sc.top20, x="sample_id", fill="Family") + facet_wrap(~treatment, scales="free_x") + labs(title = "Top 20 taxa from the soil cores")
+
+tax_table(ps_sc.top20) %>% 
+  kable(caption = "Top 20 taxa from soil cores")
+
+
+ps_nc <- ps_filter(ps, treatment == "NC")
+
+top20 <- names(sort(taxa_sums(ps_nc), decreasing=TRUE))[1:20]
+ps_nc.top20 <- transform_sample_counts(ps_nc, function(OTU) OTU/sum(OTU))
+ps_nc.top20 <- prune_taxa(top20, ps_nc.top20)
+plot_bar(ps_nc.top20, x="sample_id", fill="Family") + facet_wrap(~treatment, scales="free_x") + labs(title = "Top 20 taxa from the negative controls")
+
+
+tax_table(ps_nc.top20) %>% 
+  kable(caption = "Top 20 taxa from negative controls.")
+
+
+
+```
+
+# DECONTAM
+
+```{r}
+
+
+ps_decontam <- ps_filter(ps, !treatment  %in% c('PM', 'SC', 'PCRN'))
+ps_decontam <-
+ps_decontam %>% 
+  ps_select(sample_id:treatment, quant_reading = qubit_ngml) %>% 
+       ps_mutate(Sample_or_Control = case_when(treatment == "NC" ~ "Control", 
+                             TRUE ~ "Sample"))
+
+df <- as.data.frame(sample_data(ps_decontam)) # Put sample_data into a ggplot-friendly data.frame
+df$LibrarySize <- sample_sums(ps_decontam)
+df <- df[order(df$LibrarySize),]
+df$Index <- seq(nrow(df))
+ggplot(data=df, aes(x=Index, y=LibrarySize, color=Sample_or_Control)) + geom_point()
+
+```
+
+My negative controls have a lower library size than my samples.
+
+## Decontam Prevalance
+
+First I'll run decontam's prevalence approach, which identifies contaminates based on which ASVs are more prevalent in negative controls than positive controls. It doesn't identify any that are more prevalent in the negatives.
+
+```{r decontam_prevalence}
+sample_data(ps_decontam)$is.neg <- sample_data(ps_decontam)$Sample_or_Control == "Control Sample"
+contamdf.prev <- isContaminant(ps_decontam, method="prevalence", neg="is.neg")
+table(contamdf.prev$contaminant)
+
+contamdf.prev05 <- isContaminant(ps_decontam, method="prevalence", neg="is.neg", threshold=0.5)
+table(contamdf.prev05$contaminant)
+
+# Make phyloseq object of presence-absence in negative controls and true samples
+ps.pa <- transform_sample_counts(ps_decontam, function(abund) 1*(abund>0))
+ps.pa.neg <- prune_samples(sample_data(ps.pa)$Sample_or_Control == "Control", ps.pa)
+ps.pa.pos <- prune_samples(sample_data(ps.pa)$Sample_or_Control == "Sample", ps.pa)
+# Make data.frame of prevalence in positive and negative samples
+df.pa <- data.frame(pa.pos=taxa_sums(ps.pa.pos), pa.neg=taxa_sums(ps.pa.neg),
+                      contaminant=contamdf.prev$contaminant)
+ggplot(data=df.pa, aes(x=pa.neg, y=pa.pos, color=contaminant)) + geom_point() +
+  xlab("Prevalence (Negative Controls)") + ylab("Prevalence (True Samples)")
+
+
+```
+
+
+## Decontam Frequency
+
+Next I'll try decontam's frequency approach which identifies contaminants based on which taxa are present at higher frequency in low concentration samples. i.e., their abundance is inversely proportional to sample DNA concentration.
+
+
+```{r decontam_frequency}
+ps_decontam <-
+  ps_decontam %>% 
+  ps_filter(quant_reading > 0)
+
+contamdf.freq <- isContaminant(ps_decontam, method="frequency", conc="quant_reading")
+head(contamdf.freq)
+table(contamdf.freq$contaminant)
+head(which(contamdf.freq$contaminant))
+plot_frequency(ps_decontam, taxa_names(ps_decontam)[c(1, 184)], conc="quant_reading") + 
+  xlab("DNA Concentration (Qubit)")
+
+set.seed(99)
+plot_frequency(ps_decontam, taxa_names(ps_decontam)[sample(which(contamdf.freq$contaminant),3)], conc="quant_reading") +
+    xlab("DNA Concentration (Qubit)")
+
+```
+
+There were `r table(contamdf.freq$contaminant)[2]` contaminants identified by DECONTAM. However, I'm missing Qubit values for 3 negative controls, which were below detection limit. And looking at the plots of Frequency ~ Qubit, most contaminants are driven by just the two remaining negative controls. It's not clear that their abundance is correlated with DNA concentration. Therefore, I don't feel comfortable removing them as contaminants.
+
+I will try rerunning decontam with just the samples (no controls).
+
+```{r decontam_frequency_no_controls}
+
+ps_decontam <-
+  ps_decontam %>% 
+  ps_filter(treatment != "NC")
+
+contamdf.freq <- isContaminant(ps_decontam, method="frequency", conc="quant_reading")
+head(contamdf.freq)
+table(contamdf.freq$contaminant)
+head(which(contamdf.freq$contaminant))
+plot_frequency(ps_decontam, taxa_names(ps_decontam)[c(1, 2216, 2882, 3057)], conc="quant_reading") + 
+  xlab("DNA Concentration (Qubit)")
+
+set.seed(99)
+plot_frequency(ps_decontam, taxa_names(ps_decontam)[sample(which(contamdf.freq$contaminant),3)], conc="quant_reading") +
+    xlab("DNA Concentration (Qubit)")
+
+```
+
+This time there were only `r table(contamdf.freq$contaminant)[2]` contaminants identified. However, they're all such low prevalence (present in maybe 3-5 samples based on the handful I plotted) that it's hard to draw any conclusions. To build on this, I'll remove low prevalence ASVs - that is, ASVs present in <10% of samples.
+
+```{r decontam_frequency_prevalence}
+ps_decontam_prev <- tax_filter(ps_decontam, min_prevalence = 0.10)
+
+
+contamdf.freq <- isContaminant(ps_decontam_prev, method="frequency", conc="quant_reading")
+head(contamdf.freq)
+table(contamdf.freq$contaminant)
+head(which(contamdf.freq$contaminant))
+plot_frequency(ps_decontam_prev, taxa_names(ps_decontam_prev)[c(1, 2856, 4687, 4780, 5093)], conc="quant_reading") + 
+  xlab("DNA Concentration (Qubit)")
+
+taxa_names(ps_decontam_prev)[head(which(contamdf.freq$contaminant))]
+
+
+corncob::otu_to_taxonomy(taxa_names(ps_decontam_prev)[head(which(contamdf.freq$contaminant))], data = ps_decontam_prev)
+
+```
+
+After removing low-prevalence ASVs, only `r table(contamdf.freq$contaminant)[2]` were identified as contaminants. 
+
+
+Based on the above analyses, I have decided not to remove any contaminants.
+
+
+
+# Create final phyloseq
+
+
+```{r create_physeq}
+
+flux_sd <- 
+  fluxes %>% 
+  mutate(sample_id = paste0('G', passage, toupper(treat), rep)) %>% 
+  select(sample_id, flux_date:selected) %>% 
+  mutate(passage = as.character(passage))
+
+samples_filtered <- 
+filter(samples, sample_id %in% flux_sd$sample_id)
+
+fluxes_filtered <- 
+  filter(flux_sd, sample_id %in% samples$sample_id) %>% 
+  as.data.frame()
+
+rownames(fluxes_filtered) <- fluxes_filtered$sample_id
+
+sample_data(ps_decontam) <- sample_data(fluxes_filtered)
+
+ps <- ps_decontam
+
+save(ps, file = 'Output/phyloseq.RData')
+
+# 
+# 
+# seqtab.nochim.filtered <-
+#   seqtab.nochim[rownames(seqtab.nochim) %in% rownames(fluxes_filtered),]
+# 
+# ps <- phyloseq(otu_table(seqtab.nochim.filtered, taxa_are_rows=FALSE), 
+#                                      sample_data(fluxes_filtered),
+# 
+#                tax_table(taxa))
+# 
+# 
+# 
+# dna <- Biostrings::DNAStringSet(taxa_names(ps))
+# names(dna) <- taxa_names(ps)
+# ps <- merge_phyloseq(ps, dna)
+# taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+
+```
+
+
+
