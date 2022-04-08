@@ -189,10 +189,10 @@ fluxes <-
   select(-std.error, -statistic, -p.value, -estimate)
 ```
 
-```{r plot_fluxes, fig.height=50}
+```{r plot_fluxes, fig.height=20}
 flux_data %>%
  ggplot(aes(days, ppm)) +
- facet_grid(passage + treat ~ rep, scales = "free") +
+ facet_grid(flux_date + treat ~ rep, scales = "free") +
  geom_point() +
  stat_smooth(method = 'lm', formula = y ~ x)
 ```
