@@ -31,6 +31,9 @@ library(corncob)
 library(ggthemes)
 library(microViz)
 library(captioner)
+library(knitr)
+library(kableExtra)
+library(flextable)
 figures <- captioner()
 tables <- captioner(prefix = "Table")
 ```
@@ -349,28 +352,11 @@ treatment over the five passages `r print_lm(response_model, 2)`. By contrast,
 the Positive treatment had a `r round(per_slope)`\% increase in CH~4~
 oxidation rate per passage `r print_lm(response_model, 4)`.
 
-```{r response, fig.width=4, fig.height=3}
-ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
-
-p <- plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
-
-ggsave('fig1.jpg', p) 
-
-```
-
 We estimated heritability as the regression of mid-offspring on mid-parent (`r figures("herit", display = "cite")`).
 Offspring CH~4~ oxidation rates were correlated with parental CH~4~ oxidation
 rates in both the Positive treatment `r print_lm(herit_model, 4)` and the
 Neutral treatment `r print_lm(herit_model, 2)`. Notably, the sign of the effect
 was reversed with a positive heritability for the Positive treatment and a negative heritability for the Neutral treatment.
-
-```{r herit, fig.width=5, fig.height=3}
-
-p <- plot_herit(heritability)
-
-ggsave('fig2.jpg', p) 
-
-```
 
 Sequencing of 16S rRNA amplicons revealed that there were `r ntaxa(ps)` unique
 ASVs across all `r nsamples(ps)` jars sampled.
@@ -397,27 +383,6 @@ in microbiome composition decreased as a result of passaging in jars (F = 80.5,
 p < 0.001), but did not differ between selection treatments (F = 0.40, p =
 0.54).
 
-```{r beta, results=FALSE, fig.height=2.5}
-
-p <- plot_beta(ps)
-
-ggsave('fig3.jpg', p) 
-
-```
-
-```{r adonis}
-
-write.table(fit_adonis, 'table_1.tsv')
-# kable(col.names = c('Term', 'df', 'SS', 'R2', 'F', 'p'), 
-#       digits = c(2,2,2,2,2,3),
-## 	format = "Table",
-## 	booktabs = T,
-# 	caption = "PERMANOVA on Bray-Curtis and Jaccard dissimilarities.",
-#   	label = "beta") %>%
-#   pack_rows("Bray-Curtis", 1, 5) %>%
-#   pack_rows("Jaccard", 6, 10)
-
-```
 
 
 To investigate which taxa responded to selection on soil CH~4~ oxidation rate, we
@@ -445,13 +410,6 @@ abundance of families in the Positive jars relative to the Neutral jars within
 Passage 5 using a beta-binomial model. We identified `r ntaxa(sig_taxa_treat)`
 families that were enriched or depleted in the Positive treatmeant relative to
 the Neutral treatment (`r figures("da", display = "cite")`). 
-
-```{r da, results=FALSE}
-
-p <- dt_plot(dt_data)
-ggsave('fig4.jpg', p) 
-
-```
 
 Overall, none of the families enriched in the Positive selection treatment
 are known methanotrophs. Several taxa identified had a 
@@ -660,13 +618,67 @@ The 16S rRNA sequencing data generated during the current study are available in
 
 # Figures
 
+
+```{r response, fig.width=4, fig.height=3}
+ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
+
+p <- plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
+p
+ggsave('fig1.jpg', p) 
+
+```
+
 `r figures("response", "Response to selection on soil CH~4~ oxidation rate fit by ordinary least squares regression. The y-axis is the log~10~ of the additive inverse of the first-order exponential decay constant $k$ (i.e., $-k$) with units day^-1^. The x-axis is the passage number. The orange line and points are the Positive treatment and the gray line and points are the Neutral treatment.")`
+
+
+```{r herit, fig.width=5, fig.height=3}
+
+p <- plot_herit(heritability)
+p
+ggsave('fig2.jpg', p) 
+
+```
 
 `r figures("herit", "Ordinary least squares regression of mid-offspring CH~4~ flux on mid-parent CH~4~ flux ($-k$ with units day^-1^). Mid-parent is the mean of the jars selected to inoculate the next passage. Mid-offspring is the mean of all twelve jars produced in one passage. The orange lines and points are the Positive treatment and the gray lines and points are the Neutral treatment")`
 
+```{r beta, results=FALSE, fig.height=2.5}
+
+p <- plot_beta(ps)
+p
+ggsave('fig3.jpg', p) 
+
+```
+
 `r figures("beta", "Principal component analysis plot of beta diversity for all jars. Dissimilarities are based on Aitchison dissimilarity, which is Euclidean distance after center-log ratio transformation. Colors represent treatment and shapes represent passage number. The ratio of the axes is proportional to the variance explained by each principal component in order to accurately represent the distance between the points.")`
+
+```{r da, results=FALSE}
+
+p <- dt_plot(dt_data)
+p
+ggsave('fig4.jpg', p) 
+
+```
 
 `r figures("da", "Differentially abundant family-level taxa based on a beta-binomial model. Values on the x-axis are estimates and standard errors of the expected difference in the logit-transformed relative abundance between the two treatments. Positive values are enriched in the Positive treatment and negative values are enriched in the Neutral treatment. Taxa presented here are significant at FDR < 0.5")`
 
 `r tables("adonis", "PERMANOVA on Aitchison and Jaccard dissimilarities.")`
+
+
+```{r adonis}
+
+write.table(fit_adonis, 'table_1.tsv')
+fit_adonis %>%
+  mutate(metric = c(rep("aitchison", 5), rep("jaccard", 5))) %>% 
+  select(metric, term:p.value) %>% 
+	flextable()
+# kable(col.names = c('Term', 'df', 'SS', 'R2', 'F', 'p'), 
+#       digits = c(2,2,2,2,2,3),
+## 	format = "Table",
+## 	booktabs = T,
+# 	caption = "PERMANOVA on Bray-Curtis and Jaccard dissimilarities.",
+#   	label = "beta") %>%
+#   pack_rows("Bray-Curtis", 1, 5) %>%
+#   pack_rows("Jaccard", 6, 10)
+
+```
 
