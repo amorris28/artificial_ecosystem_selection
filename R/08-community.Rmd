@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = TRUE)
 knitr::opts_knit$set(root.dir=normalizePath('../'))
 
 ```
@@ -24,16 +24,13 @@ library(DivNet)
 library(magrittr)
 library(vegan)
 library(ggpubr)
-library(SpiecEasi)
+# library(SpiecEasi)
 library(ggthemes)
 library(broom)
 
 
 source('R/functions.R')
 
-```
-
-```{r ggplot-settings}
 ```
 
 
@@ -82,19 +79,6 @@ Richness decreases with passage, but seems unchanged between 5n and 5p.
 Initial richness appears similar between the treatments.
 
 
-
-```{r stacked_bar, eval=FALSE}
-level = "Family"
-ps_phylum <- speedyseq::tax_glom(ps, taxrank=level)
-top10 = names(sort(taxa_sums(ps_phylum), TRUE)[1:10])
-ps_phylum10 <- prune_taxa(top10, ps_phylum)
-ps_phylum10 %>% 
-  ps_filter(passage == 5) %>% 
-  speedyseq::plot_bar(facet_grid = 'treat', fill = level) + 
-  geom_bar(aes_string( color=level, fill=level), stat="identity", position="stack") +
-  geom_bar(aes(x = reorder(rep, rank_ch4)))
-
-```
 
 
 # Hypothesis Testing
@@ -206,7 +190,7 @@ ord_calc_bray <-
 ord_calc_jacc <-
   ps_fixed %>%
   dist_calc("jaccard", binary = TRUE) %>%
-  ord_calc(method = "NMDS")
+  ord_calc(method = "PCoA")
 
 ```
 
@@ -226,7 +210,8 @@ jacc <-
   ord_plot(color = "treat") +
   theme_tufte() +
   geom_rangeframe() +
-  coord_cartesian(clip="off") +
+  coord_fixed(3.9/48.3) +
+  # coord_cartesian(clip="off") +
   scale_color_manual(name = "Treatment", 
                        labels = c('Neutral', 'Positive'),
                        values = c('gray40', 'darkorange2'))
@@ -408,9 +393,121 @@ dist_aitch2 %>%
 
 # Differential Abundance
 
+
+First, I looked at which taxa are unique to treatments N and P. Several families
+present in P and absent in N. Most of them had low prevalance (present in 3 or
+fewer samples) and low abundance (median < 5 reads across samples). There were two families unique
+to the Positive treatment with relatively high prevalence. This included an ASV
+that was a member of the Bacteroidia Class with no lower taxonomic designation. 
+This ASV had a prevalence of 10/12 and a median abundance of ~2 reads. The other
+prevalent family was a member of the Silvanigrellaceae, a newly described family places in
+its own order. This family was present in
+all 12 samples and was represented by three OTUs: one with no lower designation, one from the genus
+Silvanigrella and one from the genus Candidatus Turbobacter. Silvanigrella was
+isolated from a temperate fresh water lake (https://www.microbiologyresearch.org/content/journal/ijsem/10.1099/ijsem.0.001965).
+
+Of the families unique to the Neutral treatment, only one had a prevalence greater than 2/12. 
+This family, Armatimonadaceae, was present in half of the Neutral samples (6/12). This
+family was represented by two ASVs in the genus Armatimonas. The type strain for
+Armatimonas was isolated from the rhizoplane of Phragmites australis (https://www.microbiologyresearch.org/content/journal/ijsem/10.1099/ijs.0.025643-0)
+
+
+```{r, eval=FALSE}
+
+g5<- 
+  ps_fixed %>% 
+  ps_filter(passage == 5) %>% 
+  tax_agg('Family') %>% 
+  ps_get() %>% 
+  ps_melt()
+
+g2<- 
+  ps_fixed %>% 
+  ps_filter(passage == 2) %>% 
+  tax_agg('Family') %>% 
+  ps_get() %>% 
+  ps_melt()
+
+unique(g5$Family)[!(unique(g5$Family) %in% unique(g2$Family))]
+unique(g5$Family)[unique(g5$Family) %in% unique(g2$Family)]
+
+unique(g2$Family)[!(unique(g2$Family) %in% unique(g5$Family))]
+unique(g2$Family)[unique(g2$Family) %in% unique(g5$Family)]
+
+```
+
+
+## Differential Abundance Treatment in passage 5
+
+
+```{r corncob_treatment, results=FALSE, fig.hight=40}
+ps_fixed_family <- speedyseq::tax_glom(ps_fixed, taxrank="Family")
+
+ps_fam_pas5 <- microViz::ps_filter(ps_fixed_family, passage == 5)
+
+ps_fam_pas5_prev <- microViz::tax_filter(ps_fam_pas5, min_prevalence = 0.10)
+
+sample_data(ps_fam_pas5_prev) =
+  sample_data(ps_fam_pas5_prev)[,c('sample_id', 'treat')] %>% 
+  sample_data()
+ps = ps_fam_pas5_prev
+
+save(ps, file = 'ps.RData')
+# Differential abundance test
+corncob <- bbdml(formula = ASV2954 ~ treat,
+                                 phi.formula = ~ 1,
+                                 formula_null = ~ 1,
+                                 phi.formula_null = ~ 1,
+                                 test = "lrt", boot = TRUE,
+                                 data = ps_fam_pas5_prev,
+                                 fdr_cutoff = 0.05)
+da_analysis <- differentialTest(formula = ~ treat,
+                                 phi.formula = ~ 1,
+                                 formula_null = ~ 1,
+                                 phi.formula_null = ~ 1,
+                                 test = "Wald", boot = FALSE,
+                                 data = ps_fam_pas5_prev,
+                                 fdr_cutoff = 0.05, B = 50)
+plot(da_analysis, level = c("Family"))
+da_analysis$significant_models
+dt_data <- plot(da_analysis, level = c("Family"), data_only = TRUE)
+
+sig_taxa_treat <- tax_select(ps_fam_pas5_prev, da_analysis$significant_taxa)
+ntaxa(sig_taxa_treat)
+save(da_analysis, sig_taxa_treat, file = 'Output/da_corncob.Rdata')
+
+save(dt_data, file = 'Output/dt_data.Rdata')
+
+```
+
+```{r corncob-plot, fig.width=6, fig.height=6}
+dt_plot(dt_data)
+
+```
+
+```{r stahp}
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+
+
+```{r stacked_bar, eval=FALSE}
+level = "Family"
+ps_phylum <- speedyseq::tax_glom(ps, taxrank=level)
+top10 = names(sort(taxa_sums(ps_phylum), TRUE)[1:10])
+ps_phylum10 <- prune_taxa(top10, ps_phylum)
+ps_phylum10 %>% 
+  ps_filter(passage == 5) %>% 
+  speedyseq::plot_bar(facet_grid = 'treat', fill = level) + 
+  geom_bar(aes_string( color=level, fill=level), stat="identity", position="stack") +
+  geom_bar(aes(x = reorder(rep, rank_ch4)))
+
+```
+
 ## ALDex2
 
-```{r}
+```{r, eval = FALSE}
 library(ALDEx2)
 data(selex)
 #subset only the last 400 features for efficiency
@@ -424,7 +521,7 @@ head(x.effect)
 ```
 
 
-```{r}
+```{r, eval=FALSE}
 ps_fixed_family <- speedyseq::tax_glom(ps_fixed, taxrank="Family")
 
 ps_fam_pas5 <- microViz::ps_filter(ps_fixed_family, passage == 5)
@@ -457,7 +554,7 @@ abline(0,-2, lty=2, col="grey")
 merge(as(tax_table(ps_fam_pas5_prev)[rownames(x.effect[sgn,]), ], 'data.frame'), x.effect[sgn,], by = 0)
 ```
 
-```{r}
+```{r, eval=FALSE}
 
 # Based on effect size
 
@@ -643,97 +740,6 @@ g5n_unique %>%
   scale_y_continuous(breaks = c(1, 2, 6))
 ```
 
-First, I looked at which taxa are unique to treatments N and P. Several families
-present in P and absent in N. Most of them had low prevalance (present in 3 or
-fewer samples) and low abundance (median < 5 reads across samples). There were two families unique
-to the Positive treatment with relatively high prevalence. This included an ASV
-that was a member of the Bacteroidia Class with no lower taxonomic designation. 
-This ASV had a prevalence of 10/12 and a median abundance of ~2 reads. The other
-prevalent family was a member of the Silvanigrellaceae, a newly described family places in
-its own order. This family was present in
-all 12 samples and was represented by three OTUs: one with no lower designation, one from the genus
-Silvanigrella and one from the genus Candidatus Turbobacter. Silvanigrella was
-isolated from a temperate fresh water lake (https://www.microbiologyresearch.org/content/journal/ijsem/10.1099/ijsem.0.001965).
-
-Of the families unique to the Neutral treatment, only one had a prevalence greater than 2/12. 
-This family, Armatimonadaceae, was present in half of the Neutral samples (6/12). This
-family was represented by two ASVs in the genus Armatimonas. The type strain for
-Armatimonas was isolated from the rhizoplane of Phragmites australis (https://www.microbiologyresearch.org/content/journal/ijsem/10.1099/ijs.0.025643-0)
-
-
-```{r, eval=FALSE}
-
-g5<- 
-  ps_fixed %>% 
-  ps_filter(passage == 5) %>% 
-  tax_agg('Family') %>% 
-  ps_get() %>% 
-  ps_melt()
-
-g2<- 
-  ps_fixed %>% 
-  ps_filter(passage == 2) %>% 
-  tax_agg('Family') %>% 
-  ps_get() %>% 
-  ps_melt()
-
-unique(g5$Family)[!(unique(g5$Family) %in% unique(g2$Family))]
-unique(g5$Family)[unique(g5$Family) %in% unique(g2$Family)]
-
-unique(g2$Family)[!(unique(g2$Family) %in% unique(g5$Family))]
-unique(g2$Family)[unique(g2$Family) %in% unique(g5$Family)]
-
-```
-
-
-## Differential Abundance Treatment in passage 5
-
-
-```{r corncob_treatment, fig.hight=40}
-ps_fixed_family <- speedyseq::tax_glom(ps_fixed, taxrank="Family")
-
-ps_fam_pas5 <- microViz::ps_filter(ps_fixed_family, passage == 5)
-
-ps_fam_pas5_prev <- microViz::tax_filter(ps_fam_pas5, min_prevalence = 0.10)
-
-sample_data(ps_fam_pas5_prev) =
-  sample_data(ps_fam_pas5_prev)[,c('sample_id', 'treat')] %>% 
-  sample_data()
-ps = ps_fam_pas5_prev
-
-save(ps, file = 'ps.RData')
-# Differential abundance test
-corncob <- bbdml(formula = ASV2954 ~ treat,
-                                 phi.formula = ~ 1,
-                                 formula_null = ~ 1,
-                                 phi.formula_null = ~ 1,
-                                 test = "lrt", boot = TRUE,
-                                 data = ps_fam_pas5_prev,
-                                 fdr_cutoff = 0.05)
-da_analysis <- differentialTest(formula = ~ treat,
-                                 phi.formula = ~ 1,
-                                 formula_null = ~ 1,
-                                 phi.formula_null = ~ 1,
-                                 test = "Wald", boot = FALSE,
-                                 data = ps_fam_pas5_prev,
-                                 fdr_cutoff = 0.05, B = 50)
-plot(da_analysis, level = c("Family"))
-da_analysis$significant_models
-dt_data <- plot(da_analysis, level = c("Family"), data_only = TRUE)
-
-sig_taxa_treat <- tax_select(ps_fam_pas5_prev, da_analysis$significant_taxa)
-ntaxa(sig_taxa_treat)
-save(da_analysis, sig_taxa_treat, file = 'Output/da_corncob.Rdata')
-
-save(dt_data, file = 'Output/dt_data.Rdata')
-
-```
-
-```{r corncob-plot, fig.width=6, fig.height=6}
-dt_plot(dt_data)
-
-```
-
 ## Faprotax on DA taxa
 
 ```{r export_to_faprotax, eval=FALSE}
@@ -781,7 +787,7 @@ conda deactivate
 ```
 
 
-```{r}
+```{r, eval=FALSE}
 biom_file <- "Output/func_table_from_biom_json.biom"
 
 ps_faprotax <-

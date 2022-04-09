@@ -17,14 +17,14 @@ Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx 
 #Output/richness_model_passage.Rdata R/05-community.html: R/05-community.Rmd Output/phyloseq.RData R/functions.R
 #	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
 #
-#Output/richness_model_passage.Rdata R/05-community.html: R/05-community.Rmd Output/phyloseq.RData R/functions.R
-#	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
+Output/richness_model_passage.Rdata R/08-community.html: R/08-community.Rmd Output/phyloseq.RData R/functions.R
+	Rscript -e "rmarkdown::render('$<')"
 
 Output/dada2_output.RData: R/06-dada2.R
 	sbatch bash/dada2.sbatch
 
 Output/barcode_gc3f.tsv Output/barcode_master.tsv: R/05-create-barcode-key.R Data/sample_key.tsv Data/primer_sequence_key.tsv
-	Rscript $<
+	cd $(<D);Rscript $(<F)
 
 Output/herit_model.Rdata R/04-heritability.html: R/04-heritability.Rmd Output/heritability.tsv R/functions.R
 	Rscript -e "rmarkdown::render('$<')"
