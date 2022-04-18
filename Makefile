@@ -1,23 +1,13 @@
 .PHONY: manuscript
 manuscript: Manuscript/manuscript.docx
 
-.PHONY: presentation
-presentation: Presentation/presentation.html
-
-
 Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx Manuscript/vancouver.csl Output/fluxes.tsv Output/heritability.tsv Output/herit_model.Rdata Output/response_model.Rdata R/functions.R
 	Rscript -e "rmarkdown::render('$(<F)')"
 
-#Presentation/presentation.html: Presentation/presentation.Rmd Output/fluxes.tsv Output/heritability.tsv Output/herit_model.Rdata Output/response_model.Rdata
-#	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
-#
-#Output/richness_model_passage.Rdata R/05-community.html: R/05-community.Rmd Output/phyloseq.RData R/functions.R
-#	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
-#
-#Output/richness_model_passage.Rdata R/05-community.html: R/05-community.Rmd Output/phyloseq.RData R/functions.R
-#	cd $(<D);Rscript -e "rmarkdown::render('$(<F)')"
-#
-Output/richness_model_passage.Rdata R/08-community.html: R/08-community.Rmd Output/phyloseq.RData R/functions.R
+Output/richness_model_passage.Rdata Output/richness_model_treat5.Rdata Output/richness_model_ch4.Rdata R/Output/beta_model.Rdata Output/da_corncob.Rdata Output/dt_data.Rdata R/08-community.html: R/08-community.Rmd Output/phyloseq.RData R/functions.R
+	Rscript -e "rmarkdown::render('$<')"
+
+Output/phyloseq.RData R/07-generate-physeq.html: R/07-generate-physeq.Rmd Output/dada2_output.RData Output/barcode_master.tsv Output/fluxes.tsv Data/post_pcr_qubit.tsv R/functions.R
 	Rscript -e "rmarkdown::render('$<')"
 
 Output/dada2_output.RData: R/06-dada2.R
