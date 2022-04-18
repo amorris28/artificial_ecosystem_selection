@@ -452,7 +452,7 @@ sample_data(ps_fam_pas5_prev) =
   sample_data()
 ps = ps_fam_pas5_prev
 
-save(ps, file = 'ps.RData')
+#save(ps, file = 'ps.RData')
 # Differential abundance test
 corncob <- bbdml(formula = ASV2954 ~ treat,
                                  phi.formula = ~ 1,
