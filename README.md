@@ -41,10 +41,10 @@ curl https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz -
 
 ## Directories
 
-Data/ - Contains raw data. Should never be modified.
-Output/ - Derived data that has been modified by scripts.
-HPC_Output/ - Derived data from high-performing computing cluster. (Just the DADA2 output.)
-bash/ - Bash scripts that run.
-R/ - R scripts that run and a file with custom functions.
-Manuscript/ - Contains .Rmd source code for the manuscript, a reference.docx containing formatting, references in a .bib, the vancouver CSL citation style file.
-renv/ - Directory containing renv lockfile with the R version and package versions used in the analysis.
+ - Data/ - Contains raw data. Should never be modified.
+ - Output/ - Derived data that has been modified by scripts.
+ - HPC_Output/ - Derived data from high-performing computing cluster. (Just the DADA2 output.)
+ - bash/ - Bash scripts that run.
+ - R/ - R scripts that run and a file with custom functions.
+ - Manuscript/ - Contains .Rmd source code for the manuscript, a reference.docx containing formatting, references in a .bib, and the vancouver CSL citation style file.
+ - renv/ - Directory containing renv lockfile with the R version and package versions used in the analysis.
