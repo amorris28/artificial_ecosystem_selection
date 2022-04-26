@@ -5,7 +5,11 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-This script processes the standard curve data from the GC on each sample date. It then converts area to methane concentration using the standard curves for every sample. Finally, it computes fluxes (change in concentration over time) as a first-order exponential decay function.
+This script processes the standard curve data from the gas chromatograph on
+each sample date. It then converts area-under-the-curve to methane
+concentration using the standard curves for every sample. Finally, it
+computes fluxes (change in concentration over time) as a first-order
+exponential decay function.
 
 ```{r initialize_packages, message=FALSE}
 library(tidyverse)
@@ -39,10 +43,14 @@ conc_data %>%
   kable()
 ```
 
+where `flux_date` is the date flux was measured, `treat` is the selection
+treatment, either `p` Positive or `n` Neutral, and `n` is the number of jars
+for that treatment and sample date. Dates with fewer than 12 samples were due
+to broken jars.
 
 ## Standard Curves
 
-This step first imports the values for the standard curves then calculates the slope of Methane on Area for each sample date.
+This step first imports the values for the standard curves then calculates the slope of Methane on Area for each sample date. On one flux date, a new standard curve was established on the second day of measurement due to drift in the check standards so t1 and t2 had a different standard curve than t3-t5. `flux_date` indicates the main sample data while `sc_date` indicates which standard curve was used on that day.
 
 ```{r standard_curves}
 sc_model <- function(df) {lm(injection_ppm ~ area, data = df)}
@@ -71,17 +79,21 @@ sc_equation <-
 
 sc_ch4 <- left_join(sc_r2, sc_equation, by = c("flux_date", "sc_date"))
 
+sc_ch4 %>% 
+	kable()
+
 # These are the final slopes for each Methane~Area standard curve 
-# model for each date
+# model for each date and time point
 sc_ch4 <- 
   sc_ch4 %>% 
   left_join(sc_dates, by = "sc_date") %>% 
   select(flux_date:sc_date, t, r.squared:slope)
+
 ```
 
 ## Compute Fluxes
 
-This step turns the time point data to time intervals in units of days.
+Remove Passage 6 as explained earlier.
 
 ```{r remove_p6}
 conc_data <- 
@@ -93,17 +105,20 @@ time_data <-
 
 ```
 
+Converts raw data and time time interval in units `days`. The first time point, t0 is when the jars were capped and is ignored because t1 is the first sample injected into the gas chromatograph and so is the first time point with concentrations. Decay constants are calculated between t1 and t5.
+
 ```{r compute_time_intervals}
-
+# Standardize time format
 time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')] <- 
-  lapply(time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')],
-         ymd_hms)
+  lapply(time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')], ymd_hms)
 
+# Convert time to 'days'
 as.days <- function(start, end) {as.numeric(interval(start, end))/60/60/24}
 
 time_data[, c('t1', 't2', 't3', 't4', 't5')] <- 
   lapply(time_data[, c('t1', 't2', 't3', 't4', 't5')],
          function(x) as.days(time_data$t1, x))
+
 time_data <- 
  time_data %>% 
   select(-t0) %>% 
@@ -112,7 +127,7 @@ time_data <-
 
 ```
 
-This step takes the raw gas chromatograph area data and calculates methane concentration for each time point in units of ppm.
+This step takes the raw gas chromatograph area data and calculates methane concentration for each time point in units of ppm using the standard curves calculated above.
 
 ```{r compute_ch4_conc}
 conc_data <- 
@@ -128,14 +143,24 @@ conc_data <-
 
 ```{r plot_fractions}
 
+calc_frac_remain <- function(x) {
+  if (is.na(x[3])) {
+    x[2]/x[1]
+  }
+  else {
+    x[3]/x[1]
+  }
+}
+
 conc_data %>% 
-  select(flux_date, jar, t1, t4) %>% 
-  mutate(frac_cons = t4/t1) %>% 
+  select(flux_date, jar, t1, t4, t5) %>% 
+  mutate(frac_remain = apply(conc_data[,c('t1', 't4', 't5')], 1, calc_frac_remain)) %>% 
   mutate(treat = substring(jar,1,1)) %>% 
-  ggplot(aes(x = flux_date, y = frac_cons, color = treat)) +
+  ggplot(aes(x = flux_date, y = frac_remain, color = treat)) +
   geom_jitter(width = 0.2) +
   geom_hline(yintercept = 0.90) +
-  geom_hline(yintercept = 0.05)
+  geom_hline(yintercept = 0.05) +
+  labs(x = "Flux Date", y = "Fraction of Methane Remaining")
 
 ```
 
@@ -153,10 +178,7 @@ conc_data[, c('t1', 't2', 't3', 't4', 't5')] <-
 flux_data <-
   conc_data %>% 
   gather(t, ppm, t1:t5) %>% 
-  left_join(time_data, by = c('flux_date', 'jar', 't'))
-
-flux_data <- 
-  flux_data %>% 
+  left_join(time_data, by = c('flux_date', 'jar', 't')) %>% 
   mutate(flux_date = factor(ymd(flux_date)), 
          jar = factor(jar),
          t = factor(t)) %>% 
@@ -199,7 +221,7 @@ flux_data %>%
 
 ```{r identify_selected}
 
-# Identify the selected jars in the fluxes dataframe
+# Identify the selected jars in the fluxes data frame
 selected$selected <- TRUE
 fluxes <- 
   fluxes %>% 

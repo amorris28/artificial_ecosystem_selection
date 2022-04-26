@@ -42,16 +42,15 @@ tables <- captioner(prefix = "Table")
 heritability <- read_tsv('../Output/heritability.tsv')
 fluxes <- read_tsv('../Output/fluxes.tsv')
 
-load(file = '../Output/response_model.Rdata')
-load(file = '../Output/herit_model.Rdata')
+# CH4 models
+load(file = '../Output/response_model.RData')
+load(file = '../Output/herit_model.RData')
 
-load(file = '../Output/richness_model_passage.Rdata')
-load(file = '../Output/richness_model_treat5.Rdata')
-load(file = '../Output/richness_model_ch4.Rdata')
+# 16S models
+load(file = '../Output/richness_models.RData')
 load(file = '../Output/phyloseq.RData')
-load(file = '../Output/beta_model.Rdata')
-load(file = '../Output/da_corncob.Rdata')
-load(file = '../Output/dt_data.Rdata')
+load(file = '../Output/beta_model.RData')
+load(file = '../Output/da_corncob.RData')
 
 source('../R/functions.R')
 

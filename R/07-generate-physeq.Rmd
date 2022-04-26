@@ -22,7 +22,7 @@ library(knitr)
 ```
 
 ```{r import_data}
-load(file = "Output/dada2_output.RData")
+load(file = "HPC_Output/dada2_output.RData")
 
 samples <- read_tsv('Output/barcode_master.tsv')
 fluxes <- read_tsv('Output/fluxes.tsv')
@@ -314,8 +314,6 @@ Based on the above analyses, I have decided not to remove any contaminants.
 
 
 
-# Create final phyloseq
-
 
 ```{r create_physeq}
 
@@ -340,22 +338,6 @@ ps <- ps_decontam
 
 save(ps, file = 'Output/phyloseq.RData')
 
-# 
-# 
-# seqtab.nochim.filtered <-
-#   seqtab.nochim[rownames(seqtab.nochim) %in% rownames(fluxes_filtered),]
-# 
-# ps <- phyloseq(otu_table(seqtab.nochim.filtered, taxa_are_rows=FALSE), 
-#                                      sample_data(fluxes_filtered),
-# 
-#                tax_table(taxa))
-# 
-# 
-# 
-# dna <- Biostrings::DNAStringSet(taxa_names(ps))
-# names(dna) <- taxa_names(ps)
-# ps <- merge_phyloseq(ps, dna)
-# taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
 
 ```
 

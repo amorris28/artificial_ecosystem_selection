@@ -3,15 +3,15 @@ library(tidyverse)
 
 multithread = 28
 
-path <- "00_raw_seqs" # CHANGE ME to the directory containing the fastq files after unzipping.
+path <- "raw_seqs" # CHANGE ME to the directory containing the fastq files after unzipping.
 #list.files(path)
 
 # Forward and reverse fastq filenames have format: SAMPLENAME_R1_001.fastq and SAMPLENAME_R2_001.fastq
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq.gz", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq.gz", full.names = TRUE))
 # Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
-fnFs <- fnFs[grepl('am', fnFs)]
-fnRs <- fnRs[grepl('am', fnRs)]
+# fnFs <- fnFs[grepl('am', fnFs)]
+# fnRs <- fnRs[grepl('am', fnRs)]
 
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 
@@ -25,8 +25,8 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 #plotQualityProfile(fnRs[1:2])
 
 # Place filtered files in filtered/ subdirectory
-filtFs <- file.path("01_filtered_seqs", paste0(sample.names, "_F_filt.fastq.gz"))
-filtRs <- file.path("01_filtered_seqs", paste0(sample.names, "_R_filt.fastq.gz"))
+filtFs <- file.path("filtered_seqs", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path("filtered_seqs", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
@@ -118,4 +118,5 @@ taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 
-save(seqtab.nochim, taxa, file = "Output/dada2_output.RData")
+save(seqtab.nochim, taxa, file = "HPC_Output/dada2_output.RData")
+

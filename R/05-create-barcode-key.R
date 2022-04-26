@@ -1,13 +1,14 @@
-# Script to create sample ID/barcode sequence pairs to submit to GC3F
+# Script to create sample ID/barcode sequence pairs to submit to the GC3F
+# genomics core facility at the University of Oregon
 
 # Takes one .tsv with Sample IDs and primer plate well positions for their
 # respective primers (in the form A1, A2, ... A12)
 # Takes a second table with barcode sequences and well row or column id for that
 # primer (e.g., TATGGCAC  A, ATAACGCC B, ..., CTTCACTG	12)
 
-# Outputs a "master" barcode table with the gc3f ids, my sample ids,
+# Outputs a "master" barcode table with the GC3F ids, my sample ids,
 # and all of the barcodes and well positions
-# Also outputs a table for gC3f with just the gc3f ids and the barcode
+# Also outputs a table for GC3F with just the GC3F ids and the barcode
 # sequences with the appropriate column headers
 
 library(tidyverse)
@@ -28,4 +29,4 @@ read_tsv('../Output/barcode_master.tsv') %>%
          `Index 1 (i7) sequence` = r_barcode, 
          `Index 2 (i5) sequence` = f_barcode) %>% 
   write_tsv('../Output/barcode_gc3f.tsv')
-  
+

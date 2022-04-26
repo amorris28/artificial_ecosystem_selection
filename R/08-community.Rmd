@@ -24,7 +24,6 @@ library(DivNet)
 library(magrittr)
 library(vegan)
 library(ggpubr)
-# library(SpiecEasi)
 library(ggthemes)
 library(broom)
 
@@ -63,6 +62,7 @@ depth_data %>%
   geom_tufteboxplot()
 
 ```
+
 There is no systematic difference in sequencing depth/library size between treatments. It does appear that sequencing depth decreases between passage 2 and 5.
 
 
@@ -78,14 +78,13 @@ plot_richness(ps, x = "pas_by_treat", color="treat", measures=c("Observed", "Sha
 Richness decreases with passage, but seems unchanged between 5n and 5p.
 Initial richness appears similar between the treatments.
 
-
-
-
 # Hypothesis Testing
 
 ## Richness
 
-```{r, eval=FALSE}
+```{r richness}
+
+# Test effect of passage number on richness using all samples
 richness_soil <- ps %>% breakaway
 plot(richness_soil, physeq=ps, color="passage")
 summary(richness_soil) %>% as_tibble
@@ -104,7 +103,7 @@ bt_passage <- betta(chats = combined_richness$estimate,
                       X = model.matrix(~passage, data = combined_richness))
 bt_passage$table
 
-save(bt_passage, file = 'Output/richness_model_passage.Rdata')
+# Test effect of treatment on richness in passage 5
 
 ps_5 <- ps_filter(ps, passage == "5")
 richness_soil <- ps_5 %>% breakaway
@@ -125,22 +124,21 @@ bt_treat5 <- betta(chats = combined_richness$estimate,
                       X = model.matrix(~treat, data = combined_richness))
 bt_treat5$table
 
-save(bt_treat5, file = 'Output/richness_model_treat5.Rdata')
-
+# Test effect of CH4 on richness
 
 bt_ch4 <- betta(chats = combined_richness$estimate,
                       ses = combined_richness$error,
                       X = model.matrix(~ch4, data = combined_richness))
 bt_ch4$table
 
-save(bt_ch4, file = 'Output/richness_model_ch4.Rdata')
 
+save(bt_passage, bt_treat5, bt_ch4, file = 'Output/richness_models.RData')
 
 ```
 
 Test confirms the above observation: Richness decreases between Passage 2
 and Passage 5. No difference in richness by treatment in passage 5 or by
-methane.
+methane flux.
 
 
 # Beta Diversity
@@ -148,6 +146,7 @@ methane.
 
 ```{r}
 
+# Replace unknown and missing taxa
 ps_fixed <-
 ps %>%
  tax_fix(
@@ -157,6 +156,7 @@ ps %>%
   suffix_rank = "classified"
  )
 
+# Recode treatments as binary 1/0
 ps_fixed <- 
   ps_fixed %>% 
   ps_mutate(treat_bin = factor(ifelse(treat=='p', 1,0))) %>% 
@@ -164,13 +164,6 @@ ps_fixed <-
   ps_mutate(treat_pas = interaction(treat_bin, passage_bin))
 
 ps_fixed
-```
-
-## Beta diversity test passage by treatment
-
-
-```{r}
-plot_beta(ps_fixed)
 ```
 
 
@@ -194,7 +187,9 @@ ord_calc_jacc <-
 
 ```
 
-```{r plot-beta, results=FALSE, fig.width = 6, fig.height = 2}
+## Bray-Curtis and Jaccard
+
+```{r plot-beta, results=FALSE, fig.width = 8, fig.height = 3}
 bray <-
   ord_calc_bray %>% 
   ord_plot(color = "treat") +
@@ -203,7 +198,8 @@ bray <-
   coord_cartesian(clip="off") +
   scale_color_manual(name = "Treatment", 
                        labels = c('Neutral', 'Positive'),
-                       values = c('gray40', 'darkorange2'))
+                       values = c('gray40', 'darkorange2')) +
+  labs(title = "Bray-Curtis")
 
 jacc <- 
   ord_calc_jacc %>% 
@@ -214,108 +210,25 @@ jacc <-
   # coord_cartesian(clip="off") +
   scale_color_manual(name = "Treatment", 
                        labels = c('Neutral', 'Positive'),
-                       values = c('gray40', 'darkorange2'))
+                       values = c('gray40', 'darkorange2')) +
+  labs(title = "Jaccard")
+
                        
 ggarrange(bray, jacc)
 
 ```
 
+## Aitchison
 
-```{r plot-aitch, fig.width = 4, fig.height = 4}
-
-ord_calc_aitch %>% 
-  ord_plot(color = "treat",
-           auto_caption = FALSE) +
-  theme_tufte() +
-  geom_rangeframe() +
-  coord_fixed(5.5/43.6, clip="off") +
-  scale_color_manual(name = "Treatment", 
-                       labels = c('Neutral', 'Positive'),
-                       values = c('gray40', 'darkorange2'))
-  
-
-
+```{r}
+plot_beta(ps_fixed)
 ```
 
-```{r permanova-aitch, eval=FALSE}
-dist_aitch <-
-  ps %>% 
-  dist_calc(dist = "aitchison")
-  
-dist_permanova(dist_aitch, c("passage", "treat"), "passage * treat")
 
-passage_groups <- factor(c(rep(1,22), rep(2,24)), labels = c("2","5"))
-
-dist_aitch %>% 
-  dist_get %>% 
-  vegan::betadisper(passage_groups) %>% 
-  permutest()
-
-treat_groups <- factor(c(rep(1,12), rep(2,10), rep(1,12), rep(2,12)), labels = c("n","p"))
-
-dist_aitch %>% 
-  dist_get %>% 
-  vegan::betadisper(treat_groups) %>% 
-  permutest()
-
-ps %>%
-  ps_filter(passage == 2) %>% 
-  dist_calc(dist = "aitchison") %>% 
-  dist_permanova("treat")
-
-ps %>%
-  ps_filter(passage == 5) %>% 
-  dist_calc(dist = "aitchison") %>% 
-  dist_permanova("treat")
-  
-
-
-adonis2(dist_get(dist_aitch) ~ passage * treat, data = as(sample_data(ps_fixed), 'data.frame'))
-
-dist_aitch2 <-
-  ps %>% 
-  ps_filter(passage == 2) %>% 
-  dist_calc(dist = "aitchison")
-dist_permanova(dist_aitch2, "treat")
-groups <- factor(c(rep(1,12), rep(2,10)), labels = c("N","P"))
-
-dist_aitch2 %>% 
-  dist_get %>% 
-  vegan::betadisper(groups) %>% 
-  permutest()
-dist_aitch5 <-
-  ps %>% 
-  ps_filter(passage == 5) %>% 
-  dist_calc(dist = "aitchison")
-dist_permanova(dist_aitch5, "treat")
-groups <- factor(c(rep(1,12), rep(2,12)), labels = c("N","P"))
-
-dist_aitch5 %>% 
-  dist_get %>% 
-  vegan::betadisper(groups) %>% 
-  permutest()
-
-```
-
-There is a significant main effect and interaction of passage and treatment on
-taxonomic dissimilarity of the soil microbiome. In addition, I reject the null
-hypothesis of homogeneity of group dispersions for passage, but not for treatment.
-Inspecting the NMDS plot, from this I conclude that passaging between Passage 2
-and 5 both altered the soil microbiome taxonomic composition and reduced its 
-variability. In addition, there is a difference in centroid between the two
-treatments in both Passage 2 and Passage 5, but no difference in dispersion.
-
+## Beta diversity test passage by treatment
 
 ```{r beta-test}
-# ps_prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
-# 
-# fit_bray <- adonis2(otu_table(ps_prop) ~ passage * treat, data = as(sample_data(ps_fixed), 'data.frame'), method = "bray")
-# 
-# fit_bray
-# 
-# fit_jacc <- adonis2(otu_table(ps_prop) ~ passage * treat, data = as(sample_data(ps_fixed), 'data.frame'), method = "jacc", binary = TRUE)
-# 
-# fit_jacc
+
 ps_clr <- microbiome::transform(ps, "clr")
 
 fit_bin_jacc <- adonis2(otu_table(ps) ~ passage * treat, data = as(sample_data(ps), 'data.frame'), method = "jaccard", binary = TRUE)
@@ -325,7 +238,7 @@ fit_aitch <- adonis2(otu_table(ps_clr) ~ passage * treat, data = as(sample_data(
 fit_adonis <- rbind(tidy(fit_aitch), tidy(fit_bin_jacc))
 fit_adonis$term <- c('Passage', 'Treatment', 'Pass:Treat', 'Residual', 'Total',
       'Passage', 'Treatment', 'Pass:Treat', 'Residual', 'Total')
-save(fit_adonis, file = 'Output/beta_model.Rdata')
+save(fit_adonis, file = 'Output/beta_model.RData')
 
 ############
 
@@ -361,35 +274,12 @@ dist_aitch2 %>%
   vegan::betadisper(groups) %>% 
   permutest()
 
-
-
-###########3
-
-# adonis2(otu_table(ps_filter(ps_prop, passage == 5)) ~ treat, 
-#         data = 
-#           as(
-#             sample_data(
-#               ps_filter(
-#                 ps_prop, 
-#                 passage == 5)
-#             ), 
-#             'data.frame'), 
-#         method = "bray")
-# adonis2(otu_table(ps_filter(ps_prop, passage == 5)) ~ treat, 
-#         data = 
-#           as(
-#             sample_data(
-#               ps_filter(
-#                 ps_prop, 
-#                 passage == 5)
-#             ), 
-#             'data.frame'), 
-#         method = "jaccard",
-#         binary = TRUE)
-
-
 ```
 
+
+There is a significant main effect and interaction of passage and treatment on
+taxonomic dissimilarity of the soil microbiome. In addition, there is no difference
+in dispersion between treatments, but there is between passage2 and 5.
 
 # Differential Abundance
 
@@ -400,7 +290,7 @@ fewer samples) and low abundance (median < 5 reads across samples). There were t
 to the Positive treatment with relatively high prevalence. This included an ASV
 that was a member of the Bacteroidia Class with no lower taxonomic designation. 
 This ASV had a prevalence of 10/12 and a median abundance of ~2 reads. The other
-prevalent family was a member of the Silvanigrellaceae, a newly described family places in
+prevalent family was a member of the Silvanigrellaceae, a newly described family placed in
 its own order. This family was present in
 all 12 samples and was represented by three OTUs: one with no lower designation, one from the genus
 Silvanigrella and one from the genus Candidatus Turbobacter. Silvanigrella was
@@ -412,243 +302,16 @@ family was represented by two ASVs in the genus Armatimonas. The type strain for
 Armatimonas was isolated from the rhizoplane of Phragmites australis (https://www.microbiologyresearch.org/content/journal/ijsem/10.1099/ijs.0.025643-0)
 
 
-```{r, eval=FALSE}
-
-g5<- 
-  ps_fixed %>% 
-  ps_filter(passage == 5) %>% 
-  tax_agg('Family') %>% 
-  ps_get() %>% 
-  ps_melt()
-
-g2<- 
-  ps_fixed %>% 
-  ps_filter(passage == 2) %>% 
-  tax_agg('Family') %>% 
-  ps_get() %>% 
-  ps_melt()
-
-unique(g5$Family)[!(unique(g5$Family) %in% unique(g2$Family))]
-unique(g5$Family)[unique(g5$Family) %in% unique(g2$Family)]
-
-unique(g2$Family)[!(unique(g2$Family) %in% unique(g5$Family))]
-unique(g2$Family)[unique(g2$Family) %in% unique(g5$Family)]
-
-```
-
-
-## Differential Abundance Treatment in passage 5
-
-
-```{r corncob_treatment, results=FALSE, fig.hight=40}
-ps_fixed_family <- speedyseq::tax_glom(ps_fixed, taxrank="Family")
-
-ps_fam_pas5 <- microViz::ps_filter(ps_fixed_family, passage == 5)
-
-ps_fam_pas5_prev <- microViz::tax_filter(ps_fam_pas5, min_prevalence = 0.10)
-
-sample_data(ps_fam_pas5_prev) =
-  sample_data(ps_fam_pas5_prev)[,c('sample_id', 'treat')] %>% 
-  sample_data()
-ps = ps_fam_pas5_prev
-
-#save(ps, file = 'ps.RData')
-# Differential abundance test
-corncob <- bbdml(formula = ASV2954 ~ treat,
-                                 phi.formula = ~ 1,
-                                 formula_null = ~ 1,
-                                 phi.formula_null = ~ 1,
-                                 test = "lrt", boot = TRUE,
-                                 data = ps_fam_pas5_prev,
-                                 fdr_cutoff = 0.05)
-da_analysis <- differentialTest(formula = ~ treat,
-                                 phi.formula = ~ 1,
-                                 formula_null = ~ 1,
-                                 phi.formula_null = ~ 1,
-                                 test = "Wald", boot = FALSE,
-                                 data = ps_fam_pas5_prev,
-                                 fdr_cutoff = 0.05, B = 50)
-plot(da_analysis, level = c("Family"))
-da_analysis$significant_models
-dt_data <- plot(da_analysis, level = c("Family"), data_only = TRUE)
-
-sig_taxa_treat <- tax_select(ps_fam_pas5_prev, da_analysis$significant_taxa)
-ntaxa(sig_taxa_treat)
-save(da_analysis, sig_taxa_treat, file = 'Output/da_corncob.Rdata')
-
-save(dt_data, file = 'Output/dt_data.Rdata')
-
-```
-
-```{r corncob-plot, fig.width=6, fig.height=6}
-dt_plot(dt_data)
-
-```
-
-```{r stahp}
-knitr::opts_chunk$set(eval = FALSE)
-
-```
-
-
-
-```{r stacked_bar, eval=FALSE}
-level = "Family"
-ps_phylum <- speedyseq::tax_glom(ps, taxrank=level)
-top10 = names(sort(taxa_sums(ps_phylum), TRUE)[1:10])
-ps_phylum10 <- prune_taxa(top10, ps_phylum)
-ps_phylum10 %>% 
-  ps_filter(passage == 5) %>% 
-  speedyseq::plot_bar(facet_grid = 'treat', fill = level) + 
-  geom_bar(aes_string( color=level, fill=level), stat="identity", position="stack") +
-  geom_bar(aes(x = reorder(rep, rank_ch4)))
-
-```
-
-## ALDex2
-
-```{r, eval = FALSE}
-library(ALDEx2)
-data(selex)
-#subset only the last 400 features for efficiency
-selex.sub <- selex[1:400,]
-conds <- c(rep("NS", 7), rep("S", 7))
-x <- aldex.clr(selex.sub, conds, mc.samples=16, denom="iqlr", verbose=F)
-x.tt <- aldex.ttest(x, paired.test=FALSE, verbose=FALSE)
-x.effect <- aldex.effect(x, CI=T, verbose=FALSE)
-head(x.effect)
-
-```
-
-
-```{r, eval=FALSE}
-ps_fixed_family <- speedyseq::tax_glom(ps_fixed, taxrank="Family")
-
-ps_fam_pas5 <- microViz::ps_filter(ps_fixed_family, passage == 5)
-
-ps_fam_pas5_prev <- microViz::tax_filter(ps_fam_pas5, min_prevalence = 0.10)
-ps_pass_5 <- microViz::ps_filter(ps_fixed, passage == 5)
-otu_table <- as(t(otu_table(ps_fam_pas5_prev)), 'matrix')
-conds <- c(rep("n", 12), rep("p", 12))
-
-# Based on effect confidence interval
-
-x <- aldex.clr(otu_table, conds, mc.samples=128, denom="all", verbose=F)
-x.tt <- aldex.ttest(x, paired.test=FALSE, verbose=FALSE)
-x.effect <- aldex.effect(x, CI=T, verbose=FALSE)
-
-sgn <- sign(x.effect$effect.low) == sign(x.effect$effect.high)
-par(mfrow=c(1,2))
-plot(x.effect$rab.all, x.effect$diff.btw, pch=19, cex=0.3, col="grey", xlab="Abundance", ylab="Difference", main="Bland-Altman")
-points(x.effect$rab.all[abs(x.effect$effect) >=2], x.effect$diff.btw[abs(x.effect$effect) >=2], pch=19, cex=0.5, col="red")
-points(x.effect$rab.all[sgn], x.effect$diff.btw[sgn], cex=0.7, col="blue")
-
-plot(x.effect$diff.win, x.effect$diff.btw, pch=19, cex=0.3, col="grey",xlab="Dispersion", ylab="Difference", main="Effect")
-points(x.effect$diff.win[abs(x.effect$effect) >=2], x.effect$diff.btw[abs(x.effect$effect) >=2], pch=19, cex=0.5, col="red")
-points(x.effect$diff.win[sgn], x.effect$diff.btw[sgn], cex=0.7, col="blue")
-abline(0,2, lty=2, col="grey")
-abline(0,-2, lty=2, col="grey")
-
-
-
-merge(as(tax_table(ps_fam_pas5_prev)[rownames(x.effect[sgn,]), ], 'data.frame'), x.effect[sgn,], by = 0)
-```
-
-```{r, eval=FALSE}
-
-# Based on effect size
-
-x.all <- aldex(otu_table, conds, mc.samples=128, test="t", effect=TRUE,
-     include.sample.summary=FALSE, denom="all", verbose=FALSE)
-effect_gt_2 <- merge(as(tax_table(ps_pass_5)[rownames(x.all[abs(x.all$effect)>2,]), ], 'data.frame'), x.all[abs(x.all$effect)>2,], by = 0)
-
-effect_gt_2 %>% 
-  ggplot(aes(x = effect, y = reorder(Family,effect))) +
-  geom_point()
-
-par(mfrow=c(1,2))
-aldex.plot(x.all, type="MA", test="welch", xlab="Log-ratio abundance",
-    ylab="Difference")
-aldex.plot(x.all, type="MW", test="welch", xlab="Dispersion",
-    ylab="Difference")
-
-par(mfrow=c(1,2))
-plot(x.all$effect, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
-  pch=19, xlab="Effect size", ylab="P value", main="Effect size plot")
-points(x.all$effect, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
-  pch=19)
-abline(h=0.05, lty=2, col="grey")
-legend(15,1, legend=c("P value", "BH-adjusted"), pch=19, col=c("blue", "red"))
-
-plot(x.all$diff.btw, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
-  pch=19, xlab="Difference", ylab="P value", main="Volcano plot")
-points(x.all$diff.btw, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
-  pch=19)
-abline(h=0.05, lty=2, col="grey")
-
-# identify which values are significant in both the t-test and glm tests
-found.by.all <- which(x.all$we.eBH < 0.05 & x.all$wi.eBH < 0.05)
-
-# identify which values are significant in fewer than all tests
-found.by.one <- which(x.all$we.eBH < 0.05 | x.all$wi.eBH < 0.05)
-
-# plot the within and between variation of the data
-plot(x.all$diff.win, x.all$diff.btw, pch=19, cex=0.3, col=rgb(0,0,0,0.3),
- xlab="Dispersion", ylab="Difference")
-points(x.all$diff.win[found.by.one], x.all$diff.btw[found.by.one], pch=19,
- cex=0.7, col=rgb(0,0,1,0.5))
-points(x.all$diff.win[found.by.all], x.all$diff.btw[found.by.all], pch=19,
- cex=0.7, col=rgb(1,0,0,1))
-abline(0,1,lty=2)
-abline(0,-1,lty=2)
-
-#View(tax_table(ps_fam_pas5_prev)[rownames(otu_table[found.by.all, ]), ])
-```
-
-
-```{r, eval=FALSE}
-boxData <-
-  ps_fixed %>% 
-  ps_filter(passage ==5) %>% 
-  tax_agg('Family') %>% 
-  ps_get %>% 
-  ps_melt()
-
-Family_order<-
-  boxData %>% 
-  group_by(Family) %>% 
-  summarize(median = median(Abundance)) %>% 
-  arrange(median)
-boxData$Family <- factor(boxData$Family, levels = Family_order$Family)
-boxData$treat <- factor(boxData$treat, levels = c('p', 'n'))
-```
-
-```{r, eval=FALSE, fig.height=3, fig.width=12}
-
-boxData %>% 
-  ggplot(aes(x = Family, 
-             y = Abundance)) +
-  facet_grid(treat ~ .) +
-  theme_tufte() +
-  geom_rangeframe(color = "black") +
-  # scale_x_reordered() +
-  scale_y_continuous(trans = "pseudo_log") +
-  geom_tufteboxplot() +
-  theme(axis.text.x = element_text(angle = 90))
-  # geom_boxplot() +
-  # scale_color_discrete(guide = 'none') +
-  # coord_flip()
-
-  
-```
-
-```{r, eval=FALSE}
+```{r}
+# families in to Passage 5, Treatment P
 g5p<- 
   ps_fixed %>% 
   ps_filter(treat == "p", passage == 5) %>% 
   tax_agg('Family') %>% 
   ps_get() %>% 
   ps_melt()
+
+# families in to Passage 5, Treatment N
 g5n<- 
   ps_fixed %>% 
   ps_filter(treat == "n", passage == 5) %>% 
@@ -670,13 +333,15 @@ Family_order<-
   arrange(median, max)
 g5p_unique$OTU <- factor(g5p_unique$OTU, levels = Family_order$OTU)
 
+# Plot families unique to P5 in order of median abundance
 g5p_unique %>% 
   ggplot(aes(y = Abundance, x = OTU)) +
   geom_tufteboxplot() +
   theme_tufte() +
   geom_rangeframe() +
   theme(axis.text.x = element_text(angle = 90)) +
-  scale_y_continuous(breaks = c(0, 5, 10, 15, 20, 24))
+  scale_y_continuous(breaks = c(0, 5, 10, 15, 20, 24)) +
+  labs(title = "Unique to P5 by abundance")
 
 
 # Prevalence
@@ -687,6 +352,7 @@ Family_order<-
   arrange(sum)
 g5p_unique$OTU <- factor(g5p_unique$OTU, levels = Family_order$OTU)
 
+# Plot families unique to P5 in order of prevalence
 g5p_unique %>% 
   group_by(OTU) %>% 
   summarize(Prevalence = sum(Prevalence)) %>% 
@@ -695,9 +361,8 @@ g5p_unique %>%
   theme_tufte() +
   geom_rangeframe() +
   theme(axis.text.x = element_text(angle = 90)) +
-  scale_y_continuous(breaks = c(1, 2, 3, 5, 10, 12))
-
-
+  scale_y_continuous(breaks = c(1, 2, 3, 5, 10, 12)) +
+  labs(title = "Unique to P5 by prevalence")
 
 # Families unique to n in passage 5
 g5n_unique <-
@@ -713,13 +378,16 @@ Family_order<-
   arrange(median, max)
 g5n_unique$OTU <- factor(g5n_unique$OTU, levels = Family_order$OTU)
 
+# Plot families unique to N5 in order of abundance
 g5n_unique %>% 
   ggplot(aes(y = Abundance, x = OTU)) +
   geom_tufteboxplot() +
   theme_tufte() +
   geom_rangeframe() +
   theme(axis.text.x = element_text(angle = 90)) +
-  scale_y_continuous(breaks = c(0, 10, 20, 30, 37))
+  scale_y_continuous(breaks = c(0, 10, 20, 30, 37)) +
+  labs(title = "Unique to N5 by abundance")
+
 
 # Prevalence
 Family_order<-
@@ -729,6 +397,8 @@ Family_order<-
   arrange(sum)
 g5n_unique$OTU <- factor(g5n_unique$OTU, levels = Family_order$OTU)
 
+# Plot families unique to N5 in order of prevalence
+
 g5n_unique %>% 
   group_by(OTU) %>% 
   summarize(Prevalence = sum(Prevalence)) %>% 
@@ -737,358 +407,65 @@ g5n_unique %>%
   theme_tufte() +
   geom_rangeframe() +
   theme(axis.text.x = element_text(angle = 90)) +
-  scale_y_continuous(breaks = c(1, 2, 6))
-```
-
-## Faprotax on DA taxa
-
-```{r export_to_faprotax, eval=FALSE}
-faprotax_taxonomy <-
-  sig_taxa_treat %>% 
-  tax_table %>% 
-  as_tibble %>% 
-  mutate(.taxonomy = 
-           faprotax_taxonomy %>% 
-           select(Kingdom:Species) %>% 
-           apply(1 , paste , collapse = "; " )) %>% 
-  select(.otu, .taxonomy)
-
-
-otu<-t(as(otu_table(sig_taxa_treat),"matrix")) 
-  # 't' to transform if taxa_are_rows=FALSE
-  #if taxa_are_rows=TRUE
-  #otu<-as(otu_table(GlobalPatterns),"matrix"))
-rownames(otu) <- faprotax_taxonomy$.taxonomy
-otu_biom <- biomformat::make_biom(data=otu)
-biomformat::write_biom(otu_biom,"otu_biom.biom")
+  scale_y_continuous(breaks = c(1, 2, 6)) +
+  labs(title = "Unique to N5 by prevalence")
 
 ```
 
-```{bash faprotax, eval=FALSE}
-conda activate faprotax
-
-rm Output/func_table_from_biom.biom \
-    Output/faprotax_report_from_biom.txt
-
-python python/FAPROTAX_1.2.4/collapse_table.py \
-    -i otu_biom.biom \
-    -g python/FAPROTAX_1.2.4/FAPROTAX.txt \
-    -o Output/func_table_from_biom.biom \
-    -r Output/faprotax_report_from_biom.txt \
-    -v
-
-biom convert \
-    -i Output/func_table_from_biom.biom \
-    -o Output/func_table_from_biom_json.biom \
-    --table-type="OTU table" \
-    --to-json
-
-conda deactivate
-```
 
 
-```{r, eval=FALSE}
-biom_file <- "Output/func_table_from_biom_json.biom"
+## Differential Abundance Treatment in passage 5
 
-ps_faprotax <-
-  biom_file %>% 
-  biomformat::read_biom() %>% 
-  biomformat::biom_data() %>% 
-  as("matrix") %>% 
-  otu_table(taxa_are_rows=TRUE) %>% 
-  phyloseq(sample_data(ps_gen_pas5_prev))
 
-da_faprotax <- differentialTest(formula = ~ treat,
-                                 phi.formula = ~ treat,
+```{r corncob_treatment, results=FALSE, fig.hight=40}
+ps_fixed_family <- speedyseq::tax_glom(ps_fixed, taxrank="Family")
+
+ps_fam_pas5 <- microViz::ps_filter(ps_fixed_family, passage == 5)
+
+ps_fam_pas5_prev <- microViz::tax_filter(ps_fam_pas5, min_prevalence = 0.10)
+
+sample_data(ps_fam_pas5_prev) =
+  sample_data(ps_fam_pas5_prev)[,c('sample_id', 'treat')] %>% 
+  sample_data()
+ps = ps_fam_pas5_prev
+
+# Differential abundance test
+da_analysis <- differentialTest(formula = ~ treat,
+                                 phi.formula = ~ 1,
                                  formula_null = ~ 1,
-                                 phi.formula_null = ~ treat,
+                                 phi.formula_null = ~ 1,
                                  test = "Wald", boot = FALSE,
-                                 data = ps_faprotax,
-                                 fdr_cutoff = 0.05)
-plot(da_faprotax)
+                                 data = ps_fam_pas5_prev,
+                                 fdr_cutoff = 0.05, B = 50)
 
-```
+#plot(da_analysis, level = c("Family"))
+da_analysis$significant_models
+dt_data <- plot(da_analysis, level = c("Family"), data_only = TRUE)
 
-
-## Picrust on DA taxa
-
-
-
-```{r}
-x = NULL
-for (i in seq_along(da_analysis$significant_models)) {
-  x <- c(x, da_analysis$significant_models[[i]]$coefficients[2, 1])
-}
-x > 0
-sig_taxa_pos_neg <-
-  da_analysis$significant_taxa %>% 
-  as_tibble_col(column_name = ".otu") %>% 
-  mutate(estimate = x) %>% 
-  mutate(pos_or_neg = if_else(x > 0, "pos", "neg"))
-
-top_da_taxa <- 
-  sig_taxa_treat %>% 
-  otu_table %>% 
-  as_tibble %>% 
-  filter(.abundance > 2000) %>% 
-  distinct(.otu) %$% .otu
-  
-taxonomy <-
-  sig_taxa_treat %>% 
-  tax_table %>% 
-  as_tibble %>%
-  filter(.otu %in% top_da_taxa) 
-
-
-taxonomy$.taxonomy <- taxonomy %>% 
-           select(Kingdom:Species) %>% 
-           apply(1 , paste , collapse = "; " )
-
-taxonomy <-
-  taxonomy %>% 
-  select(.otu, .taxonomy)
-
-df_top_da_taxa <-
-  sig_taxa_treat %>% 
-  otu_table %>% 
-  as_tibble %>%
-  left_join(as_tibble(sample_data(sig_taxa_treat))) %>% 
-  left_join(sig_taxa_pos_neg, by = ".otu") %>% 
-  filter(.otu != 'ASV4174') %>% 
-  filter(.otu %in% top_da_taxa) %>% 
-  left_join(taxonomy)
-
-df_top_da_taxa %>% 
-  ggplot(., aes(y = Genus, x = .abundance, color = treat)) +
-  geom_jitter(height = 0.1) + 
-  #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  facet_wrap(~ pos_or_neg)
-ggsave('Output/dif_abund_results.png', width = 6, height = 4)
-
-major_otus <- 
-sig_taxa_treat %>% 
-  otu_table %>% 
-  as_tibble %>%
-  left_join(as_tibble(sample_data(sig_taxa_treat))) %>% 
-  left_join(sig_taxa_pos_neg, by = ".otu") %>% 
-  filter(.otu != 'ASV4174') %>% 
-  filter(.abundance > 300) %>% 
-  select(.otu, pos_or_neg) %>% 
-  distinct %>% 
-  mutate(tax = otu_to_taxonomy(.otu, sig_taxa_treat))
-
-otu_to_taxonomy(major_otus$.otu, sig_taxa_treat)
-
-otu_to_taxonomy('ASV192', sig_taxa_treat)
-
-sig_taxa_treat %>% 
-  otu_table %>% 
-  as_tibble %>%
-  left_join(as_tibble(sample_data(sig_taxa_treat))) %>% 
-  left_join(sig_taxa_pos_neg, by = ".otu") %>% 
-  filter(.otu == 'ASV192') %>% 
-  ggplot(., aes(x = .otu, y = .abundance, color = treat)) +
-  geom_point() + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  facet_wrap(~ pos_or_neg)
-
-beijer_otu <-
-  ps %>% 
-  otu_table %>% 
-  as_tibble %>% 
-  filter(.otu == 'ASV192')
-
-beijer_metadata <-
-  ps %>% 
-  sample_data %>% 
-  as_tibble %>% 
-    left_join(beijer_otu)
-
-ggplot(beijer_metadata, aes(x = .abundance, y = log_ch4, color = treat)) +
-  geom_point() +
-  facet_wrap(~ passage)
-
-df_top_da_taxa %>% 
-filter(pos_or_neg == "pos") %>% 
-select(Phylum:Genus) %>% 
-distinct %>% 
-  write_tsv(., 'top_positive_taxa.txt')
-```
-
-
-
-```{bash, eval=FALSE}
-mkdir picrust2
-```
-
-```{r export_to_picrust}
-
-top_da_taxa_pos <-
-  df_top_da_taxa %>% 
-  select(.otu, pos_or_neg) %>% 
-  distinct(.otu, pos_or_neg) %>% 
-  filter(pos_or_neg == "pos") %$%
-  .otu
-sig_taxa_treat %>% 
-  tax_select(top_da_taxa_pos) %>% 
-  otu_table %>% 
-  as("matrix") %>% 
-  t %>% 
-  biomformat::make_biom() %>% 
-  biomformat::write_biom("Output/study_seqs.biom")
-
-sequences <-
-  sig_taxa_treat %>% 
-  tax_select(top_da_taxa_pos) %>% 
-  refseq %>% 
-  as.vector %>% 
-  as.list
-seqinr::write.fasta(sequences, names(sequences), file.out = "Output/study_seqs.fna")
-
-```
-
-
-```{bash picrust, eval=FALSE}
-conda activate picrust2
-cd picrust3c
-
-place_seqs.py -s ../Output/study_seqs.fna \
-    -o out.tre \
-    -p 1 \
-    --intermediate intermediate/place_seqs \
-    --chunk_size 500
-hsp.py -i 16S -t out.tre -o marker_predicted_and_nsti.tsv.gz -p 1 -n
-
-hsp.py -i EC -t out.tre -o EC_predicted.tsv.gz -p 1
-
-metagenome_pipeline.py -i ../Output/study_seqs.biom -m marker_predicted_and_nsti.tsv.gz -f EC_predicted.tsv.gz \
-                       -o EC_metagenome_out --strat_out
-
-pathway_pipeline.py -i EC_metagenome_out/pred_metagenome_contrib.tsv.gz \
-                    -o pathways_out -p 1
-
-add_descriptions.py -i EC_metagenome_out/pred_metagenome_unstrat.tsv.gz -m EC \
-                    -o EC_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz
-
-add_descriptions.py -i pathways_out/path_abun_unstrat.tsv.gz -m METACYC \
-                    -o pathways_out/path_abun_unstrat_descrip.tsv.gz
-
-
-#####
-
-picrust2_pipeline.py -s Output/study_seqs.fna -i Output/study_seqs.biom -o picrust2_out_pipeline -p 4 --stratified
-
-conda deactivate
-```
-
-
-
-```{r}
-se.mb.amgut <- spiec.easi(amgut1.filt, method='mb', lambda.min.ratio=1e-2,
-                          nlambda=20, pulsar.params=list(rep.num=50))
-se.gl.amgut <- spiec.easi(amgut1.filt, method='glasso', lambda.min.ratio=1e-2,
-                          nlambda=20, pulsar.params=list(rep.num=50))
-sparcc.amgut <- sparcc(amgut1.filt)
-## Define arbitrary threshold for SparCC correlation matrix for the graph
-sparcc.graph <- abs(sparcc.amgut$Cor) >= 0.3
-diag(sparcc.graph) <- 0
-library(Matrix)
-sparcc.graph <- Matrix(sparcc.graph, sparse=TRUE)
-## Create igraph objects
-ig.mb     <- adj2igraph(getRefit(se.mb.amgut))
-ig.gl     <- adj2igraph(getRefit(se.gl.amgut))
-ig.sparcc <- adj2igraph(sparcc.graph)
-
-```
-
-```{r}
-library(igraph)
-## set size of vertex proportional to clr-mean
-vsize    <- rowMeans(clr(amgut1.filt, 1))+6
-am.coord <- layout.fruchterman.reingold(ig.mb)
-
-par(mfrow=c(1,3))
-plot(ig.mb, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="MB")
-plot(ig.gl, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="glasso")
-plot(ig.sparcc, layout=am.coord, vertex.size=vsize, vertex.label=NA, main="sparcc")
-
-```
-
-```{r}
-
-library(phyloseq)
-## Load round 2 of American gut project
-data('amgut2.filt.phy')
-se.mb.amgut2 <- spiec.easi(amgut2.filt.phy, method='mb', lambda.min.ratio=1e-2,
-                           nlambda=20, pulsar.params=list(rep.num=50))
-ig2.mb <- adj2igraph(getRefit(se.mb.amgut2),  vertex.attr=list(name=taxa_names(amgut2.filt.phy)))
-plot_network(ig2.mb, amgut2.filt.phy, type='taxa', color="Rank3")
-
-ps_p <-
-  test %>% 
-  speedyseq::tax_glom("Family") %>% 
-  ps_filter(passage == "5") %>% 
-  ps_filter(treat == "p")
-
-se.mb.ps_p <- spiec.easi(ps_p, method='mb', lambda.min.ratio=1e-2,
-                           nlambda=200, pulsar.params=list(rep.num=50))
-ig2.mb.ps_p <- adj2igraph(getRefit(se.mb.ps_p),  vertex.attr=list(name=taxa_names(ps_p)))
-plot_network(ig2.mb.ps_p, ps_p, type='taxa', color = "Class")
-
-ps_n <-
-  test %>% 
-  speedyseq::tax_glom("Family") %>% 
-  ps_filter(passage == "5") %>% 
-  ps_filter(treat == "n")
-
-se.mb.ps_n <- spiec.easi(ps_n, method='mb', lambda.min.ratio=1e-2,
-                           nlambda=200, pulsar.params=list(rep.num=50))
-ig2.mb.ps_n <- adj2igraph(getRefit(se.mb.ps_n),  vertex.attr=list(name=taxa_names(ps_n)))
-plot_network(ig2.mb.ps_n, ps_n, type='taxa', color="Class")
-getOptMerge(se.mb.ps_p)
-getOptMerge(se.mb.ps_n)
-getStability(se.mb.ps_n)
-###
-
-se1.mb.amgut <- spiec.easi(amgut1.filt, method='mb', lambda.min.ratio=1e-2,
-                          nlambda=20, pulsar.params=list(rep.num=20, ncores=4))
-se2.mb.amgut <- spiec.easi(amgut2.filt.phy, method='mb', lambda.min.ratio=1e-2,
-                          nlambda=20, pulsar.params=list(rep.num=20, ncores=4))
-
-
-se1.slr.amgut <- spiec.easi(amgut1.filt, method='slr', r=10, lambda.min.ratio=1e-2,
-                          nlambda=20, pulsar.params=list(rep.num=20, ncores=4))
-se2.slr.amgut <- spiec.easi(amgut2.filt.phy, method='slr', r=10, lambda.min.ratio=1e-2,
-                          nlambda=20, pulsar.params=list(rep.num=20, ncores=4))
-
-otu1 <- colnames(amgut1.filt)
-otu2 <- taxa_names(amgut2.filt.phy)
-edge.diss(getRefit(se1.mb.amgut), getRefit(se2.mb.amgut), 'jaccard', otu1, otu2)
-edge.diss(getRefit(se1.slr.amgut), getRefit(se2.slr.amgut), 'jaccard', otu1, otu2)
-
-X <- se2.slr.amgut$est$data
-L <- se2.slr.amgut$est$resid[[getOptInd(se2.slr.amgut)]]
-pca <- robustPCA(X, L)
-age <- as.numeric(as.character(sample_data(amgut2.filt.phy)$AGE))
-bmi <- as.numeric(as.character(sample_data(amgut2.filt.phy)$BMI))
-depth <- colSums(otu_table(amgut2.filt.phy))
-
-cor(age, pca$scores, use='pairwise')
-cor(bmi, pca$scores, use='pairwise')
-cor(depth, pca$scores, use='pairwise')
+sig_taxa_treat <- tax_select(ps_fam_pas5_prev, da_analysis$significant_taxa)
+ntaxa(sig_taxa_treat)
+save(da_analysis, sig_taxa_treat, dt_data, file = 'Output/da_corncob.RData')
 
 
 ```
 
+```{r corncob-plot, fig.width=6, fig.height=6}
+dt_plot(dt_data)
 
-## Differential Abundance Methane
+```
+
+```{r stop}
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 
 ```{r corncob_ch4}
 
-ps_gen_pas5_trep <- ps_filter(ps_gen_pas5, treat == "p")
+ps_fam_pas5_trep <- ps_filter(ps_fam_pas5, treat == "p")
 
 
-ps_gen_prev_trep_prev <- tax_filter(ps_gen_pas5_trep, min_prevalence = 0.10)
+ps_fam_prev_trep_prev <- tax_filter(ps_fam_pas5_trep, min_prevalence = 0.10)
 
 
 da_analysis <- differentialTest(formula = ~ ch4,
@@ -1096,11 +473,11 @@ da_analysis <- differentialTest(formula = ~ ch4,
                                  formula_null = ~ 1,
                                  phi.formula_null = ~ ch4,
                                  test = "Wald", boot = FALSE,
-                                 data = ps_gen_prev_trep_prev,
+                                 data = ps_fam_prev_trep_prev,
                                  fdr_cutoff = 0.05)
-# otu_to_taxonomy(OTU = da_analysis$significant_taxa, data = ps_gen_prev)
+otu_to_taxonomy(OTU = da_analysis$significant_taxa, data = ps_fam_prev_trep_prev)
 
-plot(da_analysis, level = c("Family", "Genus"))
+plot(da_analysis, level = c("Family"))
 
 # Check unfitted taxa
 # otu_to_taxonomy(which(is.na(da_analysis$p)) %>% names, data = ps_gen_prev)
@@ -1125,290 +502,3 @@ plot(dv_analysis, level = c("Family", "Genus"))
 
 ```
 
-## Alpha Diversity Methane
-
-```{r diversity_ch4, eval = FALSE}
-ps_phylum <- speedyseq::tax_glom(ps, taxrank="Phylum")
-
-
-divnet_phylum_ch4 <- ps_phylum %>%
-  divnet(ncores = 4, tuning = "careful", formula = ~ rank_ch4)
-
-divnet_phylum_ch4$shannon %>% 
-  plot(ps_phylum, color = "rank_ch4") +
-  xlab("Rank Methane") +
-  ylab("Shannon diversity estimate\n(phylum level)") #+
-  #coord_cartesian(ylim = c(0,2))
- 
-estimates <- divnet_phylum_ch4$shannon %>% summary %$% estimate
-ses <- sqrt(divnet_phylum_ch4$`shannon-variance`)
-X <- breakaway::make_design_matrix(ps_phylum, "rank_ch4")
-betta(estimates, ses, X)$table
-
-betta(estimates, ses, X)$global[2]
-
-
-```
-
-
-## Alpha Diversity Treatment in Passage 2
-
-```{r, results=FALSE, eval = FALSE}
-ps_class <- speedyseq::tax_glom(ps, taxrank="Class")
-ps_class
-
-ps_c_2 <- ps_filter(ps_class, passage == 2)
-
-
-divnet_c_2 <- ps_c_2 %>%
-  divnet(ncores = 4, tuning = "careful", formula = ~ treat)
-```
-
-```{r, eval = FALSE}
-divnet_c_2$shannon %>% 
-  plot(ps_c_2, color = "treat") +
-  xlab("Selection treatment") +
-  ylab("Shannon diversity estimate\n(class level)") +
-  labs(title="Test alpha diversity between P and N treatments within Passage 2")
-
-estimates <- divnet_c_2$shannon %>% summary %$% estimate
-ses <- sqrt(divnet_c_2$`shannon-variance`)
-X <- breakaway::make_design_matrix(ps_c_2, "treat")
-betta(estimates, ses, X)$table
-betta(estimates, ses, X)$global
-
-divnet_c_2$simpson %>% 
-  plot(ps_c_2, color = "treat") +
-  xlab("Selection treatment") +
-  ylab("Simpson diversity estimate\n(class level)") +
-  labs(title="Test alpha diversity between P and N treatments within Passage 2")
-
-
-estimates <- divnet_c_2$simpson %>% summary %$% estimate
-ses <- sqrt(divnet_c_2$`simpson-variance`)
-X <- breakaway::make_design_matrix(ps_c_2, "treat")
-betta(estimates, ses, X)$table
-betta(estimates, ses, X)$global
-
-```
-
-## Alpha Diversity Passage 2 vs 5 (all treatment)
-
-
-```{r, results=FALSE, eval=FALSE}
-ps_phylum <- speedyseq::tax_glom(ps, taxrank="Phylum")
-
-divnet_p <- ps_phylum %>%
-  divnet(ncores = 4, tuning = "careful", formula = ~ passage)
-```
-
-```{r, eval = FALSE}
-divnet_p$shannon %>% 
-  plot(ps_phylum, color = "passage") +
-  xlab("Selection treatment") +
-  ylab("Shannon diversity estimate\n(phylum level)") +
-  labs(title="Test alpha diversity between Passage 2 and 5 all treatments")
-
-estimates <- divnet_p$shannon %>% summary %$% estimate
-ses <- sqrt(divnet_p$`shannon-variance`)
-X <- breakaway::make_design_matrix(ps_phylum, "passage")
-betta(estimates, ses, X)$table
-betta(estimates, ses, X)$global[2]
-
-
-divnet_p$simpson %>% 
-  plot(ps_phylum, color = "passage") +
-  xlab("Selection treatment") +
-  ylab("Simpson diversity estimate\n(phylum level)") +
-  labs(title="Test alpha diversity between Passage 2 and 5 all treatments")
-
-estimates <- divnet_p$simpson %>% summary %$% estimate
-ses <- sqrt(divnet_p$`simpson-variance`)
-X <- breakaway::make_design_matrix(ps_phylum, "passage")
-betta(estimates, ses, X)$table
-betta(estimates, ses, X)$global[2]
-
-```
-
-## Alpha Diversity Treatment in Passage 5
-
-
-```{r, results=FALSE, eval = FALSE}
-
-ps_class <- speedyseq::tax_glom(ps, taxrank="Class")
-
-ps_c_5 <- ps_filter(ps_class, passage == 5)
-
-ps_5 <- ps_filter(ps_phylum, passage == 5)
-
-divnet_p_5 <- ps_5 %>%
-  divnet(ncores = 4, tuning = "careful", formula = ~ treat)
-```
-
-```{r, eval = FALSE}
-divnet_p_5$shannon %>% 
-  plot(ps_5, color = "treat") +
-  xlab("Selection treatment") +
-  ylab("Shannon diversity estimate\n(phylum level)") +
-  labs(title="Test alpha diversity between P and N treatments within Passage 5")
-
-estimates <- divnet_p_5$shannon %>% summary %$% estimate
-ses <- sqrt(divnet_p_5$`shannon-variance`)
-X <- breakaway::make_design_matrix(ps_5, "treat")
-betta(estimates, ses, X)$table
-betta(estimates, ses, X)$global
-#betta_pic(estimates, ses)
-
-divnet_p_5$simpson %>% 
-  plot(ps_5, color = "treat") +
-  xlab("Selection treatment") +
-  ylab("Simpson diversity estimate\n(phylum level)") +
-  labs(title="Test alpha diversity between P and N treatments within Passage 5")
-
-estimates <- divnet_p_5$simpson %>% summary %$% estimate
-ses <- sqrt(divnet_p_5$`simpson-variance`)
-X <- breakaway::make_design_matrix(ps_5, "treat")
-betta(estimates, ses, X)$table
-betta(estimates, ses, X)$global
-#betta_pic(estimates, ses)
-
-```
-
-
-## Beta Diversity passage + treatment
-
-```{r, eval=FALSE}
-
-ps_f_c <- speedyseq::tax_glom(ps_fixed, "Class")
-
-
-X <- diag(nrow(sample_data(ps_f_c)))
-colnames(X) <- rownames(X) <-  as.character(1:ncol(X))
-
-divnet_class <-  divnet(W = ps_f_c,
-                         X = X,
-                         variance = "none")
-
-# Median composition
-set.seed(454)
-bc_test <- testBetaDiversity(divnet_class, 
-                             h0 = "bray-curtis",
-                             n_boot = 1000, # set this to 10000
-                             sample_specimen_matrix = divnet_class$X,
-                             groups = sample_data(ps_f_c)$treat_pas)
-bc_test$p_value
-
-# Euclidean distance
-set.seed(3532)
-euc_test <- testBetaDiversity(dv = divnet_class , 
-                              h0 = "euclidean",
-                              n_boot = 1000,
-                              sample_specimen_matrix = divnet_class$X,
-                              groups = sample_data(ps_f_c)$treat_pas)
-euc_test$p_value
-
-# Aitchison Distance
-set.seed(3423)
-ait_test <- testBetaDiversity(dv = divnet_class, 
-                              sample_specimen_matrix = divnet_class$X,
-                              h0 = "aitchison",
-                              n_boot = 1000,
-                    groups = sample_data(ps_f_c)$treat_pas)
-
-ait_test$p_value
-```
-
-
-## Beta Diversity gen 2 treatment
-
-
-
-```{r, results=FALSE, eval = FALSE}
-ps_f_2 <- ps_filter(ps_fixed, passage == "2")
-ps_f_2_c <- speedyseq::tax_glom(ps_f_2, "Class")
-X <- diag(nrow(sample_data(ps_f_2_c)))
-colnames(X) <- rownames(X) <-  as.character(1:ncol(X))
-
-divnet_c_2 <-  divnet(W = ps_f_2_c,
-                         X = X,
-                         variance = "none")
-
-```
-
-```{r, eval = FALSE}
-
-# Median composition
-set.seed(454)
-bc_test <- testBetaDiversity(dv = divnet_c_2, 
-                             h0 = "bray-curtis",
-                             n_boot = 1000, # set this to 10000
-                             sample_specimen_matrix = divnet_c_2$X,
-                             groups = sample_data(ps_f_2_c)$treat_bin)
-bc_test$p_value
-set.seed(3532)
-# Euclidean distance
-euc_test <- testBetaDiversity(dv = divnet_c_2 , 
-                              h0 = "euclidean",
-                              n_boot = 1000,
-                              sample_specimen_matrix = divnet_c_2$X,
-                              groups = sample_data(ps_f_2_c)$treat_bin)
-euc_test$p_value
-
-# Aitchison Distance
-set.seed(3423)
-ait_test <- testBetaDiversity(dv = divnet_c_2, 
-                              sample_specimen_matrix = divnet_c_2$X,
-                              h0 = "aitchison",
-                              n_boot = 1000,
-                              groups = sample_data(ps_f_2_c)$treat_bin)
-
-ait_test$p_value
-
- 
-
-```
-
-## Beta Diversity gen 5 treatment
-
-
-
-```{r, eval = FALSE}
-ps_f_5 <- ps_filter(ps_fixed, passage == "5")
-ps_f_5_c <- speedyseq::tax_glom(ps_f_5, "Class")
-X <- diag(nrow(sample_data(ps_f_5_c)))
-colnames(X) <- rownames(X) <-  as.character(1:ncol(X))
-
-divnet_c_5 <-  divnet(W = ps_f_5_c,
-                         X = X,
-                         variance = "none")
-
-# Median composition
-set.seed(454)
-bc_test <- testBetaDiversity(dv = divnet_c_5, 
-                             h0 = "bray-curtis",
-                             n_boot = 1000, # set this to 10000
-                             sample_specimen_matrix = divnet_c_5$X,
-                             groups = sample_data(ps_f_5_c)$treat_bin)
-bc_test$p_value
-set.seed(3532)
-# Euclidean distance
-euc_test <- testBetaDiversity(dv = divnet_c_5 , 
-                              h0 = "euclidean",
-                              n_boot = 1000,
-                              sample_specimen_matrix = divnet_c_5$X,
-                              groups = sample_data(ps_f_5_c)$treat_bin)
-euc_test$p_value
-
-# Aitchison Distance
-set.seed(3423)
-ait_test <- testBetaDiversity(dv = divnet_c_5, 
-                              sample_specimen_matrix = divnet_c_5$X,
-                              h0 = "aitchison",
-                              n_boot = 1000,
-                              groups = sample_data(ps_f_5_c)$treat_bin)
-
-ait_test$p_value
-
- 
-
-```

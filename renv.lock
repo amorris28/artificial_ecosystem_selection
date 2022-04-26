@@ -12,26 +12,6 @@
     "Version": "3.13"
   },
   "Packages": {
-    "ALDEx2": {
-      "Package": "ALDEx2",
-      "Version": "1.26.0",
-      "Source": "Bioconductor",
-      "git_url": "https://git.bioconductor.org/packages/ALDEx2",
-      "git_branch": "RELEASE_3_14",
-      "git_last_commit": "0876a2e",
-      "git_last_commit_date": "2021-10-26",
-      "Hash": "34685a73622a3f0cf789cadc32af7617",
-      "Requirements": [
-        "BiocParallel",
-        "GenomicRanges",
-        "IRanges",
-        "Rfast",
-        "S4Vectors",
-        "SummarizedExperiment",
-        "multtest",
-        "zCompositions"
-      ]
-    },
     "BH": {
       "Package": "BH",
       "Version": "1.78.0-0",
@@ -354,16 +334,6 @@
         "Matrix"
       ]
     },
-    "NADA": {
-      "Package": "NADA",
-      "Version": "1.6-1.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "c1c223f694cf3880a017d692c8db6b14",
-      "Requirements": [
-        "survival"
-      ]
-    },
     "R.cache": {
       "Package": "R.cache",
       "Version": "0.15.0",
@@ -519,16 +489,6 @@
         "Rcpp"
       ]
     },
-    "RcppGSL": {
-      "Package": "RcppGSL",
-      "Version": "0.3.10",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d7bb7e4f474a673d9db251b6eccf2f60",
-      "Requirements": [
-        "Rcpp"
-      ]
-    },
     "RcppParallel": {
       "Package": "RcppParallel",
       "Version": "5.1.5",
@@ -536,29 +496,6 @@
       "Repository": "CRAN",
       "Hash": "f3e94e34ff656a7c8336ce01207bc2b8",
       "Requirements": []
-    },
-    "RcppZiggurat": {
-      "Package": "RcppZiggurat",
-      "Version": "0.1.6",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "75b4a36aeeed440ad03b996081190703",
-      "Requirements": [
-        "Rcpp",
-        "RcppGSL"
-      ]
-    },
-    "Rfast": {
-      "Package": "Rfast",
-      "Version": "2.0.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "d05568704ec029bb68b692a1c37b6f16",
-      "Requirements": [
-        "Rcpp",
-        "RcppArmadillo",
-        "RcppZiggurat"
-      ]
     },
     "Rhdf5lib": {
       "Package": "Rhdf5lib",
@@ -675,25 +612,6 @@
       "Repository": "CRAN",
       "Hash": "2042cd9759cc89a453c4aefef0ce9aae",
       "Requirements": []
-    },
-    "SpiecEasi": {
-      "Package": "SpiecEasi",
-      "Version": "1.0.7",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "SpiecEasi",
-      "RemoteUsername": "zdk123",
-      "RemoteRef": "v1.0.7",
-      "RemoteSha": "e4d7c0af49eae1ead40a89c1f569ee589de94776",
-      "Hash": "d24787079d36e74a8e928fecad643cc4",
-      "Requirements": [
-        "MASS",
-        "Matrix",
-        "VGAM",
-        "huge",
-        "pulsar"
-      ]
     },
     "SummarizedExperiment": {
       "Package": "SummarizedExperiment",
@@ -1076,10 +994,10 @@
     },
     "cluster": {
       "Package": "cluster",
-      "Version": "2.1.2",
+      "Version": "2.1.3",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "ce49bfe5bc0b3ecd43a01fe1b01c2243",
+      "Hash": "c5f8447373ec2a0f593c694024e5b7ee",
       "Requirements": []
     },
     "codetools": {
@@ -1900,20 +1818,6 @@
         "openssl"
       ]
     },
-    "huge": {
-      "Package": "huge",
-      "Version": "1.3.5",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "bf1f0e828dc8ebc7c06c71f9afcefc75",
-      "Requirements": [
-        "MASS",
-        "Matrix",
-        "Rcpp",
-        "RcppEigen",
-        "igraph"
-      ]
-    },
     "hwriter": {
       "Package": "hwriter",
       "Version": "1.3.2",
@@ -2623,16 +2527,6 @@
       "Hash": "32620e2001c1dce1af49c49dccbb9420",
       "Requirements": []
     },
-    "pulsar": {
-      "Package": "pulsar",
-      "Version": "0.3.7",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "fe90261c3eafbae21a83da6ef5620403",
-      "Requirements": [
-        "Matrix"
-      ]
-    },
     "purrr": {
       "Package": "purrr",
       "Version": "0.3.4",
@@ -2776,16 +2670,6 @@
         "Rcpp",
         "plyr",
         "stringr"
-      ]
-    },
-    "revealjs": {
-      "Package": "revealjs",
-      "Version": "0.9",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "08e30caa337e6d335d83df1a05d5b9f3",
-      "Requirements": [
-        "rmarkdown"
       ]
     },
     "rhdf5": {
@@ -3298,14 +3182,6 @@
         "xfun"
       ]
     },
-    "truncnorm": {
-      "Package": "truncnorm",
-      "Version": "1.0-8",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "cc8b5bfa01c930ccb56d3051e515fbd8",
-      "Requirements": []
-    },
     "trust": {
       "Package": "trust",
       "Version": "0.1-8",
@@ -3489,18 +3365,6 @@
       "Repository": "CRAN",
       "Hash": "4597f73aad7d32c2913ec33a345f900b",
       "Requirements": []
-    },
-    "zCompositions": {
-      "Package": "zCompositions",
-      "Version": "1.4.0-1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "4484c7ff195601d4eca2a2db0fe3219b",
-      "Requirements": [
-        "MASS",
-        "NADA",
-        "truncnorm"
-      ]
     },
     "zip": {
       "Package": "zip",
