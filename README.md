@@ -31,11 +31,16 @@ library for this project. Depending on your machine, you may have to install a
 lot of dependencies. If you're not familiar with the `renv` package, an
 overview can be found [here](https://rstudio.github.io/renv/).
 
-Use the following commands to download the specific version of the Silva database that we used in the manuscript to assign taxonomy with DADA2.
+## Data
+
+All metadata are included in the `Data/` directory of this repository.
+
+Sequencing data (16S rRNA sequences) can be download from the NCBI SRA here:
+
+The Silva taxonomic database version that we used to assign taxonomy with DADA2 can be downloaded with these commands:
 
 ```
 curl https://zenodo.org/record/4587955/files/silva_species_assignment_v138.1.fa.gz --output tax/silva_species_assignment_v138.1.fa.gz
-
 curl https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz --output tax/silva_nr99_v138.1_train_set.fa.gzj
 ```
 
