@@ -35,9 +35,11 @@ overview can be found [here](https://rstudio.github.io/renv/).
 
 All metadata are included in the `Data/` directory of this repository.
 
-Sequencing data (16S rRNA sequences) can be download from the NCBI SRA here:
+Sequencing data (16S rRNA sequences) can be download from the NCBI SRA here: 
 
-The Silva taxonomic database version that we used to assign taxonomy with DADA2 can be downloaded with these commands:
+The Silva taxonomic database version that we used to assign taxonomy with DADA2 can be downloaded from Zenodo [here](https://zenodo.org/record/4587955).
+
+Or you can download it from the command line by using `curl`:
 
 ```
 curl https://zenodo.org/record/4587955/files/silva_species_assignment_v138.1.fa.gz --output tax/silva_species_assignment_v138.1.fa.gz
