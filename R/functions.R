@@ -156,3 +156,59 @@ dt_plot <- function(dt_data) {
     coord_cartesian(clip="off") +
     theme(panel.border = element_blank())
 }
+
+randomize_asv_table <- function(x) {
+  x %>%
+    uncount(count) %>%
+    mutate(rand_asv = sample(asv)) %>%
+    select(-asv) %>%
+    count(sample, rand_asv, name="value")
+}
+
+
+gm <- function(x){
+  
+  exp(mean(log(x[x>0])))
+  
+}
+
+get_breakaway <- function(x){
+  
+  ba <- breakaway(x)
+  tibble(est= ba$estimate,
+         lci=ba$interval[1], uci=ba$interval[2],
+         model=ba$model)
+  
+}
+
+get_chao <- function(x){
+  
+  sobs <- sum(x$n)
+  sing <- x[x$value == 1, "n"] %>% pull(n)
+  doub <- x[x$value == 2, "n"] %>% pull(n)
+  
+  sobs + sing^2 / (2*doub)
+  
+}
+richness <- function(x){
+  
+  # r <- sum(x > 0)
+  # return(r)
+  
+  sum(x>0)
+}
+shannon <- function(x){
+  
+  rabund <- x[x>0]/sum(x)
+  -sum(rabund * log(rabund))
+  
+}
+
+simpson <- function(x){
+  
+  n <- sum(x)
+  
+  # sum(x * (x-1) / (n * (n-1)))
+  1 - sum((x/n)^2)
+}
+
