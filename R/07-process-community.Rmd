@@ -365,5 +365,3 @@ full_data <-
 write_tsv(full_data, 'Output/community_data.tsv')
 
 ```
-
-
