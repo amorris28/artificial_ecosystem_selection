@@ -352,15 +352,24 @@ flux_sd <-
   fluxes %>% 
   mutate(sample = paste0('G', passage, toupper(treat), rep)) %>% 
   select(sample, flux_date:selected) %>% 
-  mutate(passage = as.character(passage))
-
-flux_sd <-
-  flux_sd %>% 
+  mutate(passage = as.character(passage)) %>% 
   select(sample, ch4, selected)
 
 full_data <-
   aes_data %>% 
+  filter(!treat %in% c("NC0",  "PM0",  "SC0",  "PCRP", "PCRN")) %>% 
+  select(-c(row, col, qubit_ngml)) %>% 
   left_join(flux_sd, by = "sample")
+
+# Remove zero-abundance ASVs
+full_data <-
+  full_data %>% 
+  group_by(asv) %>% 
+  mutate(total = sum(count)) %>% 
+  filter(total != 0) %>% 
+  ungroup() %>% 
+  select(-total) %>% 
+  filter(count > 0)
 
 write_tsv(full_data, 'Output/community_data.tsv')
 
