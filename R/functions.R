@@ -4,9 +4,9 @@ der_dir <- '../Output/' # Derived/Modified Data Directory
 
 # theme_set(theme_tufte()+
 #             theme(axis.title.y = element_text(angle = 0, vjust = 0.5)))
-theme_set(theme_classic() +
-            theme(panel.border = element_rect(fill = NA, size = 1.0625),
-                  axis.line = element_blank()))
+# theme_set(theme_classic() +
+#             theme(panel.border = element_rect(fill = NA, size = 1.0625),
+#                   axis.line = element_blank()))
 
 plot_flux <- function(fluxes, passage, estimate, ratio = NULL, log10 = FALSE) {
   p <- ggplot(fluxes, aes(x = {{passage}}, y = {{estimate}}, color = treat)) +
@@ -212,3 +212,20 @@ simpson <- function(x){
   1 - sum((x/n)^2)
 }
 
+
+log_methane <- function(x) {
+  log10( x + abs(min(x, na.rm = TRUE)) + 1)
+}
+
+
+quart <- function(x) {
+  x <- sort(x)
+  n <- length(x)
+  m <- (n+1)/2
+  if (floor(m) != m) {
+    l <- m-1/2; u <- m+1/2
+  } else {
+    l <- m-1; u <- m+1
+  }
+  c(Q1=median(x[1:l]), Q3=median(x[u:n]))
+}
