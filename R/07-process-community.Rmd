@@ -48,7 +48,8 @@ rm(samples)
 # Check if taxa names match between the otu and taxa tables
 sum(colnames(seqtab.nochim) != rownames(taxa))
 # They match if = 0 
-
+seqs <- tibble(asv = paste0("ASV", seq(ncol(seqtab.nochim))),
+               seq = colnames(seqtab.nochim))
 colnames(seqtab.nochim) <- paste0("ASV", seq(ncol(seqtab.nochim)))
 rownames(seqtab.nochim) <- metadata$sample
 rownames(taxa) <- colnames(seqtab.nochim)
@@ -174,7 +175,7 @@ top20_taxa_in_treatment(aes_data, "SC0")
 
 ```
 
-# Sequence Depth Distribution + Sample Composition
+# Sequence Depth Distribution
 
 ```{r}
 
@@ -188,6 +189,8 @@ aes_data %>%
   labs(x = "Sequences", y = "Count")
 
 ```
+
+# Beta Diversity all samples
 
 ```{r}
 
@@ -370,6 +373,10 @@ full_data <-
   ungroup() %>% 
   select(-total) %>% 
   filter(count > 0)
+
+full_data <-
+  full_data %>% 
+  left_join(seqs, by = "asv")
 
 write_tsv(full_data, 'Output/community_data.tsv')
 
