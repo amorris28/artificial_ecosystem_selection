@@ -1,12 +1,12 @@
 
-raw_dir <- '../Data/' # Raw Data Directory
-der_dir <- '../Output/' # Derived/Modified Data Directory
+raw_dir <- 'Data/' # Raw Data Directory
+der_dir <- 'Output/' # Derived/Modified Data Directory
 
 # theme_set(theme_tufte()+
 #             theme(axis.title.y = element_text(angle = 0, vjust = 0.5)))
-# theme_set(theme_classic() +
-#             theme(panel.border = element_rect(fill = NA, size = 1.0625),
-#                   axis.line = element_blank()))
+theme_set(theme_classic() +
+            theme(panel.border = element_rect(fill = NA, size = 1.0625),
+                  axis.line = element_blank()))
 
 plot_flux <- function(fluxes, passage, estimate, ratio = NULL, log10 = FALSE) {
   p <- ggplot(fluxes, aes(x = {{passage}}, y = {{estimate}}, color = treat)) +
@@ -229,3 +229,4 @@ quart <- function(x) {
   }
   c(Q1=median(x[1:l]), Q3=median(x[u:n]))
 }
+

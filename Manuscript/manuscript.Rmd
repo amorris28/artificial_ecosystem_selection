@@ -44,13 +44,18 @@ fluxes <- read_tsv('../Output/fluxes.tsv')
 
 # CH4 models
 load(file = '../Output/response_model.RData')
+load(file = '../Output/response_plot.RData')
 load(file = '../Output/herit_model.RData')
+load(file = '../Output/herit_plot.RData')
 
 # 16S models
 load(file = '../Output/richness_models.RData')
 load(file = '../Output/phyloseq.RData')
 load(file = '../Output/beta_model.RData')
+load(file = '../Output/beta_fig.RData')
 load(file = '../Output/da_corncob.RData')
+load(file = '../Output/da_fig.RData')
+
 
 source('../R/functions.R')
 
@@ -339,10 +344,10 @@ relative to the neutral treatment.
 
 # Results
 
+## Response to selection on methane oxidation rate
+
 We observed a response to selection on whole-ecosystem soil CH~4~ oxidation
-rate (`r figures("response", display = "cite")`). In addition, the
-response to selection varied with treatment 
-`r print_lrt(compare_response_mods, 2, 'LRT of nested models with and without treatment')`. At the start of the experiment, the Positive
+rate (`r figures("response", display = "cite")`; `r print_lrt(compare_response_mods, 2, 'LRT of nested models with and without treatment')`. At the start of the experiment, the Positive
 treatment had a mean CH~4~ oxidation rate that was
 `r percent_less(initial = tidy(response_model)[[1, 2]], final = tidy(response_model)[[3, 2]] + tidy(response_model)[[1, 2]])`\% lower than the
 Neutral treatment `r print_lm(response_model, 3, 'difference of y-intercepts')`. 
@@ -351,38 +356,36 @@ treatment over the five passages `r print_lm(response_model, 2)`. By contrast,
 the Positive treatment had a `r round(per_slope)`\% increase in CH~4~
 oxidation rate per passage `r print_lm(response_model, 4)`.
 
+## Heritability of methane oxidation
+
 We estimated heritability as the regression of mid-offspring on mid-parent (`r figures("herit", display = "cite")`).
 Offspring CH~4~ oxidation rates were correlated with parental CH~4~ oxidation
 rates in both the Positive treatment `r print_lm(herit_model, 4)` and the
 Neutral treatment `r print_lm(herit_model, 2)`. Notably, the sign of the effect
 was reversed with a positive heritability for the Positive treatment and a negative heritability for the Neutral treatment.
 
-Sequencing of 16S rRNA amplicons revealed that there were `r ntaxa(ps)` unique
-ASVs across all `r nsamples(ps)` jars sampled.
-Richness of ASVs decreased among all of the jars between Passage 2 and 5
-(Richness difference between Passage 5 and Passage 2 = `r myround(bt_passage$table[2, 1], 1)`, SE =
-`r myround(bt_passage$table[2, 2], 2)`, p < 0.001). However, there was no
+## Taxonomic richness
+
+Richness of ASVs decreased between Passage 2 (median = `r myround(rare_median[1, 2], 1)`, IQR = `r myround(rare_median[1, 3], 1)`) and 5 (median = `r myround(rare_median[2, 2], 1)`, IQR = `r myround(rare_median[2, 3], 1)`; Kruskal-Wallace test: chi-squared = 
+`r myround(kt[1,1], 1)`, df = `r kt[1,3]`, p < 0.001; Pairwise Wilcoxon test: p < 0.001). However, there was no
 difference in richness between the Positive and the Neutral treatment in
-Passage 5 (Difference = `r myround(bt_treat5$table[2, 1], 1)`, SE =
-`r myround(bt_treat5$table[2, 2], 2)`, p =
-`r myround(bt_treat5$table[2, 3], 3)`).  In addition, there was no
+Passage 2 or 5 (Pairwise Wilcoxon test: p = `r myround(wt[1, 3], 1)`).  In addition, there was no
 correlation between richness and CH~4~ oxidation rate across all passages
-and treatments.  (slope = `r myround(bt_ch4$table[2, 1], 1)`, SE =
-`r myround(bt_ch4$table[2, 2], 2)`, p = `r myround(bt_ch4$table[2, 3], 3)`).
+and treatments (Spearman's rho = `r myround(s[1,1], 1)`, p = `r myround(s[1,3], 1)`).
 
-Taxonomic dissimilarity of the soil microbiome varied strongly by passage and
-weakly by treatment (`r figures("beta", display = "cite")`). Permutational
-analysis of variance demonstrated an effect of passage, treatment,
-and their interaction on Aitchison dissimilarity (`r tables("adonis", display = "cite")`). 
-Passage explained `r myround(100*fit_adonis[1, 4])`\% of the
-variation in Aitchison dissimilarity and `r myround(100*fit_adonis[6, 4])`\% in
-Jaccard dissimilarity.  Treatment explains `r myround(100*fit_adonis[2, 4])`\%
-for Aitchison and `r myround(100*fit_adonis[7, 4])`\% for Jaccard.  Variation
-in microbiome composition decreased as a result of passaging in jars (F = 80.5,
-p < 0.001), but did not differ between selection treatments (F = 0.40, p =
-0.54).
+## Community dissimilarity
 
+Bray-Curtis dissimilarity of the soil microbiome varied strongly by passage and
+weakly by treatment and the interaction between passage and treatment (`r figures("beta", display = "cite")`; `r tables("tidy_permanova", display = "cite")`). 
+Passage explained `r myround(100*tidy_permanova[1, 4])`\% of the
+variation in Bray-Curtis dissimilarity.  Treatment explained 
+`r myround(100*tidy_permanova[2, 4])`\%
+of the variation. There was also an interaction
+between treatment and passage, which explained 
+`r myround(100*tidy_permanova[3, 4])`\% of the variation. We found there was 
+no difference in dispersion between treatments or passages (F~3,44~ = 0.91, p = 0.45).
 
+## Taxa that responded to selection
 
 To investigate which taxa responded to selection on soil CH~4~ oxidation rate, we
 first looked at which taxa were unique to the Positive and Neutral treatments
@@ -393,21 +396,21 @@ There were two families unique to the Positive treatment with relatively high
 prevalence. This included an ASV that was a member of the Bacteroidia Class with
 no lower taxonomic designation. This ASV had a prevalence of 10/12 and a median
 abundance of ~2 reads. The other prevalent family was a member of the
-Silvanigrellaceae, a newly described family placed in its own order. This family
+*Silvanigrellaceae*, a newly described family placed in its own order. This family
 was present in all 12 samples and had a median abundance of 8 reads.
-Silvanigrella is the only cultivated member of
-Silvanigrellaceae and was isolated from a temperate fresh water lake
+*Silvanigrella* is the only cultivated member of
+*Silvanigrellaceae* and was isolated from a temperate fresh water lake
 [@hahn2017]. Of the families unique to the Neutral treatment, only one had a
-prevalence greater than 2/12. This family, Armatimonadaceae, was present in half
-of the Neutral samples (prevalence = 6/12). The type strain for Armatimonadaceae was isolated from
+prevalence greater than 2/12. This family, *Armatimonadaceae*, was present in half
+of the Neutral samples (prevalence = 6/12). The type strain for *Armatimonadaceae* was isolated from
 the rhizosphere of *Phragmites australis* [@tamaki2011].
 
 The remaining families were shared between the Positive and Neutral treatment,
 but some differed in their relative abundance. To identify taxa that responded
 to selection on soil CH~4~ oxidation rate, we tested the differential relative
 abundance of families in the Positive jars relative to the Neutral jars within
-Passage 5 using a beta-binomial model. We identified `r ntaxa(sig_taxa_treat)`
-families that were enriched or depleted in the Positive treatmeant relative to
+Passage 5 using three methods and then plotted the taxa identified by all three methods. We identified `r length(da_fams)`
+families that were enriched or depleted in the Positive treatment relative to
 the Neutral treatment (`r figures("da", display = "cite")`). 
 
 Overall, none of the families enriched in the Positive selection treatment
@@ -415,19 +418,19 @@ are known methanotrophs. Several taxa identified had a
 higher taxonomic designation that contains methanotrophs, for example, the
 Gammaproteobacteria class had a large effect size.
 This class is one of the groups containing methanotrophic families such as
-Methylococcaceae. However, gammaproteobacteria is among the most diverse 
+*Methylococcaceae.* However, Gammaproteobacteria is among the most diverse 
 groups in the Prokaryotes, so this is not strong evidence for a selection response
 by methanotrophs [@garrity2005].
 The next family
-was Puniceicoccaceae, which is a member of the phylum Verrucomicrobia and
+was *Puniceicoccaceae*, which is a member of the phylum Verrucomicrobia and
 contains marine microbes. The Verrucomicrobia is a diverse group that contain
 known methanotrophs as well as ammonia-oxidizing bacteria [@freitag2003]. 
 An ASV from the order Armatimonadales was also enriched in the Positive treatment.
-This order also contains the family Armatimonadaceae, which was
-found to be unique to the Neutral treatment. Cytophagaceae was also enriched in
+This order also contains the family *Armatimonadaceae*, which was
+found to be unique to the Neutral treatment. *Cytophagaceae* was also enriched in
 the Positive treatment and contains a number of mainly aerobic heterotrophs
 that can digest a variety of macromolecules [@mcbride2014]. Notably, the family
-Gemmatimonadaceae has a single bacterial bin, Candidatus '*Methylotropicum kingii*',
+*Gemmatimonadaceae* has a single bacterial bin, Candidatus '*Methylotropicum kingii*',
 that contains methanotrophy genes, but this family was depleted in the Positive
 selection treatment [@bay2021].
 
@@ -619,11 +622,8 @@ The 16S rRNA sequencing data generated during the current study are available in
 
 
 ```{r response, fig.width=4, fig.height=3}
-ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
 
-p <- plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
-p
-ggsave('fig1.jpg', p) 
+p_response
 
 ```
 
@@ -632,9 +632,7 @@ ggsave('fig1.jpg', p)
 
 ```{r herit, fig.width=5, fig.height=3}
 
-p <- plot_herit(heritability)
-p
-ggsave('fig2.jpg', p) 
+p_herit
 
 ```
 
@@ -642,9 +640,7 @@ ggsave('fig2.jpg', p)
 
 ```{r beta, results=FALSE, fig.height=2.5}
 
-p <- plot_beta(ps)
-p
-ggsave('fig3.jpg', p) 
+p_beta
 
 ```
 
@@ -652,32 +648,19 @@ ggsave('fig3.jpg', p)
 
 ```{r da, results=FALSE}
 
-p <- dt_plot(dt_data)
-p
-ggsave('fig4.jpg', p) 
+p_log10
 
 ```
 
 `r figures("da", "Differentially abundant family-level taxa based on a beta-binomial model. Values on the x-axis are estimates and standard errors of the expected difference in the logit-transformed relative abundance between the two treatments. Positive values are enriched in the Positive treatment and negative values are enriched in the Neutral treatment. Taxa presented here are significant at FDR < 0.5")`
 
-`r tables("adonis", "PERMANOVA on Aitchison and Jaccard dissimilarities.")`
+`r tables("adonis", "PERMANOVA on Bray-Curtis dissimilarities.")`
 
 
 ```{r adonis}
 
-write.table(fit_adonis, 'table_1.tsv')
-fit_adonis %>%
-  mutate(metric = c(rep("aitchison", 5), rep("jaccard", 5))) %>% 
-  select(metric, term:p.value) %>% 
+tidy_permanova %>%
 	flextable()
-# kable(col.names = c('Term', 'df', 'SS', 'R2', 'F', 'p'), 
-#       digits = c(2,2,2,2,2,3),
-## 	format = "Table",
-## 	booktabs = T,
-# 	caption = "PERMANOVA on Bray-Curtis and Jaccard dissimilarities.",
-#   	label = "beta") %>%
-#   pack_rows("Bray-Curtis", 1, 5) %>%
-#   pack_rows("Jaccard", 6, 10)
 
 ```
 
