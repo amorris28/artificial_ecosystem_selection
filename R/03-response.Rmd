@@ -89,8 +89,9 @@ Here I fit two models. The first is the full model which includes passage number
 
 ```{r compare_models}
 # Compare interaction to no interaction
-compare_response_mods <- anova(no_treat_model, response_model, test = 'LRT')
-kable(tidy(compare_response_mods))
+compare_response_mods <- anova(no_treat_model, response_model)
+compare_response_mods <- tidy(compare_response_mods)
+kable(compare_response_mods)
 ```
 
 Here is the full interaction model:

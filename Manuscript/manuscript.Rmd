@@ -34,6 +34,7 @@ library(captioner)
 library(knitr)
 library(kableExtra)
 library(flextable)
+library(ggtext)
 figures <- captioner()
 tables <- captioner(prefix = "Table")
 ```
@@ -303,51 +304,52 @@ right-skewed with most values close to zero and few large, positive values. This
 resulted in residuals that did not meet the assumptions of constant variance
 and normal distribution. Therefore, CH~4~ oxidation rates were log~10~
 transformed to better meet the assumptions of a linear model and to make
-figures easier to interpret. First, we tested the effect of treatment by
-fitting two nested models with and without treatment using 'lm'. We compared these
-models using the likelihood ratio test with the 'anova' function. We
-then fit the full model to estimate the slope of the positive line, which
-represents the change in CH~4~ oxidation rate per passage as a response to
+figures easier to interpret. First, we tested the difference of slopes between
+the positive and neutral treatments by
+fitting two nested models with and without the interaction between treatment
+and passage using 'lm'. We compared these
+models using an F-test with the 'anova' function. We
+then fit the full model with the interaction term to estimate the slopes for each treatment, which
+represented the change in CH~4~ oxidation rate per passage as a response to
 selection.
 
-To estimate the proportion of variance in ecosystem function due to variation in
+To estimate the proportion of variance in CH~4~ oxidation rate due to variation in
 the microbiome, we estimated narrow-sense heritability ($h^2$) as the
 regression of mid-offspring on mid-parent [@falconer1996]. The mid-parent was the
 mean for all three selected jars and the mid-offspring was the mean for all jars
 produced by those parents. First, we tested if there was an effect of treatment
-on the heritability estimate. We compared these models using the likelihood ratio
+on the heritability estimate. We compared these models using an F-test
 test with the 'anova' function. We then fit the full model to estimate the
 heritability of the Positive and Neutral treatments.
 
-Richness estimates and tests were performed using 'breakaway' [@willis2015]. We
+Richness was estimated using the method from @hurlbert1971 with a subsample size of `r min_seqs` using the 'rarefy'
+function in 'vegan' [@oksanen2019]. We
 tested a difference in richness between Passages 2 and 5 with both treatments
 combined. Then we subset the samples from Passage 5 and compared richness between
-the Positive and Neutral treatment. Next, we compared beta-diversity as both
-Aitchison dissimilarity, which is the Euclidean distance after center-log ratio
-transformation, and the binary Jaccard distance for presence or absence [@aitchison1982]. 
+the Positive and Neutral treatment. Next, we compared beta-diversity as the 
+Bray-Curtis dissimilarity by averaging random subsets with a subsample size of `r min_seqs` using the 'avgdist' function in 'vegan' [@bray1957; @oksanen2019].
 We tested a difference in centroid and dispersion of beta
 diversity between the Positive and Neutral treatment and Passage 2 and 5 with
 permutational analysis of variance (PERMANOVA) using the 'adonis2' function from
 'vegan' [@mcardle2001; @oksanen2019].
 
 To identify taxa that responded to selection on CH~4~ oxidation rate, we tested
-differential abundance using a beta-binomial model [@martin2020]. We first
+differential abundance between the two treatments in passage 5. We first
 grouped ASVs at the family level keeping ASVs that lacked a family-level taxonomic
-assignment. We
+assignment by grouping them at a higher level. We
 then subset the samples in Passage 5 and removed all families with a prevalence
-of less than 10\%. We compared families in passage 5 between the Positive and
-Neutral treatment to identify taxa that were enriched or depleted as a response
-to selection. we used the likelihood ratio test to estimate p-values with a
-significance threshold of false-discovery rate < 0.05 [@martin2020]. Estimates
-are presented as the expected relative abundance in the positive treatment
-relative to the neutral treatment.
+of less than 10\% in either treatment. We used three methods for testing differential abundance: ANCOM-II, ALDEx2, and CORNCOB. We then
+pulled out the consensus taxa that were significant
+with all three tests and plotted their relative abundances. For ANCOM-II, we used the 'ancom' function in the 'ANCOM-BC' package with a cutoff of W = 0.7 [@kaul2017; @lin2020]. For ALDEx2, we used the 'aldex' function in the 'ALDEx2' package with the Welch's t test and we used an effect size of
+1 as our significance threshold [@fernandes2014]. Finally, we used CORNCOB with the 'differentialTest' function in the 'corncob' package with the Wald test and without bootstrapping [@martin2020]. 
 
 # Results
 
 ## Response to selection on methane oxidation rate
 
 We observed a response to selection on whole-ecosystem soil CH~4~ oxidation
-rate (`r figures("response", display = "cite")`; `r print_lrt(compare_response_mods, 2, 'LRT of nested models with and without treatment')`. At the start of the experiment, the Positive
+rate (`r figures("response", display = "cite")`; difference of slopes:
+F~`r compare_response_mods[2,3]`,`r compare_response_mods[2,1]`~ = `r myround(compare_response_mods[2,5], 2)`, p = `r myround(compare_response_mods[2,6], 2)`). At the start of the experiment, the Positive
 treatment had a mean CH~4~ oxidation rate that was
 `r percent_less(initial = tidy(response_model)[[1, 2]], final = tidy(response_model)[[3, 2]] + tidy(response_model)[[1, 2]])`\% lower than the
 Neutral treatment `r print_lm(response_model, 3, 'difference of y-intercepts')`. 
@@ -366,10 +368,10 @@ was reversed with a positive heritability for the Positive treatment and a negat
 
 ## Taxonomic richness
 
-Richness of ASVs decreased between Passage 2 (median = `r myround(rare_median[1, 2], 1)`, IQR = `r myround(rare_median[1, 3], 1)`) and 5 (median = `r myround(rare_median[2, 2], 1)`, IQR = `r myround(rare_median[2, 3], 1)`; Kruskal-Wallace test: chi-squared = 
-`r myround(kt[1,1], 1)`, df = `r kt[1,3]`, p < 0.001; Pairwise Wilcoxon test: p < 0.001). However, there was no
+Richness of ASVs decreased between Passage 2 (median = `r myround(rare_median[1, 2], 1)`, IQR = `r myround(rare_median[1, 3], 1)`) and 5 (median = `r myround(rare_median[2, 2], 1)`, IQR = `r myround(rare_median[2, 3], 1)`; Kruskal-Wallace test: $\chi^2$ = 
+`r myround(kt[1,1], 1)`, df = `r kt[1,3]`, p < 0.001; pairwise Wilcoxon test: p < 0.001). However, there was no
 difference in richness between the Positive and the Neutral treatment in
-Passage 2 or 5 (Pairwise Wilcoxon test: p = `r myround(wt[1, 3], 1)`).  In addition, there was no
+Passage 2 or 5 (pairwise Wilcoxon test: p = `r myround(wt[1, 3], 1)`).  In addition, there was no
 correlation between richness and CH~4~ oxidation rate across all passages
 and treatments (Spearman's rho = `r myround(s[1,1], 1)`, p = `r myround(s[1,3], 1)`).
 
@@ -644,7 +646,7 @@ p_beta
 
 ```
 
-`r figures("beta", "Principal component analysis plot of beta diversity for all jars. Dissimilarities are based on Aitchison dissimilarity, which is Euclidean distance after center-log ratio transformation. Colors represent treatment and shapes represent passage number. The ratio of the axes is proportional to the variance explained by each principal component in order to accurately represent the distance between the points.")`
+`r figures("beta", "Principal component analysis plot of beta diversity for all jars. Dissimilarities are based on rarefied Bray-Curtis dissimilarity. Colors represent treatment and shapes represent passage number.")`
 
 ```{r da, results=FALSE}
 
@@ -652,7 +654,7 @@ p_log10
 
 ```
 
-`r figures("da", "Differentially abundant family-level taxa based on a beta-binomial model. Values on the x-axis are estimates and standard errors of the expected difference in the logit-transformed relative abundance between the two treatments. Positive values are enriched in the Positive treatment and negative values are enriched in the Neutral treatment. Taxa presented here are significant at FDR < 0.5")`
+`r figures("da", "Differentially abundant family-level taxa identified by ANCOM-II, ALDEx2, and CORNCOB. Values on the x-axis are relative abundances on a log~10~ scale. Points are colored by treatment. Large points with error bars are the median relative abundance and interquartile range. Taxa in the top panel are enriched in the Positive treatment and taxa in the bottom panel are depleted in the Positive treatment. Taxa are sorted by their effect size with taxa at the top having the largest positive effect size and taxa at the bottom with the largest negative effect size.")`
 
 `r tables("adonis", "PERMANOVA on Bray-Curtis dissimilarities.")`
 

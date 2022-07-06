@@ -49,9 +49,9 @@ print_lm <- function(fit, term = 1, estimate = 'slope') {
 }
 
 print_lrt <- function(fit, term = 2, test = "Likelihood ratio test") {
-  paste0('(', test, ': df = ', round(tidy(fit)[term, 3]), 
+  paste0(test, ': df = ', round(tidy(fit)[term, 3]), 
          ', ss = ', myround(tidy(fit)[term, 4], 2), 
-         ', p = ', myround(tidy(fit)[term, 5], 2), ')')
+         ', p = ', myround(tidy(fit)[term, 5], 2))
 }
 
 
