@@ -8,6 +8,7 @@
 *.gif
 *.svg
 *.html
+*.tiff
 Permits/
 Figures/
 R/*.md
