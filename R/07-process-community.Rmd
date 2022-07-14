@@ -329,6 +329,7 @@ contaminants <-
   which(contamdf$contaminant)[which(contamdf$contaminant) %in% 
   c(570, 810, 1283, 1859, 2233, 2777, 2926, 5687, 6696)]
 
+save(contamdf, contaminants, file = "Output/decontam.RData")
 ```
 
 Decontam identified `r length(which(contamdf$contaminant))` potential contaminants based

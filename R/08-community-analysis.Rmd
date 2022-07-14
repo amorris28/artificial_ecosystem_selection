@@ -457,6 +457,21 @@ treatP_df <- treatP_df[, -1]
 #   summarize(n_seqs = sum(count)) %>% 
 #   summarize(min = min(n_seqs))
 
+passage2_df <-
+  aes_data %>%  
+  filter(passage == "G2") %>% 
+  group_by(asv) %>% 
+  mutate(total = sum(count)) %>% 
+  filter(total != 0) %>% 
+  ungroup() %>% 
+  select(-total) %>% 
+  select(sample, asv, count) %>%
+  pivot_wider(names_from = "asv", values_from = "count", values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(passage2_df) <- passage2_df$sample
+passage2_df <- passage2_df[, -1]
+
 passage5_df <-
   aes_data %>%  
   filter(passage == "G5") %>% 
@@ -536,49 +551,55 @@ treat_dbrda_data %>%
 
 ```
 
-```{r passage-dbrda}
-if(file.exists("Output/passage_rare_dist_bray.rds")) {
-  passage_rare_dist_bray <- 
-    readRDS("Output/passage_rare_dist_bray.rds")
+```{r passage2-dbrda}
+if(file.exists("Output/passage2_rare_dist_bray.rds")) {
+  passage2_rare_dist_bray <- 
+    readRDS("Output/passage2_rare_dist_bray.rds")
 } else {
-passage_rare_dist_bray <- avgdist(passage5_df, dmethod="bray", sample=seq_range[1])
-  passage_rare_dist_bray %>% 
-    saveRDS("Output/passage_rare_dist_bray.rds")
+passage2_rare_dist_bray <- avgdist(passage2_df, dmethod="bray", sample=seq_range[1])
+  passage2_rare_dist_bray %>% 
+    saveRDS("Output/passage2_rare_dist_bray.rds")
 }
 
-passage_dist_df <-
-  passage_rare_dist_bray %>% 
+passage2_dist_df <-
+  passage2_rare_dist_bray %>% 
   as.matrix %>% 
   as_tibble(rownames = "sample")
 
-passage_meta_dist <-
+passage2_meta_dist <-
   aes_data %>% 
   select(sample, passage_treat, passage, treat, ch4) %>% 
   distinct %>% 
-  inner_join(passage_dist_df, by = "sample")
+  inner_join(passage2_dist_df, by = "sample")
 
 
-passage_dbrda_ch4 <- dbrda(passage_rare_dist_bray ~ rank(ch4), 
-                      data = passage_meta_dist, 
+passage2_dbrda_ch4 <- dbrda(passage2_rare_dist_bray ~ rank(ch4), 
+                      data = passage2_meta_dist, 
                       na.action = "na.omit",
                       add = TRUE) 
 
-passage_dbrda_ch4 %>% 
+passage2_dbrda_permtest <- 
+passage2_dbrda_ch4 %>% 
   permutest(permutations = 9999)
 
-passage_percent_explained <- 100 * eigenvals(passage_dbrda_ch4) / sum(eigenvals(passage_dbrda_ch4))
+passage2_dbrda_permtest <- 
+passage2_dbrda_ch4 %>% 
+  anova(permutations = 9999) %>% 
+  tidy()
 
-passage_dbrda_scores <-
-  scores(passage_dbrda_ch4, display = "sites") %>% 
+passage2_percent_explained <- 100 * eigenvals(passage2_dbrda_ch4) / sum(eigenvals(passage2_dbrda_ch4))
+
+passage2_dbrda_scores <-
+  scores(passage2_dbrda_ch4, display = "sites") %>% 
   as_tibble(rownames = "sample")
   
-passage_dbrda_data <-
+passage2_dbrda_data <-
   aes_data %>% 
   select(sample, passage, treat, ch4) %>% 
   distinct %>% 
-  inner_join(passage_dbrda_scores, by = "sample")
+  inner_join(passage2_dbrda_scores, by = "sample")
 
-passage_dbrda_data %>%   
+passage2_dbrda_data %>%   
   ggplot(aes(x = dbRDA1, y = MDS1, shape = passage, color = treat)) +
   geom_point() +
   stat_ellipse(show.legend = FALSE) +
@@ -596,6 +617,77 @@ passage_dbrda_data %>%
 
 ```
 
+
+```{r passage5-dbrda}
+if(file.exists("Output/passage5_rare_dist_bray.rds")) {
+  passage5_rare_dist_bray <- 
+    readRDS("Output/passage5_rare_dist_bray.rds")
+} else {
+passage5_rare_dist_bray <- avgdist(passage5_df, dmethod="bray", sample=seq_range[1])
+  passage5_rare_dist_bray %>% 
+    saveRDS("Output/passage5_rare_dist_bray.rds")
+}
+
+passage5_dist_df <-
+  passage5_rare_dist_bray %>% 
+  as.matrix %>% 
+  as_tibble(rownames = "sample")
+
+passage5_meta_dist <-
+  aes_data %>% 
+  select(sample, passage_treat, passage, treat, ch4) %>% 
+  distinct %>% 
+  inner_join(passage5_dist_df, by = "sample")
+
+
+passage5_dbrda_ch4 <- dbrda(passage5_rare_dist_bray ~ rank(ch4), 
+                      data = passage5_meta_dist, 
+                      na.action = "na.omit",
+                      add = TRUE) 
+
+passage5_dbrda_permtest <-
+passage5_dbrda_ch4 %>% 
+  anova(permutations = 9999) %>% 
+  tidy
+
+passage5_percent_explained <- 100 * eigenvals(passage5_dbrda_ch4) / sum(eigenvals(passage5_dbrda_ch4))
+
+passage5_dbrda_scores <-
+  scores(passage5_dbrda_ch4, display = "sites") %>% 
+  as_tibble(rownames = "sample")
+  
+passage5_dbrda_data <-
+  aes_data %>% 
+  select(sample, passage, treat, ch4) %>% 
+  distinct %>% 
+  inner_join(passage5_dbrda_scores, by = "sample")
+
+passage5_dbrda_data %>%   
+  ggplot(aes(x = dbRDA1, y = MDS1, shape = passage, color = treat)) +
+  geom_point() +
+  stat_ellipse(show.legend = FALSE) +
+  coord_fixed() +
+  scale_shape_discrete(name = "Passage") +
+  scale_color_manual(name = "Treatment",
+                       labels = c('Neutral', 'Positive'),
+                       values = c('gray40', 'darkorange2')) +
+  theme_bw() +
+  theme(
+    plot.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank())
+
+
+```
+
+```{r}
+save(passage2_dbrda_permtest, 
+     passage5_dbrda_permtest, 
+     passage5_percent_explained,
+     file = "Output/dbrda.RData")
+```
+
+
 The overall dbRDA is significant and rank of methane explains 5% of the variation.
 Subsetting the Positive treatment in both G2 and G5, it is not significant: no
 correlation between dissimilarity and rank of methane between G2 and G5. This
@@ -606,6 +698,8 @@ explained by rank of CH4.
 # Differential Abundance
 
 ## Unique to each treatment
+
+### Family
 
 ```{r}
 g5n <- 
@@ -696,10 +790,141 @@ Of the `r length(p_not_n)` Families unique to P, 2 had prevalences greater than
 `r p_not_n_over_6$prevalence[1]` and `r p_not_n_over_6$Family[2]` with
 a prevalence of `r p_not_n_over_6$prevalence[2]`.
 
+### Genus
+
+```{r}
+g5n <- 
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  select(Genus) %>% 
+  distinct() %$%
+  Genus
+
+g5p <- 
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  select(Genus) %>% 
+  distinct() %$%
+  Genus
+
+
+p_not_n <- g5p[!g5p %in% g5n]
+
+n_not_p <- g5n[!g5n %in% g5p]
+
+n_not_p_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  filter(Genus %in% n_not_p) %>% 
+  select(sample, Genus, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Genus) %>% 
+  summarize(prevalence = sum(prevalence))
+
+n_not_p_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Positive")
+
+p_not_n_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  filter(Genus %in% p_not_n) %>% 
+  select(sample, Genus, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Genus) %>% 
+  summarize(prevalence = sum(prevalence))
+
+p_not_n_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Neutral")
+
+p_not_n_over_6 <- p_not_n_prevalence %>%
+  filter(prevalence > 6)
+
+n_not_p_over_6 <- n_not_p_prevalence %>%
+  filter(prevalence > 6)
+
+
+```
+
+### Species
+
+```{r}
+g5n <- 
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  select(Species) %>% 
+  distinct() %$%
+  Species
+
+g5p <- 
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  select(Species) %>% 
+  distinct() %$%
+  Species
+
+
+p_not_n <- g5p[!g5p %in% g5n]
+
+n_not_p <- g5n[!g5n %in% g5p]
+
+n_not_p_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  filter(Species %in% n_not_p) %>% 
+  select(sample, Species, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Species) %>% 
+  summarize(prevalence = sum(prevalence))
+
+n_not_p_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Positive")
+
+p_not_n_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  filter(Species %in% p_not_n) %>% 
+  select(sample, Species, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Species) %>% 
+  summarize(prevalence = sum(prevalence))
+
+p_not_n_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Neutral")
+
+p_not_n_over_6 <- p_not_n_prevalence %>%
+  filter(prevalence > 3)
+
+n_not_p_over_6 <- n_not_p_prevalence %>%
+  filter(prevalence > 3)
+
+
+```
 
 ## Setup Differential Abundance Data
 
-```{r setup-differential-abundance-data}
+### Family
+
+```{r setup-differential-abundance-data-family}
 
 aes_G5 <-
   aes_data %>% 
@@ -742,7 +967,7 @@ rownames(sample_data) <- sample_data[,1]
 
 ```
 
-## Corncob
+#### Corncob
 
 
 
@@ -784,7 +1009,7 @@ dt_data %>%
 
 ```
 
-## ANCOM
+#### ANCOM
 
 ```{r}
 
@@ -858,7 +1083,7 @@ p_w
 
 ```
 
-## Aldex2
+#### Aldex2
 
 ```{r}
 
@@ -914,9 +1139,9 @@ x.all_effect_1 <-
 
 ```
 
-## Comparison
+#### Comparison
 
-### All Significant
+##### All Significant
 
 ```{r}
 
@@ -975,7 +1200,7 @@ at_least_one_taxa %>%
 
 ```
 
-### Consensus Taxa
+##### Consensus Taxa
 
 ```{r}
 aldex_effect <-
@@ -1284,6 +1509,844 @@ cc_genus %>%
 plot(cc_genus)
 
 ```
+
+```{r}
+
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+
+### Genus
+
+```{r setup-differential-abundance-data-genus}
+
+aes_G5 <-
+  aes_data %>% 
+  filter(passage == "G5")
+
+
+aes_Genus_G5 <-
+  aes_G5 %>% 
+  select(asv, sample, treat, count, Genus) %>%
+  group_by(sample, Genus) %>% 
+  mutate(total = sum(count)) %>% 
+  ungroup() %>% 
+  select(sample, treat, Genus, total) %>% 
+  distinct()
+
+prevalent_families <- 
+  aes_Genus_G5 %>% 
+  group_by(Genus, treat) %>% 
+  summarize(prev = sum(total > 0), .groups = "drop") %>% 
+  pivot_wider(names_from = "treat", values_from = "prev", values_fill = 0) %>% 
+  filter(N/12 > 0.1 & P/12 > 0.1) %$%
+  Genus
+
+otu_table <- 
+  aes_Genus_G5 %>% 
+  filter(Genus %in% prevalent_families) %>% 
+  select(sample, Genus, total) %>% 
+  pivot_wider(names_from = sample, values_from = total, values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(otu_table) <- otu_table[,1]
+otu_table <- otu_table[,-1]
+
+sample_data <- aes_Genus_G5 %>% 
+  select(sample, treat) %>% 
+  distinct() %>% 
+  as.data.frame()
+
+rownames(sample_data) <- sample_data[,1]
+
+```
+
+#### Corncob
+
+
+
+```{r}
+
+da_analysis <- differentialTest(formula = ~ treat,
+                                phi.formula = ~ 1,
+                                formula_null = ~ 1,
+                                phi.formula_null = ~ 1,
+                                test = "Wald", 
+                                boot = FALSE,
+                                data = otu_table,
+                                sample_data = sample_data,
+                                fdr_cutoff = 0.05, B = 100,
+                                taxa_are_rows = TRUE)
+
+dt_data <- plot(da_analysis, 
+                # level = c("Genus"), 
+                data_only = TRUE)
+
+dt_plot <- function(dt_data) {
+  ggplot(dt_data, aes(x = x, xmin = xmin, xmax = xmax, y = reorder(taxa, x))) +
+    geom_pointrange() +
+    geom_vline(xintercept = 0) +
+    labs(x = "Estimate", y = NULL) +
+    coord_cartesian(clip="off") +
+    # theme(panel.border = element_blank()) +
+    theme_classic() +
+      theme(axis.text.y = element_markdown())
+    
+  
+}
+
+dt_data %>%
+  mutate(taxa = str_replace(taxa, "(.*)", "*\\1*"),
+         taxa = str_replace(taxa, "\\*(.*)_unclassified\\*",
+                                "Unclassified *\\1*")) %>% 
+  dt_plot()
+
+```
+
+#### ANCOM
+
+```{r}
+
+# Setup phyloseq object
+aes_ps <- phyloseq(otu_table(otu_table, taxa_are_rows=TRUE), sample_data(sample_data))
+
+if(file.exists("Output/ancom_out.rds")) {
+  out <- 
+    readRDS("Output/ancom_out.rds")
+} else {
+  # Run Ancom
+  out = ancom(phyloseq = aes_ps,  
+              p_adj_method = "BH",
+              prv_cut = 0.1, 
+              lib_cut = 0, 
+              main_var = "treat",
+              rand_formula = NULL, 
+              lme_control = NULL,
+              struc_zero = TRUE, 
+              neg_lb = FALSE, 
+              alpha = 0.05, 
+              n_cl = 1)  
+  out %>% 
+    saveRDS("Output/ancom_out.rds")
+}
+
+
+res = out$res
+q_val = out$q_data
+beta_val = out$beta_data
+# Only consider the effect sizes with the corresponding q-value less than alpha
+beta_val = beta_val * (q_val < 0.05) 
+# Choose the maximum of beta's as the effect size
+beta_pos = apply(abs(beta_val), 2, which.max) 
+beta_max = vapply(seq_along(beta_pos), function(i) beta_val[beta_pos[i], i],
+                  FUN.VALUE = double(1))
+# Number of taxa except structural zeros
+n_taxa = ifelse(is.null(out$zero_ind), 
+                nrow(feature_table), 
+                sum(apply(out$zero_ind, 1, sum) == 0))
+# Cutoff values for declaring differentially abundant taxa
+cut_off = 0.7 * (n_taxa - 1)
+
+df_fig_w = res %>%
+  dplyr::mutate(beta = beta_max,
+                direct = case_when(
+                  detected_0.7 == TRUE & beta > 0 ~ "Positive",
+                  detected_0.7 == TRUE & beta <= 0 ~ "Negative",
+                  TRUE ~ "Not Significant"
+                  )) %>%
+  dplyr::arrange(W)
+df_fig_w$taxon_id = factor(df_fig_w$taxon_id, levels = df_fig_w$taxon_id)
+df_fig_w$W = replace(df_fig_w$W, is.infinite(df_fig_w$W), n_taxa - 1)
+df_fig_w$direct = factor(df_fig_w$direct, 
+                     levels = c("Negative", "Positive", "Not Significant"))
+
+p_w = df_fig_w %>%
+  ggplot(aes(x = taxon_id, y = W, color = direct)) +
+  geom_point(size = 2, alpha = 0.6) +
+  labs(x = "Taxon", y = "W") +
+  scale_color_discrete(name = NULL) + 
+  geom_hline(yintercept = cut_off, linetype = "dotted", 
+             color = "blue", size = 1.5) +
+  geom_text(aes(x = 2, y = cut_off + 0.5, label = "W[0.7]"), 
+            size = 5, vjust = -0.5, hjust = 0, color = "orange", parse = TRUE) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major = element_blank())
+p_w
+
+```
+
+#### Aldex2
+
+```{r}
+
+conds <- colnames(otu_table) %>% 
+  substr(3, 3)
+
+if(file.exists("Output/aldex_x_all.rds")) {
+  x.all <- 
+    readRDS("Output/aldex_x_all.rds")
+} else {
+  x.all <- aldex(otu_table, 
+                 conds, mc.samples=1000, test="t", effect=TRUE,
+                 include.sample.summary=FALSE, denom="all", verbose=FALSE, paired.test=FALSE)
+  x.all %>% 
+    saveRDS("Output/aldex_x_all.rds")
+}
+
+
+
+par(mfrow=c(1,2))
+aldex.plot(x.all, type="MA", test="welch", xlab="Log-ratio abundance",
+    ylab="Difference")
+aldex.plot(x.all, type="MW", test="welch", xlab="Dispersion",
+    ylab="Difference")
+
+par(mfrow=c(1,2))
+plot(x.all$effect, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
+  pch=19, xlab="Effect size", ylab="P value", main="Effect size plot")
+points(x.all$effect, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
+  pch=19)
+abline(h=0.05, lty=2, col="grey")
+legend(15,1, legend=c("P value", "BH-adjusted"), pch=19, col=c("blue", "red"))
+
+plot(x.all$diff.btw, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
+  pch=19, xlab="Difference", ylab="P value", main="Volcano plot")
+points(x.all$diff.btw, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
+  pch=19)
+abline(h=0.05, lty=2, col="grey")
+
+x.all_effect_1 <-
+  x.all %>% 
+  filter(abs(effect) > 1) %>% 
+  as_tibble(rownames = "Genus")
+
+# x.all_effect_1 %>% 
+#   # inner_join(taxa_table, by = "asv")
+#   ggplot(aes(y = reorder(Genus, effect), x = effect)) +
+#   geom_point()
+
+# x.all_effect_1 %>% 
+#   select(Genus, effect)
+  
+
+```
+
+#### Comparison
+
+##### All Significant
+
+```{r}
+
+# CORNCOB
+corncob_taxa <- dt_data$taxa
+
+# ANCOM
+ancom_taxa <- as.character(df_fig_w[df_fig_w$detected_0.7, ]$taxon_id)
+
+# ALDEX2
+aldex_taxa <- x.all_effect_1$Genus
+
+
+
+at_least_one_taxa <-
+	aes_Genus_G5 %>%
+	group_by(sample) %>%
+	mutate(rel_abund = (total / sum(total)) * 100) %>%
+	filter(Genus %in% ancom_taxa | Genus %in% aldex_taxa | Genus %in% corncob_taxa) %>%
+	mutate(Genus = str_replace(Genus, "(.*)", "*\\1*"),
+	       Genus = str_replace(Genus, "\\*(.*)_unclassified\\*",
+				    "Unclassified *\\1*"))
+
+at_least_one_iqm <- 
+	at_least_one_taxa %>%
+	group_by(treat, Genus) %>%
+	summarize(median = median(rel_abund), 
+		  first_quartile = quart(rel_abund)[1],
+		  third_quartile = quart(rel_abund)[2], .groups = "drop")
+
+sort_order <-
+	at_least_one_taxa %>%
+	group_by(Genus) %>%
+	summarize(median = median(rel_abund)) %>%
+	arrange(median)
+
+at_least_one_taxa$Genus <- factor(at_least_one_taxa$Genus, levels = sort_order$Genus)
+
+at_least_one_taxa %>%
+	ggplot(aes(x = rel_abund, y = Genus, color = treat)) +
+	geom_point(position=position_jitterdodge()) +
+	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
+			data = at_least_one_iqm, 
+			position = position_dodge(width = 0.75), 
+			shape = 21, 
+			color = "black") +
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Relative Abundance (%)", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2'))
+
+```
+
+##### Consensus Taxa
+
+```{r}
+aldex_effect <-
+  x.all_effect_1 %>% 
+  select(Genus, effect)
+
+all_taxa <-
+	aes_Genus_G5 %>%
+	group_by(sample) %>%
+	mutate(rel_abund = (total / sum(total)) * 100) %>%
+  left_join(aldex_effect, by = "Genus") %>% 
+	filter(Genus %in% ancom_taxa & Genus %in% aldex_taxa & Genus %in% corncob_taxa) %>% 
+  ungroup()
+
+da_fams <-
+  all_taxa %>% 
+  select(Genus) %>% 
+  distinct() %$%
+  Genus
+
+all_taxa <-
+  all_taxa %>%
+	mutate(Genus = str_replace(Genus, "(.*)", "*\\1*"),
+	       Genus = str_replace(Genus, "\\*(.*)_unclassified\\*",
+				    "Unclassified *\\1*"))
+all_taxa$Genus[all_taxa$Genus == "Unclassified *0319-6G20*"] <- "Uncultured Genus 0319-6G20"
+all_taxa$Genus[all_taxa$Genus == "Unclassified *Chloroplast*"] <- "Chloroplast"
+all_taxa$Genus[all_taxa$Genus == "Unclassified *Armatimonadales*"] <- "Unclassified Armatimonadales"
+all_taxa$Genus[all_taxa$Genus == "Unclassified *Gammaproteobacteria*"] <- "Unclassified Gammaproteobacteria"
+all_taxa$Genus[all_taxa$Genus == "Unclassified *Kapabacteriales*"] <- "Unclassified Kapabacteriales"
+
+all_iqm <- 
+	all_taxa %>%
+	group_by(treat, Genus) %>%
+	summarize(median = median(rel_abund), 
+		  first_quartile = quart(rel_abund)[1],
+		  third_quartile = quart(rel_abund)[2], .groups = "drop")
+
+sort_order <-
+	all_taxa %>%
+  select(Genus, effect) %>% 
+  distinct() %>% 
+  arrange(effect)
+	# group_by(Genus) %>%
+	# summarize(median = median(rel_abund)) %>%
+	# arrange(median)
+
+all_taxa$Genus <- factor(all_taxa$Genus, levels = sort_order$Genus)
+all_iqm$Genus <- factor(all_iqm$Genus, levels = sort_order$Genus)
+all_taxa <-
+  all_taxa %>% 
+  mutate(direction = if_else(effect > 0, 0, 1))
+all_iqm <-
+all_taxa %>% 
+  select(Genus, direction) %>% 
+  distinct() %>% 
+  full_join(all_iqm, by = "Genus")
+(p <-
+	all_taxa %>%
+	ggplot(aes(x = rel_abund, y = Genus, color = treat)) +
+	geom_point(position=position_jitterdodge()) +
+	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
+			data = all_iqm, 
+			position = position_dodge(width = 0.75), 
+			shape = 21, 
+			color = "black") +
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Relative Abundance (%)", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+    facet_grid(direction ~ ., scale = "free_y", space = "free")  + 
+theme(
+  strip.background = element_blank(),
+  strip.text.y = element_blank()
+))
+
+
+
+(p_log10 <- 
+	p +
+	scale_x_log10(breaks = c(0.001, 0.01, 0.1, 1),
+		      labels = c(0.001, 0.01, 0.1, 1)))
+
+
+save(p_log10, da_fams, file = "Output/da_fig.RData")
+
+ggsave('Manuscript/fig4.jpg', p_log10, width = 5, height = 5) 
+
+
+## All
+# ggsave("shared_taxa.png", p)
+ggsave("shared_taxa_log.png", p_log10, width = 5, height = 5)
+
+# aes_Genus_rclr_plot <-
+#   aes_Genus_rclr %>% 
+# 	filter(Genus %in% ancom_taxa & Genus %in% aldex_taxa & Genus %in% corncob_taxa) %>% 
+#   pivot_longer(G2:G5, names_to = "passage", values_to = "rclr") %>% 
+#   select(Genus, treat, rep, passage, rclr) %>% 
+#   distinct() %>% 	
+#   mutate(Genus = str_replace(Genus, "(.*)", "*\\1*"),
+# 	       Genus = str_replace(Genus, "\\*(.*)_unclassified\\*",
+# 				    "Unclassified *\\1*"))
+# 
+# aes_Genus_rclr_plot$Genus[aes_Genus_rclr_plot$Genus == "Unclassified *0319-6G20*"] <- "Uncultured Genus 0319-6G20"
+# aes_Genus_rclr_plot$Genus[aes_Genus_rclr_plot$Genus == "Unclassified *Chloroplast*"] <- "Chloroplast"
+# aes_Genus_rclr_plot$Genus <- factor(aes_Genus_rclr_plot$Genus, levels = sort_order$Genus)
+# ggplot(aes_Genus_rclr_plot, aes(x = rclr, y = Genus, color = treat)) +
+#   facet_grid( ~ passage) +
+#   geom_point(position = position_jitterdodge())
+
+p_effect <-
+	all_taxa %>%
+	ggplot(aes(x = effect, y = Genus)) +
+	geom_point() +
+
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Aldex2 Effect Size", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2'))
+p_effect
+
+
+```
+
+
+
+### Species
+
+```{r setup-differential-abundance-data-species}
+
+aes_G5 <-
+  aes_data %>% 
+  filter(passage == "G5")
+
+
+aes_Species_G5 <-
+  aes_G5 %>% 
+  select(asv, sample, treat, count, Species) %>%
+  group_by(sample, Species) %>% 
+  mutate(total = sum(count)) %>% 
+  ungroup() %>% 
+  select(sample, treat, Species, total) %>% 
+  distinct()
+
+prevalent_families <- 
+  aes_Species_G5 %>% 
+  group_by(Species, treat) %>% 
+  summarize(prev = sum(total > 0), .groups = "drop") %>% 
+  pivot_wider(names_from = "treat", values_from = "prev", values_fill = 0) %>% 
+  filter(N/12 > 0.1 & P/12 > 0.1) %$%
+  Species
+
+otu_table <- 
+  aes_Species_G5 %>% 
+  filter(Species %in% prevalent_families) %>% 
+  select(sample, Species, total) %>% 
+  pivot_wider(names_from = sample, values_from = total, values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(otu_table) <- otu_table[,1]
+otu_table <- otu_table[,-1]
+
+sample_data <- aes_Species_G5 %>% 
+  select(sample, treat) %>% 
+  distinct() %>% 
+  as.data.frame()
+
+rownames(sample_data) <- sample_data[,1]
+
+```
+
+#### Corncob
+
+
+
+```{r}
+
+da_analysis <- differentialTest(formula = ~ treat,
+                                phi.formula = ~ 1,
+                                formula_null = ~ 1,
+                                phi.formula_null = ~ 1,
+                                test = "Wald", 
+                                boot = FALSE,
+                                data = otu_table,
+                                sample_data = sample_data,
+                                fdr_cutoff = 0.05, B = 100,
+                                taxa_are_rows = TRUE)
+
+dt_data <- plot(da_analysis, 
+                # level = c("Species"), 
+                data_only = TRUE)
+
+dt_plot <- function(dt_data) {
+  ggplot(dt_data, aes(x = x, xmin = xmin, xmax = xmax, y = reorder(taxa, x))) +
+    geom_pointrange() +
+    geom_vline(xintercept = 0) +
+    labs(x = "Estimate", y = NULL) +
+    coord_cartesian(clip="off") +
+    # theme(panel.border = element_blank()) +
+    theme_classic() +
+      theme(axis.text.y = element_markdown())
+    
+  
+}
+
+dt_data %>%
+  mutate(taxa = str_replace(taxa, "(.*)", "*\\1*"),
+         taxa = str_replace(taxa, "\\*(.*)_unclassified\\*",
+                                "Unclassified *\\1*")) %>% 
+  dt_plot()
+
+```
+
+#### ANCOM
+
+```{r}
+
+# Setup phyloseq object
+aes_ps <- phyloseq(otu_table(otu_table, taxa_are_rows=TRUE), sample_data(sample_data))
+
+if(file.exists("Output/ancom_out.rds")) {
+  out <- 
+    readRDS("Output/ancom_out.rds")
+} else {
+  # Run Ancom
+  out = ancom(phyloseq = aes_ps,  
+              p_adj_method = "BH",
+              prv_cut = 0.1, 
+              lib_cut = 0, 
+              main_var = "treat",
+              rand_formula = NULL, 
+              lme_control = NULL,
+              struc_zero = TRUE, 
+              neg_lb = FALSE, 
+              alpha = 0.05, 
+              n_cl = 1)  
+  out %>% 
+    saveRDS("Output/ancom_out.rds")
+}
+
+
+res = out$res
+q_val = out$q_data
+beta_val = out$beta_data
+# Only consider the effect sizes with the corresponding q-value less than alpha
+beta_val = beta_val * (q_val < 0.05) 
+# Choose the maximum of beta's as the effect size
+beta_pos = apply(abs(beta_val), 2, which.max) 
+beta_max = vapply(seq_along(beta_pos), function(i) beta_val[beta_pos[i], i],
+                  FUN.VALUE = double(1))
+# Number of taxa except structural zeros
+n_taxa = ifelse(is.null(out$zero_ind), 
+                nrow(feature_table), 
+                sum(apply(out$zero_ind, 1, sum) == 0))
+# Cutoff values for declaring differentially abundant taxa
+cut_off = 0.7 * (n_taxa - 1)
+
+df_fig_w = res %>%
+  dplyr::mutate(beta = beta_max,
+                direct = case_when(
+                  detected_0.7 == TRUE & beta > 0 ~ "Positive",
+                  detected_0.7 == TRUE & beta <= 0 ~ "Negative",
+                  TRUE ~ "Not Significant"
+                  )) %>%
+  dplyr::arrange(W)
+df_fig_w$taxon_id = factor(df_fig_w$taxon_id, levels = df_fig_w$taxon_id)
+df_fig_w$W = replace(df_fig_w$W, is.infinite(df_fig_w$W), n_taxa - 1)
+df_fig_w$direct = factor(df_fig_w$direct, 
+                     levels = c("Negative", "Positive", "Not Significant"))
+
+p_w = df_fig_w %>%
+  ggplot(aes(x = taxon_id, y = W, color = direct)) +
+  geom_point(size = 2, alpha = 0.6) +
+  labs(x = "Taxon", y = "W") +
+  scale_color_discrete(name = NULL) + 
+  geom_hline(yintercept = cut_off, linetype = "dotted", 
+             color = "blue", size = 1.5) +
+  geom_text(aes(x = 2, y = cut_off + 0.5, label = "W[0.7]"), 
+            size = 5, vjust = -0.5, hjust = 0, color = "orange", parse = TRUE) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major = element_blank())
+p_w
+
+```
+
+#### Aldex2
+
+```{r}
+
+conds <- colnames(otu_table) %>% 
+  substr(3, 3)
+
+if(file.exists("Output/aldex_x_all.rds")) {
+  x.all <- 
+    readRDS("Output/aldex_x_all.rds")
+} else {
+  x.all <- aldex(otu_table, 
+                 conds, mc.samples=1000, test="t", effect=TRUE,
+                 include.sample.summary=FALSE, denom="all", verbose=FALSE, paired.test=FALSE)
+  x.all %>% 
+    saveRDS("Output/aldex_x_all.rds")
+}
+
+
+
+par(mfrow=c(1,2))
+aldex.plot(x.all, type="MA", test="welch", xlab="Log-ratio abundance",
+    ylab="Difference")
+aldex.plot(x.all, type="MW", test="welch", xlab="Dispersion",
+    ylab="Difference")
+
+par(mfrow=c(1,2))
+plot(x.all$effect, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
+  pch=19, xlab="Effect size", ylab="P value", main="Effect size plot")
+points(x.all$effect, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
+  pch=19)
+abline(h=0.05, lty=2, col="grey")
+legend(15,1, legend=c("P value", "BH-adjusted"), pch=19, col=c("blue", "red"))
+
+plot(x.all$diff.btw, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
+  pch=19, xlab="Difference", ylab="P value", main="Volcano plot")
+points(x.all$diff.btw, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
+  pch=19)
+abline(h=0.05, lty=2, col="grey")
+
+x.all_effect_1 <-
+  x.all %>% 
+  filter(abs(effect) > 1) %>% 
+  as_tibble(rownames = "Species")
+
+# x.all_effect_1 %>% 
+#   # inner_join(taxa_table, by = "asv")
+#   ggplot(aes(y = reorder(Species, effect), x = effect)) +
+#   geom_point()
+
+# x.all_effect_1 %>% 
+#   select(Species, effect)
+  
+
+```
+
+#### Comparison
+
+##### All Significant
+
+```{r}
+
+# CORNCOB
+corncob_taxa <- dt_data$taxa
+
+# ANCOM
+ancom_taxa <- as.character(df_fig_w[df_fig_w$detected_0.7, ]$taxon_id)
+
+# ALDEX2
+aldex_taxa <- x.all_effect_1$Species
+
+
+
+at_least_one_taxa <-
+	aes_Species_G5 %>%
+	group_by(sample) %>%
+	mutate(rel_abund = (total / sum(total)) * 100) %>%
+	filter(Species %in% ancom_taxa | Species %in% aldex_taxa | Species %in% corncob_taxa) %>%
+	mutate(Species = str_replace(Species, "(.*)", "*\\1*"),
+	       Species = str_replace(Species, "\\*(.*)_unclassified\\*",
+				    "Unclassified *\\1*"))
+
+at_least_one_iqm <- 
+	at_least_one_taxa %>%
+	group_by(treat, Species) %>%
+	summarize(median = median(rel_abund), 
+		  first_quartile = quart(rel_abund)[1],
+		  third_quartile = quart(rel_abund)[2], .groups = "drop")
+
+sort_order <-
+	at_least_one_taxa %>%
+	group_by(Species) %>%
+	summarize(median = median(rel_abund)) %>%
+	arrange(median)
+
+at_least_one_taxa$Species <- factor(at_least_one_taxa$Species, levels = sort_order$Species)
+
+at_least_one_taxa %>%
+	ggplot(aes(x = rel_abund, y = Species, color = treat)) +
+	geom_point(position=position_jitterdodge()) +
+	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
+			data = at_least_one_iqm, 
+			position = position_dodge(width = 0.75), 
+			shape = 21, 
+			color = "black") +
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Relative Abundance (%)", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2'))
+
+```
+
+##### Consensus Taxa
+
+```{r}
+aldex_effect <-
+  x.all_effect_1 %>% 
+  select(Species, effect)
+
+all_taxa <-
+	aes_Species_G5 %>%
+	group_by(sample) %>%
+	mutate(rel_abund = (total / sum(total)) * 100) %>%
+  left_join(aldex_effect, by = "Species") %>% 
+	filter(Species %in% ancom_taxa & Species %in% aldex_taxa & Species %in% corncob_taxa) %>% 
+  ungroup()
+
+da_fams <-
+  all_taxa %>% 
+  select(Species) %>% 
+  distinct() %$%
+  Species
+
+all_taxa <-
+  all_taxa %>%
+	mutate(Species = str_replace(Species, "(.*)", "*\\1*"),
+	       Species = str_replace(Species, "\\*(.*)_unclassified\\*",
+				    "Unclassified *\\1*"))
+all_taxa$Species[all_taxa$Species == "Unclassified *0319-6G20*"] <- "Uncultured Species 0319-6G20"
+all_taxa$Species[all_taxa$Species == "Unclassified *Chloroplast*"] <- "Chloroplast"
+all_taxa$Species[all_taxa$Species == "Unclassified *Armatimonadales*"] <- "Unclassified Armatimonadales"
+all_taxa$Species[all_taxa$Species == "Unclassified *Gammaproteobacteria*"] <- "Unclassified Gammaproteobacteria"
+all_taxa$Species[all_taxa$Species == "Unclassified *Kapabacteriales*"] <- "Unclassified Kapabacteriales"
+
+all_iqm <- 
+	all_taxa %>%
+	group_by(treat, Species) %>%
+	summarize(median = median(rel_abund), 
+		  first_quartile = quart(rel_abund)[1],
+		  third_quartile = quart(rel_abund)[2], .groups = "drop")
+
+sort_order <-
+	all_taxa %>%
+  select(Species, effect) %>% 
+  distinct() %>% 
+  arrange(effect)
+	# group_by(Species) %>%
+	# summarize(median = median(rel_abund)) %>%
+	# arrange(median)
+
+all_taxa$Species <- factor(all_taxa$Species, levels = sort_order$Species)
+all_iqm$Species <- factor(all_iqm$Species, levels = sort_order$Species)
+all_taxa <-
+  all_taxa %>% 
+  mutate(direction = if_else(effect > 0, 0, 1))
+all_iqm <-
+all_taxa %>% 
+  select(Species, direction) %>% 
+  distinct() %>% 
+  full_join(all_iqm, by = "Species")
+(p <-
+	all_taxa %>%
+	ggplot(aes(x = rel_abund, y = Species, color = treat)) +
+	geom_point(position=position_jitterdodge()) +
+	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
+			data = all_iqm, 
+			position = position_dodge(width = 0.75), 
+			shape = 21, 
+			color = "black") +
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Relative Abundance (%)", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+    facet_grid(direction ~ ., scale = "free_y", space = "free")  + 
+theme(
+  strip.background = element_blank(),
+  strip.text.y = element_blank()
+))
+
+
+
+(p_log10 <- 
+	p +
+	scale_x_log10(breaks = c(0.001, 0.01, 0.1, 1),
+		      labels = c(0.001, 0.01, 0.1, 1)))
+
+
+save(p_log10, da_fams, file = "Output/da_fig.RData")
+
+ggsave('Manuscript/fig4.jpg', p_log10, width = 5, height = 5) 
+
+
+## All
+# ggsave("shared_taxa.png", p)
+ggsave("shared_taxa_log.png", p_log10, width = 5, height = 5)
+
+# aes_Species_rclr_plot <-
+#   aes_Species_rclr %>% 
+# 	filter(Species %in% ancom_taxa & Species %in% aldex_taxa & Species %in% corncob_taxa) %>% 
+#   pivot_longer(G2:G5, names_to = "passage", values_to = "rclr") %>% 
+#   select(Species, treat, rep, passage, rclr) %>% 
+#   distinct() %>% 	
+#   mutate(Species = str_replace(Species, "(.*)", "*\\1*"),
+# 	       Species = str_replace(Species, "\\*(.*)_unclassified\\*",
+# 				    "Unclassified *\\1*"))
+# 
+# aes_Species_rclr_plot$Species[aes_Species_rclr_plot$Species == "Unclassified *0319-6G20*"] <- "Uncultured Species 0319-6G20"
+# aes_Species_rclr_plot$Species[aes_Species_rclr_plot$Species == "Unclassified *Chloroplast*"] <- "Chloroplast"
+# aes_Species_rclr_plot$Species <- factor(aes_Species_rclr_plot$Species, levels = sort_order$Species)
+# ggplot(aes_Species_rclr_plot, aes(x = rclr, y = Species, color = treat)) +
+#   facet_grid( ~ passage) +
+#   geom_point(position = position_jitterdodge())
+
+p_effect <-
+	all_taxa %>%
+	ggplot(aes(x = effect, y = Species)) +
+	geom_point() +
+
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Aldex2 Effect Size", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2'))
+p_effect
+
+
+```
+
+
+
 
 
 ```{r stop}
