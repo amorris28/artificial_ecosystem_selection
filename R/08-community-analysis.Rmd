@@ -1611,9 +1611,9 @@ dt_data %>%
 # Setup phyloseq object
 aes_ps <- phyloseq(otu_table(otu_table, taxa_are_rows=TRUE), sample_data(sample_data))
 
-if(file.exists("Output/ancom_out.rds")) {
+if(file.exists("Output/ancom_out_genus.rds")) {
   out <- 
-    readRDS("Output/ancom_out.rds")
+    readRDS("Output/ancom_out_genus.rds")
 } else {
   # Run Ancom
   out = ancom(phyloseq = aes_ps,  
@@ -1628,7 +1628,7 @@ if(file.exists("Output/ancom_out.rds")) {
               alpha = 0.05, 
               n_cl = 1)  
   out %>% 
-    saveRDS("Output/ancom_out.rds")
+    saveRDS("Output/ancom_out_genus.rds")
 }
 
 
@@ -1685,15 +1685,15 @@ p_w
 conds <- colnames(otu_table) %>% 
   substr(3, 3)
 
-if(file.exists("Output/aldex_x_all.rds")) {
+if(file.exists("Output/aldex_x_all_genus.rds")) {
   x.all <- 
-    readRDS("Output/aldex_x_all.rds")
+    readRDS("Output/aldex_x_all_genus.rds")
 } else {
   x.all <- aldex(otu_table, 
                  conds, mc.samples=1000, test="t", effect=TRUE,
                  include.sample.summary=FALSE, denom="all", verbose=FALSE, paired.test=FALSE)
   x.all %>% 
-    saveRDS("Output/aldex_x_all.rds")
+    saveRDS("Output/aldex_x_all_genus.rds")
 }
 
 
@@ -1821,11 +1821,11 @@ all_taxa <-
 	mutate(Genus = str_replace(Genus, "(.*)", "*\\1*"),
 	       Genus = str_replace(Genus, "\\*(.*)_unclassified\\*",
 				    "Unclassified *\\1*"))
-all_taxa$Genus[all_taxa$Genus == "Unclassified *0319-6G20*"] <- "Uncultured Genus 0319-6G20"
-all_taxa$Genus[all_taxa$Genus == "Unclassified *Chloroplast*"] <- "Chloroplast"
-all_taxa$Genus[all_taxa$Genus == "Unclassified *Armatimonadales*"] <- "Unclassified Armatimonadales"
-all_taxa$Genus[all_taxa$Genus == "Unclassified *Gammaproteobacteria*"] <- "Unclassified Gammaproteobacteria"
-all_taxa$Genus[all_taxa$Genus == "Unclassified *Kapabacteriales*"] <- "Unclassified Kapabacteriales"
+# all_taxa$Genus[all_taxa$Genus == "Unclassified *0319-6G20*"] <- "Uncultured Genus 0319-6G20"
+# all_taxa$Genus[all_taxa$Genus == "Unclassified *Chloroplast*"] <- "Chloroplast"
+# all_taxa$Genus[all_taxa$Genus == "Unclassified *Armatimonadales*"] <- "Unclassified Armatimonadales"
+# all_taxa$Genus[all_taxa$Genus == "Unclassified *Gammaproteobacteria*"] <- "Unclassified Gammaproteobacteria"
+# all_taxa$Genus[all_taxa$Genus == "Unclassified *Kapabacteriales*"] <- "Unclassified Kapabacteriales"
 
 all_iqm <- 
 	all_taxa %>%
