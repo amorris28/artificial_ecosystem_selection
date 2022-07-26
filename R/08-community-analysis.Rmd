@@ -80,6 +80,7 @@ aes_data <-
   unnest(taxa) %>% 
   unnest(data)
 
+
 ```
 
 # Exploratory
@@ -272,10 +273,11 @@ s <- cor.test(~ ch4 + rare, data = rare_data, method = "spearman", alternative =
 s5 <-
   rare_data %>% 
   filter(passage == "G5") %>% 
-  cor.test(~ ch4 + rare, data = ., method = "spearman", alternative = "two.sided")
+  cor.test(~ ch4 + rare, data = ., method = "spearman", alternative = "two.sided") %>%
+  tidy
 
 min_seqs <- paste(substr(as.character(min_seqs), 1, 3), substr(as.character(min_seqs), 4, 6), sep = ",")
-save(kt, wt, rare_median, s, min_seqs, file = "Output/richness_models.RData")
+save(kt, wt, rare_median, s5, min_seqs, file = "Output/richness_models.RData")
 
 ```
 
@@ -337,10 +339,7 @@ ggsave('Manuscript/fig3.jpg', p_beta, height = 2.5, width = 4)
 
 ```
 
-## Beta diversity test passage by treatment
-
-```{r permanova-passage-treatment, warnings=FALSE}
-
+```{r}
 dist_df <-
   rare_dist_bray %>% 
   as.matrix %>% 
@@ -355,7 +354,7 @@ meta_dist <-
 permanova <- adonis2(rare_dist_bray ~ passage * treat, data = meta_dist, permutations = 999)
 
 betadisper(rare_dist_bray, meta_dist$passage_treat) %>% 
-  permutest()
+  anova()
 
 tidy_permanova <- 
   tidy(permanova)
@@ -368,27 +367,58 @@ There is a significant difference of centroid between passage, treatment, and
 their interaction. Testing a difference of dispersion using betadisper
 shows no difference in variance between the four groups.
 
-# Distance-based RDA Methane
 
-```{r full-dbrda}
 
-meta_dist %>% 
-  select(passage_treat, ch4) %>% 
-  mutate(log_ch4 = log_methane(ch4)) %>% 
-  ggplot(aes(x = passage_treat, y = log_ch4)) +
-  geom_boxplot() +
-  theme_classic() +
-  labs(x = "Passage x Treatment", y = "Log10 Methane")
+## dbrda methane in passage 5
 
-dbrda_ch4 <- dbrda(rare_dist_bray ~ rank(ch4), 
-                      data = meta_dist, 
+```{r dbrda, warnings=FALSE}
+passage5_df <-
+  aes_data %>%  
+  filter(passage == "G5") %>% 
+  group_by(asv) %>% 
+  mutate(total = sum(count)) %>% 
+  filter(total != 0) %>% 
+  ungroup() %>% 
+  select(-total) %>% 
+  select(sample, asv, count) %>%
+  pivot_wider(names_from = "asv", values_from = "count", values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(passage5_df) <- passage5_df$sample
+passage5_df <- passage5_df[, -1]
+
+if(file.exists("Output/rare_dist_bray_p5.rds")) {
+  rare_dist_bray_p5 <- 
+    readRDS("Output/rare_dist_bray_p5.rds")
+} else {
+rare_dist_bray_p5 <- avgdist(passage5_df, dmethod="bray", sample=seq_range[1])
+  rare_dist_bray_p5 %>% 
+    saveRDS("Output/rare_dist_bray_p5.rds")
+}
+
+
+
+rare_dist_df <-
+  rare_dist_bray_p5 %>% 
+  as.matrix %>% 
+  as_tibble(rownames = "sample")
+
+dbrda_meta_dist <-
+  aes_data %>% 
+  select(sample, passage_treat, passage, treat, ch4) %>% 
+  distinct %>% 
+  inner_join(rare_dist_df, by = "sample")
+
+dbrda_ch4 <- dbrda(rare_dist_bray_p5 ~ rank(ch4), 
+                      data = dbrda_meta_dist, 
                       na.action = "na.omit",
                       add = TRUE) 
 
-dbrda_ch4 %>% 
-  permutest(permutations = 9999)
+dbrda_aov <-
+  dbrda_ch4 %>% 
+  anova()
 
-percent_explained <- 100 * eigenvals(dbrda_ch4) / sum(eigenvals(dbrda_ch4))
+dbrda_percent_explained <- 100 * eigenvals(dbrda_ch4) / sum(eigenvals(dbrda_ch4))
 
 dbrda_scores <-
   scores(dbrda_ch4, display = "sites") %>% 
@@ -415,285 +445,10 @@ dbrda_data %>%
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank())
 
-```
-
-
-```{r pre-dbrda-data-subsets}
-
-# aes_data %>% 
-#   filter(treat == "P") %>% 
-#   group_by(asv) %>% 
-#   mutate(total = sum(count)) %>% 
-#   filter(total != 0) %>% 
-#   ungroup() %>% 
-#   select(-total) %>% 
-#   group_by(sample) %>% 
-#   summarize(n_seqs = sum(count)) %>% 
-#   summarize(min = min(n_seqs))
-
-treatP_df <-
-  aes_data %>%  
-  filter(treat == "P") %>% 
-  group_by(asv) %>% 
-  mutate(total = sum(count)) %>% 
-  filter(total != 0) %>% 
-  ungroup() %>% 
-  select(-total) %>% 
-  select(sample, asv, count) %>%
-  pivot_wider(names_from = "asv", values_from = "count", values_fill = 0) %>% 
-  as.data.frame()
-
-rownames(treatP_df) <- treatP_df$sample
-treatP_df <- treatP_df[, -1]
-
-# aes_data %>% 
-#   filter(passage == "G5") %>% 
-#   group_by(asv) %>% 
-#   mutate(total = sum(count)) %>% 
-#   filter(total != 0) %>% 
-#   ungroup() %>% 
-#   select(-total) %>% 
-#   group_by(sample) %>% 
-#   summarize(n_seqs = sum(count)) %>% 
-#   summarize(min = min(n_seqs))
-
-passage2_df <-
-  aes_data %>%  
-  filter(passage == "G2") %>% 
-  group_by(asv) %>% 
-  mutate(total = sum(count)) %>% 
-  filter(total != 0) %>% 
-  ungroup() %>% 
-  select(-total) %>% 
-  select(sample, asv, count) %>%
-  pivot_wider(names_from = "asv", values_from = "count", values_fill = 0) %>% 
-  as.data.frame()
-
-rownames(passage2_df) <- passage2_df$sample
-passage2_df <- passage2_df[, -1]
-
-passage5_df <-
-  aes_data %>%  
-  filter(passage == "G5") %>% 
-  group_by(asv) %>% 
-  mutate(total = sum(count)) %>% 
-  filter(total != 0) %>% 
-  ungroup() %>% 
-  select(-total) %>% 
-  select(sample, asv, count) %>%
-  pivot_wider(names_from = "asv", values_from = "count", values_fill = 0) %>% 
-  as.data.frame()
-
-rownames(passage5_df) <- passage5_df$sample
-passage5_df <- passage5_df[, -1]
-
-```
-
-```{r treat-dbrda}
-
-if(file.exists("Output/treat_rare_dist_bray.rds")) {
-  treat_rare_dist_bray <- 
-    readRDS("Output/treat_rare_dist_bray.rds")
-} else {
-treat_rare_dist_bray <- avgdist(treatP_df, dmethod="bray", sample=seq_range[1])
-  treat_rare_dist_bray %>% 
-    saveRDS("Output/treat_rare_dist_bray.rds")
-}
-
-
-
-treat_dist_df <-
-  treat_rare_dist_bray %>% 
-  as.matrix %>% 
-  as_tibble(rownames = "sample")
-
-treat_meta_dist <-
-  aes_data %>% 
-  select(sample, passage_treat, passage, treat, ch4) %>% 
-  distinct %>% 
-  inner_join(treat_dist_df, by = "sample")
-
-
-treat_dbrda_ch4 <- dbrda(treat_rare_dist_bray ~ rank(ch4), 
-                      data = treat_meta_dist, 
-                      na.action = "na.omit",
-                      add = TRUE) 
-
-treat_dbrda_ch4 %>% 
-  permutest(permutations = 9999)
-
-percent_explained <- 100 * eigenvals(treat_dbrda_ch4) / sum(eigenvals(treat_dbrda_ch4))
-
-treat_dbrda_scores <-
-  scores(treat_dbrda_ch4, display = "sites") %>% 
-  as_tibble(rownames = "sample")
-  
-treat_dbrda_data <-
-  aes_data %>% 
-  select(sample, passage, treat, ch4) %>% 
-  distinct %>% 
-  inner_join(treat_dbrda_scores, by = "sample")
-
-treat_dbrda_data %>%   
-  ggplot(aes(x = dbRDA1, y = MDS1, shape = passage, color = treat)) +
-  geom_point() +
-  stat_ellipse(show.legend = FALSE) +
-  coord_fixed() +
-  scale_shape_discrete(name = "Passage") +
-  scale_color_manual(name = "Treatment",
-                       labels = c('Positive'),
-                       values = c('darkorange2')) +
-  theme_bw() +
-  theme(
-    plot.background = element_blank(),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank())
-
-```
-
-```{r passage2-dbrda}
-if(file.exists("Output/passage2_rare_dist_bray.rds")) {
-  passage2_rare_dist_bray <- 
-    readRDS("Output/passage2_rare_dist_bray.rds")
-} else {
-passage2_rare_dist_bray <- avgdist(passage2_df, dmethod="bray", sample=seq_range[1])
-  passage2_rare_dist_bray %>% 
-    saveRDS("Output/passage2_rare_dist_bray.rds")
-}
-
-passage2_dist_df <-
-  passage2_rare_dist_bray %>% 
-  as.matrix %>% 
-  as_tibble(rownames = "sample")
-
-passage2_meta_dist <-
-  aes_data %>% 
-  select(sample, passage_treat, passage, treat, ch4) %>% 
-  distinct %>% 
-  inner_join(passage2_dist_df, by = "sample")
-
-
-passage2_dbrda_ch4 <- dbrda(passage2_rare_dist_bray ~ rank(ch4), 
-                      data = passage2_meta_dist, 
-                      na.action = "na.omit",
-                      add = TRUE) 
-
-passage2_dbrda_permtest <- 
-passage2_dbrda_ch4 %>% 
-  permutest(permutations = 9999)
-
-passage2_dbrda_permtest <- 
-passage2_dbrda_ch4 %>% 
-  anova(permutations = 9999) %>% 
-  tidy()
-
-passage2_percent_explained <- 100 * eigenvals(passage2_dbrda_ch4) / sum(eigenvals(passage2_dbrda_ch4))
-
-passage2_dbrda_scores <-
-  scores(passage2_dbrda_ch4, display = "sites") %>% 
-  as_tibble(rownames = "sample")
-  
-passage2_dbrda_data <-
-  aes_data %>% 
-  select(sample, passage, treat, ch4) %>% 
-  distinct %>% 
-  inner_join(passage2_dbrda_scores, by = "sample")
-
-passage2_dbrda_data %>%   
-  ggplot(aes(x = dbRDA1, y = MDS1, shape = passage, color = treat)) +
-  geom_point() +
-  stat_ellipse(show.legend = FALSE) +
-  coord_fixed() +
-  scale_shape_discrete(name = "Passage") +
-  scale_color_manual(name = "Treatment",
-                       labels = c('Neutral', 'Positive'),
-                       values = c('gray40', 'darkorange2')) +
-  theme_bw() +
-  theme(
-    plot.background = element_blank(),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank())
+save(dbrda_aov, dbrda_percent_explained, file = "Output/dbrda.RData")
 
 
 ```
-
-
-```{r passage5-dbrda}
-if(file.exists("Output/passage5_rare_dist_bray.rds")) {
-  passage5_rare_dist_bray <- 
-    readRDS("Output/passage5_rare_dist_bray.rds")
-} else {
-passage5_rare_dist_bray <- avgdist(passage5_df, dmethod="bray", sample=seq_range[1])
-  passage5_rare_dist_bray %>% 
-    saveRDS("Output/passage5_rare_dist_bray.rds")
-}
-
-passage5_dist_df <-
-  passage5_rare_dist_bray %>% 
-  as.matrix %>% 
-  as_tibble(rownames = "sample")
-
-passage5_meta_dist <-
-  aes_data %>% 
-  select(sample, passage_treat, passage, treat, ch4) %>% 
-  distinct %>% 
-  inner_join(passage5_dist_df, by = "sample")
-
-
-passage5_dbrda_ch4 <- dbrda(passage5_rare_dist_bray ~ rank(ch4), 
-                      data = passage5_meta_dist, 
-                      na.action = "na.omit",
-                      add = TRUE) 
-
-passage5_dbrda_permtest <-
-passage5_dbrda_ch4 %>% 
-  anova(permutations = 9999) %>% 
-  tidy
-
-passage5_percent_explained <- 100 * eigenvals(passage5_dbrda_ch4) / sum(eigenvals(passage5_dbrda_ch4))
-
-passage5_dbrda_scores <-
-  scores(passage5_dbrda_ch4, display = "sites") %>% 
-  as_tibble(rownames = "sample")
-  
-passage5_dbrda_data <-
-  aes_data %>% 
-  select(sample, passage, treat, ch4) %>% 
-  distinct %>% 
-  inner_join(passage5_dbrda_scores, by = "sample")
-
-passage5_dbrda_data %>%   
-  ggplot(aes(x = dbRDA1, y = MDS1, shape = passage, color = treat)) +
-  geom_point() +
-  stat_ellipse(show.legend = FALSE) +
-  coord_fixed() +
-  scale_shape_discrete(name = "Passage") +
-  scale_color_manual(name = "Treatment",
-                       labels = c('Neutral', 'Positive'),
-                       values = c('gray40', 'darkorange2')) +
-  theme_bw() +
-  theme(
-    plot.background = element_blank(),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank())
-
-
-```
-
-```{r}
-save(passage2_dbrda_permtest, 
-     passage5_dbrda_permtest, 
-     passage5_percent_explained,
-     file = "Output/dbrda.RData")
-```
-
-
-The overall dbRDA is significant and rank of methane explains 5% of the variation.
-Subsetting the Positive treatment in both G2 and G5, it is not significant: no
-correlation between dissimilarity and rank of methane between G2 and G5. This
-makes sense, because most of that variation would be due to selection in the jar.
-However, subsetting passage G5 and comparing N and P, 10% of dissimilarity is
-explained by rank of CH4. 
 
 # Differential Abundance
 
@@ -1342,11 +1097,33 @@ Methanotrophy is (mostly) conserved at the family level. The Type I and Type X m
 
 
 ```{r methanotroph-lists}
+# List of methanotrophs from Table 1 of Stein 2012 
+troph_genera <- c('Methylococcus',
+                  'Methylocaldum',
+                  'Methylobacter',
+                  'Methylomicrobium',
+                  'Methylomonas',
+                  'Methylosarcina',
+                  'Methylosoma',
+                  'Crenothrixa',
+                  'Clonothrixa',
+                  'Methylosphaera',
+                  'Methylohalobiusa',
+                  'Methylothermusa',
+                  'Methylocystis',
+                  'Methylosinus',
+                  'Methylocella',
+                  'Methylocapsa',
+                  'Methyloferula',
+                  'Methylomirabilis',
+                  'Methylacidiphilum')
+troph_genera <- c(troph_genera, paste(troph_genera, "unclassified", sep = "_"))
 
 methanotrophs <- c('Methylococcaceae', 
                    'Methylothermaceae', 
                    'Methylocystaceae', 
                    'Beijerinckiaceae', 
+                   'NC10',
                    'Methylacidiphilaceae')
 methanotrophs <- c(methanotrophs, paste(methanotrophs, "unclassified", sep = "_"))
 
@@ -1391,6 +1168,15 @@ aes_data %>%
   facet_grid(passage ~ method, scales = "free") +
   theme_bw()
 
+
+
+
+troph_asvs <-
+  aes_data %>% 
+  select(Kingdom:Species, asv) %>% 
+  distinct() %>% 
+  filter(Genus %in% troph_genera) %$%
+  asv
 
 troph_asvs <-
   aes_data %>% 
@@ -2349,11 +2135,7 @@ p_effect
 
 
 
-```{r stop}
 
-knitr::opts_chunk$set(eval = FALSE)
-
-```
 
 
 
