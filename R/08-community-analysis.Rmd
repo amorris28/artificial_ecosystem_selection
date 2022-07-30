@@ -323,7 +323,7 @@ p_beta <-
   geom_point() +
   stat_ellipse(show.legend = FALSE) +
   coord_fixed() +
-  scale_shape_discrete(name = "Passage") +
+  scale_shape_discrete(name = "Passage", labels = c(2, 5)) +
   scale_color_manual(name = "Treatment",
                        labels = c('Neutral', 'Positive'),
                        values = c('gray40', 'darkorange2')) #+

@@ -54,6 +54,10 @@ ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
 
 p_response <- plot_flux(fluxes, passage, log_ch4, ratio_log10, log10 = TRUE)
 
+p_response <-
+  p_response +
+  scale_x_continuous(labels = 1:5)
+
 save(p_response, file = 'Output/response_plot.RData')
 
 ggsave('Manuscript/fig1.jpg', p_response, width = 4, height = 3) 
