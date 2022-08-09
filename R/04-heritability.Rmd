@@ -56,6 +56,7 @@ p_herit
 save(p_herit, file = 'Output/herit_plot.RData')
 
 ggsave('Manuscript/fig2.jpg', p_herit, width = 4, height = 3) 
+ggsave('Manuscript/fig2.svg', p_herit, width = 4, height = 3) 
 
 
 ```

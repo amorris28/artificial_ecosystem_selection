@@ -335,7 +335,9 @@ p_beta <-
 
 save(p_beta, file = "Output/beta_fig.RData")
 
-ggsave('Manuscript/fig3.jpg', p_beta, height = 2.5, width = 4) 
+ggsave('Manuscript/fig3.png', p_beta, height = 2.5, width = 4) 
+
+ggsave('Manuscript/fig3.svg', p_beta, height = 2.5, width = 4) 
 
 ```
 
@@ -1048,11 +1050,12 @@ theme(
 save(p_log10, da_fams, file = "Output/da_fig.RData")
 
 ggsave('Manuscript/fig4.jpg', p_log10, width = 5, height = 5) 
+ggsave('Manuscript/fig4.svg', p_log10, width = 5, height = 5) 
 
 
 ## All
 # ggsave("shared_taxa.png", p)
-ggsave("shared_taxa_log.png", p_log10, width = 5, height = 5)
+# ggsave("shared_taxa_log.png", p_log10, width = 5, height = 5)
 
 # aes_family_rclr_plot <-
 #   aes_family_rclr %>% 

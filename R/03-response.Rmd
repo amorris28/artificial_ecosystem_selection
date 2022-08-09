@@ -61,6 +61,7 @@ p_response <-
 save(p_response, file = 'Output/response_plot.RData')
 
 ggsave('Manuscript/fig1.jpg', p_response, width = 4, height = 3) 
+ggsave('Manuscript/fig1.svg', p_response, width = 4, height = 3) 
 
 ```
 
