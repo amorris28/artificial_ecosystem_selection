@@ -81,6 +81,23 @@ heritability <-
   ungroup()
 ```
 
+```{r}
+offspring_each <- 
+  offspring %>% 
+  group_by(passage, treat) %>% 
+  mutate(offspring = log_ch4)
+
+heritability_each <- 
+  selected_mean %>% 
+  left_join(offspring_each, by = c("passage", "treat")) %>% 
+  filter(passage != 5) %>% # Remove passage 5, which has no offspring
+  ungroup()
+
+write_tsv(heritability_each, paste0(der_dir, 'heritability_each.tsv'))
+
+```
+
+
 ```{r print_data}
 kable(heritability)
 ```

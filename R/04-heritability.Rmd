@@ -49,7 +49,17 @@ Here, I fit two models. The first is simply offspring flux on selected parent fl
 
 ```{r plot_herit}
 
-p_herit <- plot_herit(heritability)
+  ratio <- calc_plot_ratios(heritability$selected, heritability$offspring)
+p_herit <- 
+  ggplot(heritability, aes(selected, offspring, color = treat)) +
+    geom_point() + 
+    stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+    labs(x = expression(Parental ~ log[10] ~ CH[4] ~ "(-k)"), 
+         y = expression(atop(Offspring, log[10] ~ CH[4] ~ "(-k)"))) +
+    scale_color_manual(name = "Treatment", 
+                       labels = c('Neutral', 'Positive'), 
+                       values = c('gray40', 'darkorange2')) +
+    coord_fixed(ratio)
 
 p_herit
 
@@ -65,5 +75,33 @@ ggsave('Manuscript/fig2.svg', p_herit, width = 4, height = 3)
 save(herit_model, file = 'Output/herit_model.RData')
 ```
 
+```{r}
+heritability_each <- read_tsv(paste0(der_dir, 'heritability_each.tsv'))
+
+fit_no_treat <- lm(offspring ~ selected, data = heritability_each)
+kable(tidy(fit_no_treat))
+herit_model <- lm(offspring ~ selected * treat, data = heritability_each)
+kable(tidy(herit_model))
+kable(tidy(anova(fit_no_treat, herit_model)))
+
+ratio <- calc_plot_ratios(heritability_each$selected, heritability_each$offspring)
+p_herit_each <- 
+ggplot(heritability_each, aes(selected, offspring, color = treat)) +
+    # theme_classic() +
+    # geom_rangeframe(color = 'black') +
+    geom_point() + 
+    stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+    labs(x = expression(atop(Mean ~ Parental, log[10] ~ CH[4] ~ "(-k)")), 
+         y = expression(atop(Offspring, log[10] ~ CH[4] ~ "(-k)"))) +
+    scale_color_manual(name = "Treatment", 
+                       labels = c('Neutral', 'Positive'), 
+                       values = c('gray40', 'darkorange2')) +
+    coord_fixed(ratio)
+
+save(p_herit_each, file = 'Output/herit_plot.RData')
+
+ggsave('Manuscript/fig2_each.jpg', p_herit_each, width = 4, height = 3) 
+ggsave('Manuscript/fig2_each.svg', p_herit_each, width = 4, height = 3) 
+```
 
 
