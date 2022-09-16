@@ -1013,10 +1013,10 @@
     },
     "detectseparation": {
       "Package": "detectseparation",
-      "Version": "0.3",
+      "Version": "0.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "e36da492d559eebcc8b8d959e3f7b26a",
+      "Hash": "a1791d5189d2ee6e17b8efe51a962953",
       "Requirements": [
         "ROI",
         "ROI.plugin.lpsolve",
