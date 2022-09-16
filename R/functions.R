@@ -2,16 +2,12 @@
 raw_dir <- 'Data/' # Raw Data Directory
 der_dir <- 'Output/' # Derived/Modified Data Directory
 
-# theme_set(theme_tufte()+
-#             theme(axis.title.y = element_text(angle = 0, vjust = 0.5)))
 theme_set(theme_classic() +
             theme(panel.border = element_rect(fill = NA, size = 1.0625),
                   axis.line = element_blank()))
 
 plot_flux <- function(fluxes, passage, estimate, ratio = NULL, log10 = FALSE) {
   p <- ggplot(fluxes, aes(x = {{passage}}, y = {{estimate}}, color = treat)) +
-    # theme_classic() +
-    # geom_rangeframe(color = 'black') +
     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
     scale_color_manual(
       name = "Treatment", 
@@ -58,8 +54,6 @@ print_lrt <- function(fit, term = 2, test = "Likelihood ratio test") {
 plot_herit <- function(heritability, ratio) {
   ratio <- calc_plot_ratios(heritability$selected, heritability$offspring)
   ggplot(heritability, aes(selected, offspring, color = treat)) +
-    # theme_classic() +
-    # geom_rangeframe(color = 'black') +
     geom_jitter(width = 0.01) + 
     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
     labs(x = expression(Parental ~ log[10] ~ CH[4] ~ "(-k)"), 
@@ -85,8 +79,6 @@ plot_beta <- function(ps) {
     ord_plot(color = "treat",
              shape = "passage",
              auto_caption = NA) +
-    # theme_tufte() +
-    # geom_rangeframe(color = 'black') +
     coord_fixed(5.5/43.6, clip="off") +
     scale_shape_discrete(name = "Passage") +
     scale_color_manual(name = "Treatment",
@@ -95,8 +87,6 @@ plot_beta <- function(ps) {
     theme_classic() +
     theme(panel.border = element_rect(fill = NA, size = 0.5),
           axis.line = element_blank())  
-  # theme_tufte() +
-  #   theme(axis.title.y = element_text(angle = 0, vjust = 0.5))
   
 
   # ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
