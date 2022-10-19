@@ -83,7 +83,7 @@ aes_data <-
 ```
 
 
-```{r remove_chloroplasts, eval=FALSE}
+```{r remove_chloroplasts}
 
 chloroplast_seqs <- 
   aes_data %>% 
@@ -385,7 +385,6 @@ save(tidy_permanova, file = "Output/beta_model.RData")
 There is a significant difference of centroid between passage, treatment, and
 their interaction. Testing a difference of dispersion using betadisper
 shows no difference in variance between the four groups.
-
 
 
 ## dbrda methane in passage 5

@@ -67,136 +67,118 @@ source('../R/functions.R')
 
 Microbiomes mediate important ecosystem functions, yet it has proven difficult
 to determine the relationship between microbiome composition and the rate of
-any ecosystem function. This challenge remains because it is difficult to
-manipulate microbiome composition directly, we cannot know a priori which members of the
-microbiome limit the rate of an ecosystem function, and microbiomes covary with
-the environment. We propose that artificial ecosystem selection
-can overcome these challenges. Artificial ecosystem selection involves creating
-replicate ecosystems, selecting replicates with a desired ecosystem-level
-trait, and using the microbiomes from the selected ecosystems to inoculate a
-new set of ecosystems. We performed artificial ecosystem selection on replicate
-soil microcosms to select for increased soil methane oxidation rate. We
-observed a strong response to selection with a 51% increase in methane oxidation rate per round over five
-rounds of selection. This suggests that a large portion of the variation in
-methane oxidation rate in these soils can be attributed to microbiome
-variation. We also found that selection did not enrich for known methane
-oxidizers; rather microbes that responded to selection included `r length(da_fams)`
-families such as *Fimbriimonadaceae*, *Cytophagaceae*, and *Diplorickettsiaceae*. This result
-is in contrast to the typical assumption that the rate of an ecosystem function
-is limited by the final step in the associated microbial pathway. Our study
-demonstrates that variation in microbiome composition can contribute to
-variation in the rate of ecosystem function.
+ecosystem functions. This challenge remains because it is difficult to
+manipulate microbiome composition directly, we often cannot know a priori which
+members of a microbiome influence the rate of an ecosystem function, and
+microbiomes can covary strongly with other drivers of ecosystem function, such
+as the environment. We propose that artificial ecosystem selection can overcome
+these challenges. Artificial ecosystem selection involves creating replicate
+ecosystems, selecting replicates with a desired ecosystem-level trait, and
+using the microbiomes from the selected ecosystems to inoculate a new set of
+ecosystems. We performed artificial ecosystem selection on replicate soil
+microcosms to select for increased soil methane oxidation rate. We observed a
+strong response to selection with a 51% increase in methane oxidation rate per
+round over five rounds of selection. This suggests that a large portion of the
+variation in methane oxidation rate in these soils can be attributed to
+microbiome variation. We also found that selection did not enrich for known
+methane oxidizers; rather microbes that responded to selection included members
+of `r length(da_fams)` families such as *Fimbriimonadaceae*, *Cytophagaceae*,
+and *Diplorickettsiaceae*. This result is in contrast to the typical assumption
+that the rate of an ecosystem function is limited by the final step in the
+associated microbial pathway. Our study demonstrates that variation in
+microbiome composition can contribute to variation in the rate of ecosystem
+function and that this relationship can be revealed via artificial ecosystem
+selection.
 
 # Introduction
 
 Microbiomes mediate a variety of important functions in ecosystems, and there
 is great interest in understanding how attributes of microbiomes may influence
-variation in ecosystem functions [@crowther2019]. Biodiversity-ecosystem
+variation in ecosystem functions [@conrad1996; @schimel1998; @crowther2019]. Biodiversity-ecosystem
 function relationships have been described for a variety of macroorganismal
 communities. For example, plant species richness correlates with productivity
 and marine community diversity correlates with functions such as production,
 consumption, and nutrient release
-[@cardinale2006; @hooper2012; @gamfeldt2015]. While there is evidence that
-variation in the microbiome contributes to variation in ecosystem functions,
-describing this relationship has been elusive [@rocca2015; @graham2016].
+[@cardinale2006; @hooper2012; @gamfeldt2015]. While there is some evidence that
+variation in microbiomes can contribute to variation in ecosystem functions,
+documenting this relationship has been elusive [@conrad1996; @rocca2015; @graham2016].
 
-One reason for this difficulty is that it is challenging to directly manipulate
-microbiome composition and diversity the way we can for macroorganismal
-communities. Instead, we must use genetics through marker gene or metagenomic
-sequencing to characterize the microbiome.  However, studies that measure the
-taxonomic or functional diversity of a microbiome through these approaches
-rarely find a correlation between diversity and function [@graham2016]. Another
-approach is to quantify cells or genes using  quantitative
-PCR. Studies such as this still rarely find a correlation between the abundance
-of a functional group and the rate of the corresponding process [@rocca2015].
-As a result, it remains unclear how and when microbiome variation contributes
-to variation in the rate of ecosystem functions.
-
-Another likely reason that microbiome-ecosystem function relationships have been
-difficult to document is that the most common approaches for looking for a
-relationship requires some prior knowledge of the likely causal links between
-microbiomes and ecosystem functions. For example, many studies have looked for
-relationships with the abundance or diversity of a "marker gene" for a
-particular function. Marker genes are microbial genes that code for an enzyme or
+There are several reasons for this difficulty. One reason is that it is
+challenging to manipulate microbiome composition and diversity directly.
+Experimental manipulations of community composition and diversity have been
+central to documenting the relationships between ecosystem functions and the
+biodiversity of plants and animals [@hooper2012], but this is seldom possible
+with microbiomes. Most microorganisms cannot yet be cultured and most
+available methods for manipulation of microbiomes (e.g., antibiotics, dilution,
+etc.) are not sufficiently specific to manipulate individual microbial
+lineages. Microbial ecologists are thus often restricted to using comparative
+methods, in which microbiome composition and diversity is surveyed via
+environmental DNA and then correlated with the rate of an ecosystem function
+{cite examples}. However, such studies are rarely successful [@graham2016]. In an
+attempt to increase the likelihood of detecting such a correlation, microbial
+ecologists may focus their survey efforts on a particular group of microbes
+thought to be involved in the ecosystem function of interest. For example, many
+studies have looked for relationships between an ecosystem function and the
+abundance or diversity of a microbial gene that codes for an enzyme or
 enzyme-subunit known to be involved in a particular function. But this approach
-assumes that one can identify the "right" marker gene a priori which, given
-how little is understood about microbial diversity, seems highly unlikely. What
-is needed are approaches to microbiome-ecosystem
-function mapping that do not require this degree of prior knowledge.
+assumes that one can identify the “right” marker gene a priori which, given how
+little is understood about microbial diversity, seems highly unlikely. And in
+fact these studies are rarely successful [@rocca2015]. 
 
-Yet another likely reason that microbiome-ecosystem function relationships have
-been difficult to document is that microbiomes can be related to ecosystem
-functions in two related but distinct ways that historically have been difficult
-to separate. One way is that microbiomes may simply be conduits through which
-the environment drives function. That is to say that the environmental
-conditions completely regulate the attributes of the microbiome and a shift in
-the environment causes a shift in microbiome attributes, such as the abundance
-of a microbial functional group. This shift results in a change in the rate of
-an ecosystem function. In this case, microbiome attributes would be
-statistically associated with variation in ecosystem function, but also strongly
-covary with environmental conditions. Therefore, there would be no association
-between microbiomes and ecosystem functions independent of the environmental
-conditions. Under this scenario, knowing anything about the microbiome would not
-necessarily provide you with information regarding the causes of the change in
-ecosystem function or improve one's ability to predict changes in ecosystem
-function. Furthermore, attempting to alter ecosystem function by altering the
-microbiome without changing the underlying environmental conditions would likely
-be fruitless.
-
-Another possibility is that the microbiome itself alters the rate of ecosystem
-function independent of the environment. In this case, one cannot predict the
-rate of ecosystem function without understanding changes in the microbiome. In
-addition, managing the microbiome through inoculation or selective antibiotics
-would potentially be an effective approach for enhancing or mitigating certain
-changes to ecosystem functions. These two scenarios are not mutually
-exclusive, nor are they likely unique to microbes, but methods to determine the
-relative importance of these two scenarios have not until recently been employed.
+Another likely reason that microbiome-ecosystem function relationships have
+been difficult to document is that microbiomes often covary with other drivers
+of variation in ecosystem functions, such as environmental conditions or
+resources. Such covariation can make it impossible to determine whether
+microbiomes directly contribute to functional variation. Understanding the
+degree to which microbiomes directly influence functional variation is crucial
+if scientists are to develop microbiome-focused methods for altering or
+maintaining ecosystem functions. 
 
 The problem of connecting microbiome attributes to the rate of an ecosystem
 function is analogous to the problem of connecting genomic variation to
 phenotypic traits in organisms, and solutions to this problem may be found by
-exploring this analogy [@morris2020]. For example, one approach to the problem of
-genotype-phenotype mapping is to perform artificial selection on a trait of
+exploring this analogy [@morris2020]. For example, one approach to the problem
+of genotype-phenotype mapping is to perform artificial selection on a trait of
 interest and identify genes that respond to selection. Such genes are likely to
 be causally linked to the trait under selection. An analogous approach for
 exploring microbiome-ecosystem function relationships is gaining acceptance
-among microbiologists [@swenson2000; @panke-buisse2015]. Microbiomes have been
-shown to respond to selection at the ecosystem-trait level [@swenson2000],
-and some ecosystem-scale microbiome traits have been shown to be transferable
-through microbiome inoculations [@panke-buisse2015]. Applying artificial
-selection to whole microbiomes could be a novel approach for quantifying how
-much of the variation in the rate of an ecosystem function could be attributed
-independently to microbiome variation [@goodnight2000]. In addition, this
-approach could be used to identify microbiome attributes, such as genes or taxa,
-associated with the rate of an ecosystem function, although, to our knowledge
-this has not previously been accomplished [@arias-sanchez2019; @morris2020]. 
-Such an approach has the potential to expand our ability to model
-microbial ecosystem-function relationships more accurately and allow us to
-manage ecosystems for particular outcomes [@fuhrman2009; @schimel1998]. Here, we
-use this approach to estimate how much of the variation in ecosystem function
-(the flux of CH~4~ gas between the soil and atmosphere) can be attributed to
-variation in the microbiome and to identify microbial markers associated with
-this ecosystem function.
+among microbiologists [@swenson2000; @panke-buisse2015; @sanchez2021].
+Microbiomes have been shown to respond to selection at the ecosystem-trait
+level [@swenson2000], and some ecosystem-scale microbiome traits have been
+shown to be transferable through microbiome inoculations [@panke-buisse2015].
+Applying artificial selection to whole microbiomes could be a novel approach
+for quantifying how much of the variation in the rate of an ecosystem function
+could be attributed independently to microbiome variation [@goodnight2000]. In
+addition, this approach could be used to identify microbiome attributes, such
+as genes or taxa, associated with the rate of an ecosystem function, although,
+to our knowledge this has not previously been accomplished [@arias-sanchez2019;
+@morris2020]. Such an approach has the potential to expand our ability to more
+accurately model microbial ecosystem-function relationships and allow us to
+manage ecosystems for particular outcomes [@fuhrman2009; @schimel1998].
 
-Soil CH~4~ oxidation is a suitable function for this study because there is
-evidence that it may vary with microbiome attributes. For example, variation in
-CH~4~ emissions in arctic permafrost is correlated with the transcriptional
-activity of certain methanogens [@freitag2009; @freitag2010]. In addition,
-soil microbiome phylogenetic variation is a strong predictor of CH~4~ oxidation in
-forests and pastures of the Brazilian Amazon [@meyer2020]. Finally,
-methanogenesis and methanotrophy are two of the most deeply conserved microbial
-physiologies and are represented in a narrow range of taxa and so the taxonomic
-composition of the microbiome is more likely to be associated with the rate of
-CH~4~ flux than other broader or more shallowly conserved functions
-[@schimel1998; @martiny2013]. This suggests that microbiome variation might
-drive variation in CH~4~ oxidation in soils.
+We use this approach to estimate how much of the variation in an ecosystem
+function - the flux of CH~4~ gas between the soil and atmosphere - can be
+attributed to variation in the microbiome and to identify microbial markers
+associated with this ecosystem function.  Soil CH~4~ oxidation is a suitable
+function for this study because there is evidence that it may vary with
+microbiome attributes. For example, variation in CH~4~ emissions in arctic
+permafrost is correlated with the transcriptional activity of certain
+methanogens [@freitag2009; @freitag2010]. In addition, soil microbiome
+phylogenetic variation is a strong predictor of CH~4~ oxidation in forests and
+pastures of the Brazilian Amazon and the Congo Basin [@meyer2020; @meyer2020a]. Finally, methanogenesis and
+methanotrophy are two of the most deeply conserved microbial physiologies and
+are represented in a narrow range of taxa and so the taxonomic composition of
+the microbiome is more likely to be associated with the rate of CH~4~ flux than
+other broader or more shallowly conserved functions [@schimel1998;
+@martiny2013]. This suggests that microbiome variation might drive variation in
+CH~4~ oxidation in soils.
 
 We applied artificial ecosystem selection on soil microbiomes by selecting on
 the ecosystem-scale CH~4~ oxidation rate.  Using this approach, we were able to
 estimate how much of the variation in CH~4~ oxidation rate was associated with
 variation in the microbiome.  To identify which microorganisms could be markers
 of CH~4~ oxidation rate, we compared the composition of the artificially
-selected microbiomes to a control set of microbiomes without selection.  We
+selected microbiomes to a control set of microbiomes with random selection.  We
 then evaluated whether these markers met our underlying assumptions about
 which taxa limit the rate of ecosystem function.
 
@@ -235,26 +217,30 @@ approximately three weeks. Methane oxidation rates were determined at the end
 of the incubation period. For the positive treatment, the three jars with the
 greatest CH~4~ oxidation rates were chosen to inoculate the next generation.
 For the neutral treatment, three jars were randomly selected to inoculate the
-next generation. For each treatment, the selected jars were homogenized and 5 g 
+next generation. For each treatment, the selected jars were homogenized and 5 g
 of the homogenized soil was used to inoculate the next set of jars, which
-represents a 10% subsampling. The
-next set of jars were created in an identical manner to the first generation
-with fresh autoclaved potting mix and the same moisture and CH~4~ content.
+represents a 10% subsampling. The next set of jars were created in an identical
+manner to the first generation with fresh autoclaved potting mix and the same
+moisture and CH~4~ content.
 
 ## Methane oxidation rate
 
 Methane oxidation rates were determined after flushing and spiking jars to
-approximately 1000 ppm CH~4~. Headspace samples of 1 mL were collected from each
-jar immediately after spiking and then at time points 3, 6, 24, and 48 hours for
-a 5-point curve. Samples were immediately injected into a SRI model 8610C gas
-chromatograph equipped with a flame ionization detector (SRI Instruments, Torrance, CA, USA) to determine the headspace CH~4~
-concentration. Fluxes were calculated from a first-order exponential decay
-function as decay constant $k$ with units day^-1^. Oxidation rates are presented
-as the additive inverse of $k$ (i.e., $-k$) so that a more positive value
-represents a greater oxidation rate. The jars selected for the positive
-treatment in passage 2 had the lowest CH~4~ oxidation rate of the twelve jars
-due to a calculation error in the CH~4~ oxidation rate. All other passages
-correctly used the top three jars.
+approximately 1000 ppm CH~4~. Headspace samples of 1 mL were collected from
+each jar immediately after spiking and then at time points 3, 6, 24, and 48
+hours for a 5-point curve. Samples were immediately injected into a SRI model
+8610C gas chromatograph equipped with a flame ionization detector (SRI
+Instruments, Torrance, CA, USA) to determine the headspace CH~4~ concentration.
+Fluxes were calculated from a first-order exponential decay function as decay
+constant $k$ with units day^-1^. Oxidation rates are presented as the additive
+inverse of $k$ (i.e., $-k$) so that a more positive value represents a greater
+oxidation rate. The jars selected for the positive treatment in passage 2 had
+the lowest CH~4~ oxidation rate of the twelve jars due to a calculation error
+in the CH~4~ oxidation rate. Despite this error, we still observed a strong
+response to selection demonstrating the power of this technique. In addition,
+this likely reintroduced diversity lost during the selection process,
+potentially increasing the variation available to be selected upon, as
+is recommended for microbiome selection experiments [@sanchez2021].
 
 ## Soil DNA extraction and sequencing
 
@@ -291,7 +277,7 @@ contaminants was evaluated using both the prevalence and frequency methods from
 Decontam identified `r length(which(contamdf$contaminant))` potential contaminants based
 on prevalence and frequency. Visual inspection of abundance-concentration
 plots indicated that `r length(contaminants)` of these were likely contaminants and these
-ASVs were removed.
+ASVs were removed. Amplicon sequence variants that were assigned chloroplast taxonomy were removed prior to analysis.
 
 ## Statistical Analysis
 
@@ -311,9 +297,8 @@ selection.
 
 To estimate the proportion of variance in CH~4~ oxidation rate due to variation in
 the microbiome, we estimated narrow-sense heritability ($h^2$) as the
-regression of mid-offspring on mid-parent [@falconer1996]. The mid-parent was the
-mean for all three selected jars and the mid-offspring was the mean for all jars
-produced by those parents. First, we tested if there was an effect of treatment
+regression of offspring on mid-parent [@falconer1996]. The mid-parent was the
+mean for all three selected jars and the offspring was the CH~4~ oxidation rate for each jar produced by those parents. First, we tested if there was an effect of treatment
 on the heritability estimate. We compared nested models with and without treatment using an F-test
 test with the 'anova' function. We then fit the full model to estimate the
 heritability of the Positive and Neutral treatments.
@@ -340,7 +325,7 @@ grouped ASVs at the family level keeping ASVs that lacked a family-level taxonom
 assignment by grouping them at a higher level. We
 then subset the samples in Passage 5 and removed all families with a prevalence
 of less than 10\% in either treatment. We used three methods for testing differential abundance: ANCOM-II, ALDEx2, and CORNCOB. We then
-pulled out the consensus taxa that were significant
+identified the consensus taxa that were significant
 with all three tests and plotted their relative abundances. For ANCOM-II, we used the 'ancom' function in the 'ANCOM-BC' package with a cutoff of W = 0.7 [@kaul2017; @lin2020]. For ALDEx2, we used the 'aldex' function in the 'ALDEx2' package with Welch's t-test and we used an effect size of
 1 as our significance threshold [@fernandes2014]. Finally, we used CORNCOB with the 'differentialTest' function in the 'corncob' package with the Wald test and without bootstrapping [@martin2020]. Lastly, to test differentially abundant methanotrophs, we subset all ASVs within methanotrophic families and tested their differential abundance aggregated at the family and genus level using 'corncob'.
 
@@ -350,7 +335,7 @@ with all three tests and plotted their relative abundances. For ANCOM-II, we use
 
 We observed a response to selection on whole-ecosystem soil CH~4~ oxidation
 rate (`r figures("response", display = "cite")`; difference of slopes:
-F~`r compare_response_mods[2,3]`,`r compare_response_mods[2,1]`~ = `r myround(compare_response_mods[2,5], 2)`, p = `r myround(compare_response_mods[2,6], 2)`). At the start of the experiment, the Positive
+F~`r compare_response_mods[2,4]`,`r compare_response_mods[2,2]`~ = `r myround(compare_response_mods[2,5], 2)`, p = `r myround(compare_response_mods[2,6], 2)`). At the start of the experiment, the Positive
 treatment had a mean CH~4~ oxidation rate that was
 `r percent_less(initial = tidy(response_model)[[1, 2]], final = tidy(response_model)[[3, 2]] + tidy(response_model)[[1, 2]])`\% lower than the
 Neutral treatment `r print_lm(response_model, 3, 'difference of y-intercepts')`. 
@@ -359,12 +344,12 @@ treatment over the five passages `r print_lm(response_model, 2)`. By contrast,
 the Positive treatment had a `r round(per_slope)`\% increase in CH~4~
 oxidation rate per passage `r print_lm(response_model, 4)`.
 
-## Heritability of methane oxidation
-
-We estimated heritability as the regression of mid-offspring on mid-parent (`r figures("herit", display = "cite")`).
-Offspring CH~4~ oxidation rates were correlated with parental CH~4~ oxidation
-rates in both the Positive treatment `r print_lm(herit_model, 4)` and the
-Neutral treatment `r print_lm(herit_model, 2)`. 
+We estimated the proportion of variation in methane oxidation due to variation
+in the microbiome as the regression of offspring on mid-parent 
+(`r figures("herit", display = "cite")`).  Offspring CH~4~ oxidation rates were
+correlated with parental CH~4~ oxidation rates in both the Positive treatment
+`r print_lm(herit_model, 4)` and the Neutral treatment `r print_lm(herit_model,
+2)`. 
 
 ## Taxonomic richness
 
@@ -425,192 +410,141 @@ on methanol [@tamas2014, @dedysh2016]. Based on this analysis,
 it appears that no methanotrophs were enriched in the Positive treatment.
 
 
-# New Discussion
+# Discussion
 
-We observed a response to selection on whole-ecosystem soil methane oxidation rate, which demonstrates that variation in the microbiome can generate variation in the rate of ecosystem function independent of the underlying environmental conditions. While it is well understood that the microbiome mediates a variety of ecosystem functions, a fundamental question in microbial ecology is whether we need to understand variation in the composition of microbiomes to understand variation in the rate of ecosystem functions. To address that question, we performed artificial ecosystem selection on soil microbiomes by selecting for ecosystems with high methane oxidation rates. We found that there was a significant increase in methane oxidation rate as a response to selection. Each generation of soil ecosystems was created from the same pool of sterile soil substrate and a small inoculum from the previous generation. Therefore, it is unlikely that this response to selection was due to changes in the abiotic conditions of the ecosystem. In addition, the response was only observed in the Positive treatment and not in the Neutral treatment, which shows that this was not a side effect of passaging in jars. Therefore, we conclude that variation in the microbiome can generate variation in ecosystem functions independent of the environment.
+While it is well understood that the microbiome mediates a variety of ecosystem
+functions, a fundamental question in microbial ecology is whether we need to
+understand variation in the composition of microbiomes to understand variation
+in the rate of ecosystem functions [@conrad1996; @schimel1998]. To address this question, we performed
+artificial ecosystem selection on soil microbiomes by selecting for ecosystems
+with high methane oxidation rates. We found that there was a significant
+increase in methane oxidation rate as a response to selection. Each generation
+of soil ecosystems was created from the same pool of sterile soil substrate and
+a small inoculum from the previous generation. Therefore, it is unlikely that
+this response to selection was due to changes in the abiotic conditions of the
+ecosystem. In addition, the response was only observed in the Positive
+treatment and not in the Neutral treatment, which shows that this was not a
+side effect of passaging in jars.  Therefore, we conclude that variation in the
+microbiome can generate variation in ecosystem functions independent of the
+environment.
 
-In addition, we observed a large heritability for methane oxidation rate, which suggests that microbiome variation explains a large portion of the variation in methane oxidation rate relative to environmental variation in this system.
-To estimate how much of the variation in methane oxidation rate can be explained by the presence, absence, and relative abundances of specific microbial taxa, we calculated the narrow-sense heritability of methane oxidation rate, which was `r myround(coefficients(herit_model)[4], 2)` for the Positive treatment. A heritability of 1 would indicate that a trait is entirely genetically determined and thus offspring would have the exact same value of that trait as their parents. A heritability greater than 1 indicates that offspring exceed the value of their parents. This is unlikely in the context of a genomic trait, but microbiomes are not limited by the constraints of genomes because microbes are not alleles and communities are not chromosomes. Therefore, complementarity within a microbial community could result in offspring communities that exceed the trait values of their "parent" ecosystems. The large heritability we observed indicates that microbiome variation is a large contributor to the variation in methane oxidation in this experimental system.
+In quantitative genetics, heritability quantifies the degree to which variation
+in a trait is due to variation in genotype [@falconer1996]. This is often estimated as the
+regression of offspring phenotype on parental phenotype. Thus, a significant
+correlation between the trait values of parents and offspring indicates that
+the trait is at least partially genetically determined. To estimate the
+variation in an ecosystem trait due to variation in the microbiome, we can
+perform a similar estimation by comparing the trait values of the "offspring"
+jars in one generation to the trait value of the "parental" jars chosen for
+selection in the previous generation. This "ecosystem heritability" then
+quantifies how much of the variation in ecosystem function is due to variation
+in the microbiome [@goodnight2000; @sanchez2021; @henry2021]. 
 
-Next, we wanted to address what aspects of the microbiome, in terms of alpha diversity, beta diversity, or individual taxa, explain this contribution of the microbiome to variation in methane oxidation rate. There are three ways that the microbiome could respond to selection in this experiment: gain or loss of species, changes in the relative abundances of species, or changes within the genomes of the constituent species. Using 16S rRNA gene sequences, we are unable to address the third possibility of whether taxa in this experiment could have evolved changes in their genomes as a result of selection. Therefore, we will focus on the first two possibilities. 
+We quantified how much of the variation in methane oxidation
+rate was due to variation in the microbiome by regressing the methane oxidation
+rates of the 12 offspring jars against the mean methane oxidation rate of the
+three jars selected in the previous generation 
+We observed a heritability of `r myround(coefficients(herit_model)[4], 2)` (add SE/CI) for the
+Positive selection treatment. 
+A heritability of 1 would indicate that a trait is entirely
+genetically determined and thus offspring would have the exact same value of
+that trait as their parents. A heritability greater than 1 indicates that
+offspring exceed the value of their parents. This is unlikely in the context of
+a genomic trait, but microbiomes are not limited by the constraints of genomes
+because microbes are not alleles and communities are not chromosomes.
+Therefore, complementarity within a microbial community could result in
+offspring communities that exceed the trait values of their "parent"
+ecosystems. The large heritability we observed indicates that microbiome
+variation is a large contributor to variation in methane oxidation in this
+experimental system.
 
-Richness at the ASV level did not vary between the two treatments and there were relatively few taxa gained or lost in the Positive selection treatment and none of these were prevalent across the 12 jars in passage 5. Therefore, the gain or loss of species is unlikely to explain the increase in methane oxidation rate. However, we found that Bray-Curtis dissimilarity was greater between the two treatments in Passage 5 than within each treatment and was correlated with methane oxidation rate, which suggests that changes in the relative abundance of taxa could explain the response to selection. A difference in composition between the two treatments could be a direct result of selection for organisms that contribute to CH~4~ oxidation or a result of ecological drift over the course of the experiment. In the former case, that would suggest that changes in the relative abundance of specific microbial taxa could explain the response to selection on CH~4~ oxidation rate. 
+Next, we wanted to address what aspects of the microbiome, in terms of alpha
+diversity, beta diversity, or individual taxa, explain this contribution of the
+microbiome to variation in methane oxidation rate. There are three ways that
+the microbiome could respond to selection in this experiment: gain or loss of
+species, changes in the relative abundances of species, or changes within the
+genomes of the constituent species. Using 16S rRNA gene sequences, we are
+unable to address the third possibility of whether taxa in this experiment
+could have evolved changes in their genomes as a result of selection.
+Therefore, we will focus on the first two possibilities. 
 
-Even though we observed an increase in methane oxidation rate in the Positive treatment and a difference in composition between the two treatments, we did not observe an increase in the relative abundance of methanotrophs. This contrasts with the usual assumption that the final step in a metabolic pathway is the rate-limiting step (citation?). In certain ecosystems, methane oxidation rate is correlated with the abundance of methanotrophs as estimated from marker genes (Cite. I know that one methanogenesis paper, not sure about methanotrophy). However, it does not appear generally true that the rate of an ecosystem function is limited by the abundance of the gene that encodes the final step in that pathway (cite rocca, maybe some of the methane work.) Since we did not observe an increase in the relative abundance of methanotrophs in the treatment that displayed an increase in methane oxidation rate, we may have to consider other microbial functional groups within an ecosystem to understand what drives changes in the rate of ecosystem functions.
+Richness at the ASV level did not vary between the two treatments and there
+were relatively few taxa gained or lost in the Positive selection treatment and
+none of these were prevalent across the 12 jars in passage 5. Therefore, the
+gain or loss of species is unlikely to explain the increase in methane
+oxidation rate. However, we found that Bray-Curtis dissimilarity was greater
+between the two treatments in Passage 5 than within each treatment and was
+correlated with methane oxidation rate, which suggests that changes in the
+relative abundance of taxa could explain the response to selection.
 
-One of the goals of this study was to determine how much of the variation in ecosystem function is due to variation in the microbiome. In this experiment, we eliminated as much environmental variation as possible. This was intentional, because we wanted to determine whether it was possible for variation in the microbiome to generate variation in methane oxidation rate independent of the environment. As a result, our heritability estimates are likely to be greater than they would be in natural ecosystems with greater environmental variation. Future work could estimate heritability in experimental systems that manipulate environmental variation or across natural ecosystems to evaluate how much of the variation in ecosystem function can be explained by microbiome variation outside the lab. This experiment also had a relatively small sample size which resulted in heritability estimates with wide error bars. Increasing replication would help us more accurately estimate this parameter and give us a better understanding of the relative importance of environmental variation and microbiome variation in the rate of microbiome-mediated ecosystem functions. 
+Even though we observed an increase in methane oxidation rate in the Positive
+treatment and a difference in composition between the two treatments, we did
+not observe an increase in the relative abundance of methanotrophs. This was
+surprising given that methane consumption is not a common trait among microbes
+and that it is often assumed that the rate of an ecosystem function is
+limited by the final enzymatic step in a metabolic pathway
+[@rocca2015]. In certain ecosystems, methane production and consumption are 
+correlated with the abundance of methanogens and methanotrophs as estimated from marker
+genes [@meyer2020, @meyer2020a]. However, it does not appear generally true that the rate of an
+ecosystem function is limited by the abundance of the gene that encodes the
+final step in that pathway [@rocca2015]. Our results suggest that the rate of methane oxidation can be altered by
+non-methanotrophs, perhaps through ecological interactions with methanotrophic
+species. 
 
-Another important question is whether selection at the ecosystem scale resulted in within-strain evolution. Using 16S rRNA gene sequencing we are unable to resolve genomic changes within taxa that may have undergone evolution. Future work could analyze an artificial ecosystem selection experiment using genome-resolved metagenomics to try to detect strain-level changes in the constituent taxa. This would help evaluate whether certain metabolic pathways were enriched in the positive selection treatment or if functional genes changed in frequency within the microbiome. 
+Another important question is whether selection at the ecosystem scale resulted
+in within-strain evolution. Using 16S rRNA gene sequencing we are unable to
+resolve genomic changes within taxa that may have undergone evolution. 
+Therefore, it is possible that the response to selection was driven by changes 
+within the genomes of methanotrophs. But given
+the slow growth rate of methanotrophs, often requiring weeks to years of
+serial batch culturing for isolation, this seems like an unlikely explanation 
+[@whittenbury1970; @hirayama2014; @kim2018]. Future
+work could analyze an artificial ecosystem selection experiment using
+genome-resolved metagenomics to try to detect strain-level changes in the
+constituent taxa. However, reconstructing genomes from in situ soil samples
+has been difficult to achieve and may require enrichment techniques, particularly for methanotrophs which are a relatively rare component of the soil microbiome [@delmont2015]. 
+If these challenges could be overcome for soil metagenomics, we could begin to evaluate whether ecosystem selection results in strain-level evolution or enriches for certain metabolic pathways within the microbiome.
 
-As more is understood about the role of the microbiome in regulating ecosystem functions and the specific taxa involved, more detailed experiments could selectively add or remove important taxa or manipulate their relative abundance to start to estimate the quantitative relationship between specific taxa and the rate of an ecosystem function. Both our differential abundance analysis and this reductionist approach to manipulating individual taxa assumes that taxa act individually on ecosystem function. However, it is much more likely that the microbiome affects the rate of ecosystem function through the interactions of multiple taxa and future analyses with greater replication should test the role of multiple taxa simultaneously by, for example, using machine learning methods [@topçuoğlu2020]
+As more is understood about the role of the microbiome in regulating ecosystem
+functions and the specific taxa involved, more detailed experiments could
+selectively add or remove important taxa or manipulate their relative abundance
+to start to estimate the quantitative relationship between specific taxa and
+the rate of an ecosystem function. Both our differential abundance analysis and
+this reductionist approach to manipulating individual taxa assumes that taxa
+act individually on ecosystem function. However, it is much more likely that
+the microbiome affects the rate of ecosystem function through the interactions
+of multiple taxa. We are unable to evaluate this possibility given our small 
+sample size, but future analyses with greater replication should test the
+role of multiple taxa simultaneously by, for example, using machine learning
+methods [@topcuoglu2020].
 
-A fundamental question in microbial ecology is whether variation in the microbiome contributes to variation in ecosystem function. We performed artificial ecosystem selection on soil methane oxidation rate to test the relationship between microbiome variation and soil methane oxidation rate. We observed a response to selection on soil methane oxidation rate and found a high heritability for methane oxidation, which suggests that variation in the microbiome contributes to variation in soil methane oxidation rate. Surprisingly, we did not observe an increase in the relative of abundance of methanotrophs as a response to selection. Future research could estimate heritability under greater environmental variation to understand how much of the variation in methane oxidation rate is due to variation in the microbiome in a natural ecosystem. In addition, future selection experiments could use genome-resolved metagenomics to observe within-strain evolution and test changes in the functional pathways of the microbiome as a response to selection to determine what aspects of the microbiome explain this increase in oxidation rate. This study demonstrates that soil methane oxidation rate can vary greatly with variation in the microbiome and opens up future research opportunities to establish a more detailed understanding of the relationship between the microbiome and ecosystem function.
-
-# Old Discussion
-
-We observed a response to
-selection on whole-ecosystem soil CH~4~ oxidation rate. This type of response
-has been observed for other functions, such as chloroaniline degradation in
-water [@swenson2000], but this is the first instance, to our knowledge, of
-selection being performed directly on soil biogeochemical cycling. With this
-experimental design, we attempted to create multiple ecosystems that were very
-similar with respect to the type and quantity of soil, soil moisture content,
-and the headspace concentration of CH~4~. we further controlled for environmental
-variation across replicates by having twelve replicates per treatment, using
-controlled laboratory conditions, and by having a random selection treatment as
-a control. Therefore, the observed response to selection on
-CH~4~ oxidation rate is likely due to changes in the microbiome.
-
-To investigate the relationship between microbiome structure and
-ecosystem function, we wanted to determine how much of the variation in soil CH4
-oxidation was attributable to variation in the microbiome. This ecological
-question is analogous to the problem of estimating heritability in quantitative
-genetics [@morris2020]. Variation in an organismal trait is
-determined by the sum of genetic variation, environmental variation, and the
-interaction between the two [@falconer1996]. One goal of quantitative
-genetics is to determine the proportion of phenotypic variation attributable to
-genetic variation. This is commonly estimated as the narrow-sense heritability
-defined as the additive genetic variance. This goal can be achieved through
-artificial selection experiments with selection on the character of interest
-[@falconer1996].
-
-The heritability we observed in the Positive treatment was large ($h^2$ =
-`r myround(tidy(herit_model)[4, 2], 2)`) relative to other studies of biological
-heritability [@visscher2008]. However, given the small sample
-size and wide confidence intervals (95\% CI: 
-`r myround(confint(herit_model)[4, ], 2)`) it is likely that a larger study could
-more precisely estimate the true heritability. We intentionally eliminated much of the
-environmental variation that would be present in natural ecosystems, but it is
-unclear how much jar-to-jar variation there is in the composition of the soil
-substrate. Given these data, though, we conclude that variation within
-the soil microbiome has a very strong effect on soil CH~4~
-oxidation rates independent of any environmental variation. 
-
-The negative heritability observed in the Neutral treatment could indicate a
-negative genetic correlation between CH~4~ oxidation rate and traits
-associated with persistence in a jar [@conner2003]. The conditions in the
-jar favor organisms that can grow in potting mix, reproduce within a three week
-incubation, and survive passaging between jars. These traits might be
-negatively correlated with a community's ability to oxidize CH~4~ indicating
-a potential trade-off [@conner2003]. This trade-off would result in a
-negative heritability of CH~4~ oxidation rate in the Neutral treatment,
-which did not experience selection on CH~4~ oxidation rate.
-
-Since there was a response to selection, we wanted to identify
-which taxa responded to selection. That is, the taxa that
-were enriched in the Positive treatment relative to the Neutral treatment. 
-Studies of microbiome structure-function
-relationships typically quantify marker genes for the final enzyme in a pathway
-to try to predict the rate of flux through that pathway. However, of the 
-`r ntaxa(sig_taxa_treat)` taxa identified by the differential abundance test, none
-were members of a family known to oxidize CH~4~. This suggests
-that, in this system, the taxa that perform the final step in the CH~4~ oxidation pathway
-do not
-limit the rate of flux through the pathway. Traits that we assume are important
-for regulating function (such as the diversity or relative abundance of
-methanotrophs estimated from phylogenetic marker genes) may not be important for
-determining variation in function.
-Perhaps once a sufficient number of methanotrophs are present, the
-process itself is limited by other metabolic processes in the ecosystem, such
-as nitrogen cycling mediated by non-methanotrophic organisms.
-
-We found that `r nrow(dt_data[dt_data$x > 0,])` taxa were enriched in the Positive treatment,
-which might indicate that the soil CH~4~ oxidation rate in these jars is controlled by
-multiple taxa. 
-This conclusion is analogous to the conclusion in quantitative genetics that
-most traits at the organismal level are the result of the interaction between
-many independent genes. Indeed, very few traits or genetic diseases are the
-result of a single gene or mutation [@kerem1989; @macdonald1992]. This results in the use of polygenic risk scores for predicting
-phenotype or disease risk in humans [@reich2001; @hindorff2009]. An analogous conclusion can be drawn for predicting
-the rate of ecosystem function from the presence or relative abundance of 
-microbial taxa. The rate of an ecosystem function at the whole-ecosystem level is 
-the result of interactions among a variety of disparate taxa with different traits.
-To better understand microbiome structure-function relationships, our results suggest that we
-should move away from single marker genes and instead investigate the role of
-multiple functional groups in determining the function of ecosystems whether it
-is CH~4~ flux from soil or host-microbiome health.
-
-Taxonomic richness dropped precipitously
-between Passage 2 and Passage 5. There are several explanations for this drop
-in diversity. The initial community was a diverse microbiome sampled from a natural soil.
-With the initial inoculation and at
-each subsequent passaging, the ecosystem was subsampled to 10\% (5 g of living
-soil was combined with 45 g of sterilized substrate). This subsampling likely
-explains a large part of the drop in diversity. In addition, beyond the imposed
-selection regime based on CH~4~ oxidation rate, these soil microbiomes were under
-a variety of selection pressures such as persistence in a jar, survival during the transfer
-from one jar to the next, and the ability to colonize a new jar in a couple of
-weeks, to name a few. These selection pressures would have further filtered
-the microbiome for taxa that could persist in this laboratory environment.
-
-In addition to the drop in richness, there was also a decrease in beta
-diversity among the jars as a result of passaging. This could be due to the
-homogenization step between each passage. Once the jars were selected to generate
-the next set of jars, the soil from those jars was homogenized and this homogenate
-was used to inoculate the next set of jars. The goal of this step was to "shuffle"
-membership in the microbiomes among the jars in order to test different
-combinations and relative abundances of taxa in terms of their effect on CH~4~
-oxidation rate. This likely also made the communities more similar in their
-membership by increasing the likelihood that each taxon was represented in each
-jar. Another explanation for this biotic homogenization is the aforementioned
-selection for persistence in a jar. These selection pressures would have 
-favored the subset of taxa suited to these laboratory conditions regardless
-of whether they were in the Positive or Neutral selection line. This can be
-seen by the relative similarity of the Positive and Neutral jars in Passage 5.
-Despite the Positive treatment undergoing selection on CH~4~ oxidation rate,
-both the Positive and Neutral jars were experiencing selection on a variety
-of other traits that made the overall soil microbiomes appear similar.
-
-One caveat that is important to keep in mind is that 16S rRNA genes are not
-markers of functional characteristics of microorganisms. They are simply
-phylogenetic markers useful for determining the relative position of taxa in a
-phylogenetic tree. In addition, assigning functions to taxa based solely on
-their taxonomy is a fraught exercise because many microbial functions are not
-very deeply conserved, are spread across disparate lineages of the tree of life,
-or are easily transferred between distantly related taxa. However,
-methanotrophy and methanogenesis are two of the most deeply conserved microbial
-traits [@martiny2013]. This results in part from the fact that
-these functions require multiple genes to perform and are therefore not easy to
-evolve independently or to transfer between lineages through horizontal gene
-transfer. However, in order to be confident that the response we observed was not
-simply due to a relative increase in methanotrophs, we would need to apply
-a functional approach to characterizing the microbiome, for example, by sequencing
-whole metagenomes. 
-
-Future research in this area should use methods that are able to detect
-functions and metabolic pathways within the community that respond to
-selection. For example, genome-resolved metagenomics could identify pathways
-that are enriched in the Positive selection treatment. This would further
-advance our understanding of the exact traits that are enriched in high-flux
-ecosystems and therefore could be markers of ecosystem function. In addition,
-future studies could build on experimental results such as these to sample a
-natural gradient of ecosystem CH~4~ fluxes to determine whether the taxa identified
-in our selection experiment could be useful indicators of CH~4~ flux in the
-field. These studies would allow us to build a picture of the multiple traits
-that drive variation in ecosystem function at the whole-ecosystem level.
-
-We performed an artificial ecosystem selection experiment on whole-ecosystem
-CH~4~ oxidation rate to determine whether variation in microbiome
-composition can contribute to variation in ecosystem function. We observed
-a significant response to selection on CH~4~ oxidation rate - the first
-example of an experiment performing selection on soil biogeochemical cycling.
-In addition, we observed strong heritability of CH~4~ flux between
-passages, suggesting that variation in microbiome composition could be
-a major source of variation in CH~4~ flux in ecosystems. Surprisingly, 
-the taxonomic groups that experienced selection on CH~4~
-oxidation rate were not enriched in methanotrophs. This suggests that
-understanding a single functional group is insufficient for predicting the
-effect of microbiome composition on the rate of ecosystem function.
-Instead, we may need to investigate alternative functional groups or multiple
-interacting taxa to understand the role of microbiomes in ecosystem function. While it has often been assumed that
-microorganisms play a major role in determining variation in ecosystem function, 
-this has not previously been shown empirically. This experiment demonstrates that
-variation in microbiome composition can contribute to considerable variation
-in ecosystem function.
+A fundamental question in microbial ecology is whether variation in the
+microbiome contributes to variation in ecosystem function. We performed
+artificial ecosystem selection on soil methane oxidation rate to test the
+relationship between microbiome variation and soil methane oxidation rate. We
+observed a response to selection on soil methane oxidation rate and found a
+high heritability for methane oxidation, which suggests that variation in the
+microbiome contributes to variation in soil methane oxidation rate.
+Surprisingly, we did not observe an increase in the relative of abundance of
+methanotrophs as a response to selection. This suggests that the rate of methane 
+oxidation could be altered by
+non-methanotrophs. Future research could estimate
+heritability under greater environmental variation to understand how much of
+the variation in methane oxidation rate is due to variation in the microbiome
+in a natural ecosystem. In addition, future selection experiments could use
+genome-resolved metagenomics to observe within-strain evolution and test
+changes in the functional pathways of the microbiome as a response to selection
+to determine what aspects of the microbiome explain this increase in oxidation
+rate. This study demonstrates that soil methane oxidation rate can vary greatly
+with variation in the microbiome and opens up future research opportunities to
+establish a more detailed understanding of the relationship between the
+microbiome and ecosystem function.
 
 # Acknowledgments
 
-This project was supported by the National Science Foundation Graduate Research Fellowship Program (grant no. DGE 1255832) and the ARCS Foundation Florence and Mike Nudelman Scholarship.
+This project was supported by the National Science Foundation Graduate Research
+Fellowship Program (grant no. DGE 1255832) and the ARCS Foundation Florence and
+Mike Nudelman Scholarship.
 
 # Competing Interests
 
@@ -618,7 +552,12 @@ We declare we have no competing interests.
 
 # Data Availability Statement
 
-The 16S rRNA sequencing data generated during the current study are available in the NCBI Sequence Read Archive (SRA) under BioProject accession number PRJNA832314, https://www.ncbi.nlm.nih.gov/sra/PRJNA832314. The metadata generated during the current study as well as the scripts to recreate the analysis are available on Github, https://github.com/amorris28/artificial_ecosystem_selection.
+The 16S rRNA sequencing data generated during the current study are available
+in the NCBI Sequence Read Archive (SRA) under BioProject accession number
+PRJNA832314, https://www.ncbi.nlm.nih.gov/sra/PRJNA832314. The metadata
+generated during the current study as well as the scripts to recreate the
+analysis are available on Github,
+https://github.com/amorris28/artificial_ecosystem_selection.
 
 # Supplement
 
@@ -642,11 +581,11 @@ p_response
 
 ```{r herit, fig.width=5, fig.height=3}
 
-p_herit
+p_herit_each
 
 ```
 
-`r figures("herit", "Ordinary least squares regression of mid-offspring CH~4~ flux on mid-parent CH~4~ flux ($-k$ with units day^-1^). Mid-parent is the mean of the jars selected to inoculate the next passage. Mid-offspring is the mean of all twelve jars produced in one passage. The orange lines and points are the Positive treatment and the gray lines and points are the Neutral treatment")`
+`r figures("herit", "Ordinary least squares regression of offspring CH~4~ flux on mid-parent CH~4~ flux ($-k$ with units day^-1^). Mean parental is the mean of the jars selected to inoculate the next passage. Offspring is the oxidation rate of each jar in the next passage. The orange lines and points are the Positive treatment and the gray lines and points are the Neutral treatment")`
 
 ```{r beta, results=FALSE, fig.height=2.5}
 
