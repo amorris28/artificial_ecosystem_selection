@@ -1,37 +1,18 @@
----
-title: "Sequence data processing"
-author: "Andrew Morris"
-date: "9/13/2021"
-output: html_document
-editor_options: 
-  chunk_output_type: console
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
-knitr::opts_knit$set(root.dir=normalizePath('../'))
-```
-
-
-```{r initialize-packages}
 library(tidyverse)
 #library(phyloseq)
 library(decontam)
 #library(microViz)
 library(knitr)
 library(vegan)
-```
+source('R/functions.R')
 
-```{r import-data}
-load(file = "HPC_Output/dada2_output.RData")
+load(file = paste0(der_dir, "dada2_output.RData"))
 
-samples <- read_tsv('Output/barcode_master.tsv')
-fluxes <- read_tsv('Output/fluxes.tsv')
-qubit <- read_tsv('Data/post_pcr_qubit.tsv')
+samples <- read_tsv(paste0(der_dir, "barcode_master.tsv"))
+fluxes <- read_tsv(paste0(der_dir, "fluxes.tsv"))
+qubit <- read_tsv(paste0(raw_dir, "post_pcr_qubit.tsv"))
 
-```
-
-```{r data-munging}
 
 metadata <-
   samples %>% 
@@ -70,14 +51,12 @@ aes_data <-
   inner_join(metadata, by = "sample") %>% 
   inner_join(taxa, by = "asv")
 
-```
 
 # Alpha Diversity for All Data
 
-Here is alpha diversity for each treatment, positive/negative control, etc.
-In addition, there is alpha diversity by row and column of the PCR plate. I don't see any relationship between PCR plate location and alpha diversity, which is good. It looks like the PCR positive control, which was a pure culture of E. Coli, has particularly low diversity, which is good. Let's pull that sample out and look at it.
+# Here is alpha diversity for each treatment, positive/negative control, etc.
+# In addition, there is alpha diversity by row and column of the PCR plate. I don't see any relationship between PCR plate location and alpha diversity, which is good. It looks like the PCR positive control, which was a pure culture of E. Coli, has particularly low diversity, which is good. Let's pull that sample out and look at it.
 
-```{r alpha-diversity-treatment}
 
 aes_data %>%
   select(sample, treat, asv, count) %>% 
@@ -98,9 +77,6 @@ aes_data %>%
   theme_classic() +
   labs(x = "Treatment", y = "Value")
 
-```
-
-```{r alpha-diversity-row-col}
 
 aes_data %>%
   select(row, col, asv, count) %>% 
@@ -122,11 +98,8 @@ aes_data %>%
   geom_smooth() + 
   scale_x_continuous(breaks = 1:9)
 
-```
-
 ## Top 20 taxa in controls
 
-```{r top20-function}
 top20_taxa_in_treatment <- function(x, treatment) {
 x %>% 
   filter(treat == treatment) %>% 
@@ -138,46 +111,33 @@ x %>%
   arrange(desc(count)) %>% 
   slice_head(n = 20)
 }
-```
 
 ### Potting Mix
 
-```{r top20-potting-mix}
 top20_taxa_in_treatment(aes_data, "PM0")
 
-```
 
 ### Negative Control
 
-```{r top20-negative-control}
 top20_taxa_in_treatment(aes_data, "NC0")
 
-```
 
 ### PCR Positive Control
 
-```{r top20-pcr-pos}
 top20_taxa_in_treatment(aes_data, "PCRP")
 
-```
 
 ### PCR Negative Control
 
-```{r top20-pcr-neg}
 top20_taxa_in_treatment(aes_data, "PCRN")
 
-```
 
 ### Soil Core
 
-```{r top20-soil-core}
 top20_taxa_in_treatment(aes_data, "SC0")
-
-```
 
 # Sequence Depth Distribution
 
-```{r}
 
 # Look at distribution of sequencing depths
 aes_data %>%
@@ -188,11 +148,8 @@ aes_data %>%
   geom_histogram() +
   labs(x = "Sequences", y = "Count")
 
-```
 
 # Beta Diversity all samples
-
-```{r}
 
 aes_df <- 
   aes_data %>%
@@ -248,13 +205,9 @@ bray_data %>%
   labs(x = labs[1], y = labs[2], title = "Bray PCoA by PCR plate row") +
   coord_fixed(percent_explained[2]/percent_explained[1], clip="off")
 
-```
-
-
 
 # DECONTAM
 
-```{r decontam-n-seqs}
 
 aes_data %>% 
   filter(!treat %in% c('PM0', 'SC0', 'PCRN', 'PCRP')) %>% 
@@ -270,23 +223,21 @@ aes_data %>%
   labs(y = "Library Size", x = "Index")
 
 
-```
 
-My negative controls have a lower library size than my samples.
+# My negative controls have a lower library size than my samples.
 
 ## Decontam Combined Prevalence and Frequency
 
-Here, I use DNA concentration values from Qubit and prevalence in negative
-controls to identify potential contaminants. Several negative controls
-had DNA concentration below the detection limit of the instrument and these
-were set to 0.50 ng/mL, which is close to the DNA concentration of the
-negative controls that were within the detection limit and is at the limit of the 
-Qubit's detection limit.
+# Here, I use DNA concentration values from Qubit and prevalence in negative
+# controls to identify potential contaminants. Several negative controls
+# had DNA concentration below the detection limit of the instrument and these
+# were set to 0.50 ng/mL, which is close to the DNA concentration of the
+# negative controls that were within the detection limit and is at the limit of the 
+# Qubit's detection limit.
+# 
+# In the plots below, ASV1 is a true sequence. The others are the ASVs identified
+# by decontam as potential contaminants.
 
-In the plots below, ASV1 is a true sequence. The others are the ASVs identified
-by decontam as potential contaminants.
-
-```{r decontam-prep}
 
 otu_table <-
   aes_data %>% 
@@ -306,9 +257,6 @@ rownames(otu_table) <- otu_table$sample
 otu_table <- otu_table[, -1]
 otu_mat <- as.matrix(otu_table)
 
-```
-
-```{r decontam}
 contamdf <- isContaminant(otu_mat, conc = concentration, neg=control)
 
 alleged_contaminants <- which(contamdf$contaminant)
@@ -329,27 +277,23 @@ contaminants <-
   which(contamdf$contaminant)[which(contamdf$contaminant) %in% 
   c(570, 810, 1283, 1859, 2233, 2777, 2926, 5687, 6696)]
 
-save(contamdf, contaminants, file = "Output/decontam.RData")
-```
+save(contamdf, contaminants, file = paste0(der_dir, "decontam.RData"))
+# 
+# Decontam identified `r length(which(contamdf$contaminant))` potential contaminants based
+# on prevalence and frequency. Visual inspection of abundance ~ concentration
+# plots indicated that `r length(contaminants)` were likely contaminants. These
+# ASVs were removed.
 
-Decontam identified `r length(which(contamdf$contaminant))` potential contaminants based
-on prevalence and frequency. Visual inspection of abundance ~ concentration
-plots indicated that `r length(contaminants)` were likely contaminants. These
-ASVs were removed.
-
-```{r remove-contaminants}
 aes_data_no_contam <-
  aes_data %>%
   nest(data = -asv) %>% 
   filter(!asv %in% paste0("ASV", contaminants)) %>% 
   unnest(data)
 
-```
 
 
 # Combine ASV table and flux data
 
-```{r combine-data}
 
 
 flux_sd <- 
@@ -379,6 +323,5 @@ full_data <-
   full_data %>% 
   left_join(seqs, by = "asv")
 
-write_tsv(full_data, 'Output/community_data.tsv')
+write_tsv(full_data, paste0(der_dir, "community_data.tsv"))
 
-```

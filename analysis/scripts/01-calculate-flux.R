@@ -1,119 +1,46 @@
----
-title: "Process Flux Data"
-author: "Andrew Morris"
-date: "`r Sys.Date()`"
-output: html_document
----
-```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = TRUE)
-knitr::opts_knit$set(root.dir=normalizePath('../'))
+# This script processes the standard curve data from the gas chromatograph on
+# each sample date. It then converts area-under-the-curve to methane
+# concentration using the standard curves for every sample. Finally, it computes
+# fluxes (change in concentration over time) as a first-order exponential decay
+# function.
 
-```
-
-This script processes the standard curve data from the gas chromatograph on
-each sample date. It then converts area-under-the-curve to methane
-concentration using the standard curves for every sample. Finally, it
-computes fluxes (change in concentration over time) as a first-order
-exponential decay function.
-
-```{r initialize_packages, message=FALSE}
 library(tidyverse)
 library(broom)
 library(lubridate)
-library(knitr)
-```
-
-```{r initialize_variables}
 source('R/functions.R')
-```
 
-
-```{r import_data}
+# import_data
 sc <- read.csv(paste0(raw_dir, 'standard_curve.csv'))
 sc_dates <- read.csv(paste0(raw_dir, 'sc_dates.csv'))
 time_data <- data.table::fread(paste0(raw_dir, 'time_data.csv'))
 conc_data <- data.table::fread(paste0(raw_dir, 'conc_data.csv'))
 selected <- read.csv(paste0(raw_dir, 'selected.csv'))
-```
-
-This dataset includes `r length(unique(substr(conc_data$jar, 1, 1)))` treatments across `r length(unique(conc_data$flux_date))` passages (generations). This includes a total of n = `r nrow(conc_data)` samples. However, passage 6 will not be included in the analyzed dataset, because that passage was sampled much later due to covid and used different potting mix so has too many confounding factors. The samples are broken down across passages and treatments as in the following table:
-
-
-```{r echo=FALSE}
-conc_data %>% 
-  mutate(treat = substr(conc_data$jar, 1, 1),
-         rep = substr(conc_data$jar, 2, 3)) %>% 
-  group_by(flux_date, treat) %>% 
-  summarize(n = n_distinct(rep), .groups='drop') %>% 
-  kable()
-```
-
-where `flux_date` is the date flux was measured, `treat` is the selection
-treatment, either `p` Positive or `n` Neutral, and `n` is the number of jars
-for that treatment and sample date. Dates with fewer than 12 samples were due
-to broken jars.
 
 ## Standard Curves
 
-This step first imports the values for the standard curves then calculates the slope of Methane on Area for each sample date. On one flux date, a new standard curve was established on the second day of measurement due to drift in the check standards so t1 and t2 had a different standard curve than t3-t5. `flux_date` indicates the main sample data while `sc_date` indicates which standard curve was used on that day.
-
-```{r standard_curves}
-sc_model <- function(df) {lm(injection_ppm ~ area, data = df)}
+# This step first imports the values for the standard curves then calculates the slope of Methane on Area for each sample date. On one flux date, a new standard curve was established on the second day of measurement due to drift in the check standards so t1 and t2 had a different standard curve than t3-t5. `flux_date` indicates the main sample data while `sc_date` indicates which standard curve was used on that day.
 
 # fit a separate model for each date
-standard_curves <- 
-  sc %>% 
-  filter(molecule == 'ch4') %>% 
-  group_by(flux_date, sc_date) %>% 
-  nest() %>% 
-  mutate(model = map(data, sc_model),
-         glance = map(model, glance),
-         tidy = map(model, tidy)) 
-
-sc_r2 <- 
-  standard_curves %>% 
-  unnest(glance) %>% 
-  select(flux_date, sc_date, r.squared)
-
-sc_equation <- 
-  standard_curves %>% 
-  unnest(tidy) %>%
-  select(flux_date, sc_date, term, estimate) %>% 
-  spread(term, estimate) %>% 
-  rename(intercept = `(Intercept)`, slope = area)
-
-sc_ch4 <- left_join(sc_r2, sc_equation, by = c("flux_date", "sc_date"))
-
-sc_ch4 %>% 
-	kable()
-
-# These are the final slopes for each Methane~Area standard curve 
-# model for each date and time point
-sc_ch4 <- 
-  sc_ch4 %>% 
-  left_join(sc_dates, by = "sc_date") %>% 
-  select(flux_date:sc_date, t, r.squared:slope)
-
-```
+sc <- 
+    sc %>% 
+    select(flux_date, molecule, injection_ppm, area) %>% 
+    group_by(flux_date, molecule) %>% 
+    nest() %>% 
+    mutate(model = map(data, function(df) lm(injection_ppm ~ area, df))) %>% 
+    mutate(glance = map(model, glance)) %>% 
+    mutate(tidy = map(model, tidy)) %>% 
+    unnest(glance) %>% 
+    select(flux_date, molecule, r.squared, tidy) %>% 
+    unnest(tidy) %>% 
+    select(flux_date, molecule, r.squared, term, estimate) %>% 
+    spread(term, estimate) %>% 
+    rename(intercept = `(Intercept)`, slope = area)
 
 ## Compute Fluxes
 
-Remove Passage 6 as explained earlier.
+# Converts raw data and time time interval in units `days`. The first time point, t0 is when the jars were capped and is ignored because t1 is the first sample injected into the gas chromatograph and so is the first time point with concentrations. Decay constants are calculated between t1 and t5.
 
-```{r remove_p6}
-conc_data <- 
-  conc_data %>% 
-  filter(flux_date != '2020-07-27')
-time_data <- 
-  time_data %>% 
-  filter(flux_date != '2020-07-27')
-
-```
-
-Converts raw data and time time interval in units `days`. The first time point, t0 is when the jars were capped and is ignored because t1 is the first sample injected into the gas chromatograph and so is the first time point with concentrations. Decay constants are calculated between t1 and t5.
-
-```{r compute_time_intervals}
 # Standardize time format
 time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')] <- 
   lapply(time_data[, c('t0', 't1', 't2', 't3', 't4', 't5')], ymd_hms)
@@ -131,58 +58,31 @@ time_data <-
   gather(t, days, t1:t5) %>% 
   mutate(flux_date = factor(flux_date))
 
-```
+# This step takes the raw gas chromatograph area data and calculates methane concentration for each time point in units of ppm using the standard curves calculated above.
 
-This step takes the raw gas chromatograph area data and calculates methane concentration for each time point in units of ppm using the standard curves calculated above.
-
-```{r compute_ch4_conc}
-conc_data <- 
+ch4_conc_data <- 
   conc_data %>% 
   filter(molecule == 'ch4') %>% 
   mutate(flux_date = factor(flux_date)) %>% 
   gather(t, area, t1:t5) %>% 
-  left_join(sc_ch4, by = c('flux_date', 't')) %>% 
+  left_join(sc, by = c('flux_date', 'molecule')) %>% 
   mutate(ppm = area * slope + intercept) %>% 
   select(flux_date, jar, t, ppm) %>% 
   spread(t, ppm)
-```
 
-```{r plot_fractions}
+# Finally, this step takes the time intervals and ch4 concentrations and fits a
+# first-order exponential decay function to compute methane flux as `k` which is
+# the rate-constant for the first-order exponential decay function. Here, I
+# calculate `k` as the slope of ln(t0/tn) over time. I use t0/tn rather than
+# tn/t0 so that the sign of the slope is reversed. That way a larger `k` means a
+# faster oxidation rate.
 
-calc_frac_remain <- function(x) {
-  if (is.na(x[3])) {
-    x[2]/x[1]
-  }
-  else {
-    x[3]/x[1]
-  }
-}
+ch4_conc_data[, c('t1', 't2', 't3', 't4', 't5')] <- 
+  lapply(ch4_conc_data[, c('t1', 't2', 't3', 't4', 't5')],
+         function(x) log(ch4_conc_data$t1/x))
 
-conc_data %>% 
-  select(flux_date, jar, t1, t4, t5) %>% 
-  mutate(frac_remain = apply(conc_data[,c('t1', 't4', 't5')], 1, calc_frac_remain)) %>% 
-  mutate(treat = substring(jar,1,1)) %>% 
-  ggplot(aes(x = flux_date, y = frac_remain, color = treat)) +
-  geom_jitter(width = 0.2) +
-  geom_hline(yintercept = 0.90) +
-  geom_hline(yintercept = 0.05) +
-  labs(x = "Flux Date", y = "Fraction of Methane Remaining")
-
-```
-
-Finally, this step takes the time intervals and ch4 concentrations and fits a first-order exponential decay function to compute methane flux as `k` which is the rate-constant for the first-order exponential decay function.
-
-```{r fit_flux}
-ln_ch0_chn <- function(t0, tn) {
-  log(t0/tn)
-}
-
-conc_data[, c('t1', 't2', 't3', 't4', 't5')] <- 
-  lapply(conc_data[, c('t1', 't2', 't3', 't4', 't5')],
-         function(x) ln_ch0_chn(conc_data$t1, x))
-
-flux_data <-
-  conc_data %>% 
+ch4_flux_data <-
+  ch4_conc_data %>% 
   gather(t, ppm, t1:t5) %>% 
   left_join(time_data, by = c('flux_date', 'jar', 't')) %>% 
   mutate(flux_date = factor(ymd(flux_date)), 
@@ -191,17 +91,13 @@ flux_data <-
   mutate(rep = factor(substr(jar, 2, 3)),
          treat = factor(substr(jar, 1, 1)))
 
-lin_model <- function(dt) {
-  lm(ppm ~ days, data = dt)
-}
-
 nested <- 
-  flux_data %>% 
+  ch4_flux_data %>% 
   group_by(flux_date, jar, treat, rep) %>% 
   nest() %>% 
-  mutate(model = map(data, lin_model))
+  mutate(model = map(data, function(df) {lm(ppm ~ days, data = df)}))
 
-fluxes <-
+ch4_fluxes <-
   nested %>% 
   mutate(tidy = map(model, tidy)) %>% 
   unnest(tidy) %>% 
@@ -215,43 +111,41 @@ fluxes <-
          rank_ch4 = rank(ch4),
          log_ch4 = log10(ch4 + abs(min(ch4)) + 0.001)) %>% 
   select(-std.error, -statistic, -p.value, -estimate)
-```
-
-```{r plot_fluxes, fig.height=20}
-flux_data %>%
- ggplot(aes(days, ppm)) +
- facet_grid(flux_date + treat ~ rep, scales = "free") +
- geom_point() +
- stat_smooth(method = 'lm', formula = y ~ x)
-```
-
-```{r identify_selected}
 
 # Identify the selected jars in the fluxes data frame
 selected$selected <- TRUE
-fluxes <- 
-  fluxes %>% 
+ch4_fluxes <- 
+  ch4_fluxes %>% 
   left_join(selected, by = c('passage', 'jar')) %>% 
   mutate(selected = !is.na(selected)) %>% 
   select(-jar) %>% 
   select(flux_date, passage, treat, rep, ch4:selected)
-```
 
-```{r print_data}
-kable(fluxes)
-```
+# Export CH4 flux data
 
-```{r export_data}
-write_tsv(fluxes, paste0(der_dir, 'fluxes.tsv'))
-```
+write_tsv(ch4_fluxes, paste0(der_dir, 'fluxes.tsv'))
 
+# Calculate CO2 flux on the three days for which we have these data
 
-The final dataset includes `r length(unique(fluxes$treat))` treatments across `r length(unique(fluxes$passage))` passages (generations). This includes a total of n = `r nrow(fluxes)` samples. The samples are broken down across passages and treatments as in the following table:
+co2_conc_data <- 
+  conc_data %>% 
+  filter(molecule == 'co2') %>% 
+  mutate(flux_date = factor(flux_date)) %>% 
+  gather(t, area, t1:t5) %>% 
+  left_join(sc, by = c('flux_date', 'molecule')) %>% 
+  mutate(ppm = area * slope + intercept) %>% 
+  select(flux_date, jar, t, ppm) %>% 
+  spread(t, ppm)
 
-
-```{r echo=FALSE}
-fluxes %>% 
-  group_by(flux_date, treat) %>% 
-  summarize(n = n_distinct(rep), .groups='drop') %>% 
-  kable()
-```
+co2_fluxes <- 
+    co2_conc_data %>% 
+  pivot_longer(t1:t5, names_to = 't', values_to = 'ppm') %>% 
+  left_join(time_data, by = c('flux_date', 'jar', 't')) %>% 
+  group_by(flux_date, jar) %>% 
+  nest() %>% 
+  mutate(flux = map(data, function(df) lm(ppm ~ days, df))) %>% 
+  mutate(tidy = map(flux, tidy)) %>% 
+  unnest(tidy) %>% 
+  filter(term == 'days') %>% 
+    select(flux_date, jar, flux_ppmday = estimate)
+ 

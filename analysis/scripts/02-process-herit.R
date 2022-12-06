@@ -1,43 +1,26 @@
----
-title: "Process Heritability Data"
-author: "Andrew Morris"
-date: "`r Sys.Date()`"
-output: html_document
----
-```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = TRUE)
-knitr::opts_knit$set(root.dir=normalizePath('../'))
+# This script takes in the flux data from script 01 and the data on which jars
+# were selected in each passage. It then aligns these data so that for each
+# passage there is a mean flux for all parents, the selected parents, and all
+# offspring.
 
-```
-This script takes in the flux data from script 01 and the data on which jars
-were selected in each passage. It then aligns these data so that for each
-passage there is a mean flux for all parents, the selected parents, and all
-offspring. 
-
-```{r initialize_packages, message=FALSE}
 library(tidyverse)
 library(knitr)
-```
 
-```{r initialize_variables}
 source('R/functions.R')
-```
 
-```{r import_data, message=FALSE}
+# import data
+
 selected_jars <- read_csv(paste0(raw_dir, 'selected.csv'))
 fluxes <- read_tsv(paste0(der_dir, 'fluxes.tsv'))
-```
 
 ## Organize parent/offspring values
 
-```{r process_herit_data}
 # Pull out the selected parental jars
 selected <- 
   fluxes %>% 
   filter(selected) %>% 
   select(passage, treat, log_ch4)
-  
 
 # Pull out all parental jars
 parental <-
@@ -79,9 +62,9 @@ heritability <-
   filter(passage != 5) %>% # Remove passage 5, which has no offspring,
   # because it's the last generation
   ungroup()
-```
 
-```{r}
+
+
 offspring_each <- 
   offspring %>% 
   group_by(passage, treat) %>% 
@@ -95,13 +78,5 @@ heritability_each <-
 
 write_tsv(heritability_each, paste0(der_dir, 'heritability_each.tsv'))
 
-```
 
-
-```{r print_data}
-kable(heritability)
-```
-
-```{r export_data}
 write_tsv(heritability, paste0(der_dir, 'heritability.tsv'))
-```

@@ -1,0 +1,1597 @@
+---
+title: "Analysis"
+author: "Andrew Morris"
+date: "2022-11-21"
+output: 
+    html_document:
+        toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+here::i_am("analysis/analysis.Rmd")
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE)
+
+```
+
+```{r initialize_packages, message=FALSE}
+library(morris)
+library(broom)
+library(knitr)
+library(broman)
+
+library(phyloseq)
+library(knitr)
+library(magrittr)
+library(vegan)
+library(ggpubr)
+library(ggtext)
+library(ALDEx2)
+library(corncob)
+library(ANCOMBC)
+library(tidyverse)
+library(here)
+
+source(here('R/', 'functions.R'))
+
+set.seed(1337)
+```
+
+
+```{r import_data, message=FALSE}
+fluxes <- read_tsv(here(der_dir, 'fluxes.tsv'))
+heritability <- read_tsv(here(der_dir, 'heritability.tsv'))
+aes_data <- read_tsv(here(der_dir, 'community_data.tsv'))
+
+
+# Shift the passage numbers so the first passage becomes "Passage 0"
+fluxes <-
+  fluxes %>% 
+  mutate(passage = passage - 1)
+```
+
+# Overview
+
+The final dataset includes `r length(unique(fluxes$treat))` treatments across `r length(unique(fluxes$passage))` passages (generations). This includes a total of n = `r nrow(fluxes)` samples. The samples are broken down across passages and treatments as in the following table:
+
+```{r}
+fluxes %>% 
+  group_by(flux_date, treat) %>% 
+  summarize(n = n_distinct(rep), .groups='drop') %>% 
+  kable()
+```
+
+
+# Reponse to Selection
+
+
+This script takes in the flux data. It then plots the raw data
+and the log-transformed data. Finally, it fits a linear model to the flux data
+over time per treatment and tests a difference of slope between the positive
+and the neutral treatment.
+
+
+## Plot the raw data
+
+```{r plot_raw}
+ratio <- calc_plot_ratios(fluxes$passage, fluxes$ch4)
+
+ggplot(fluxes, aes(x = passage, y = ch4, color = treat)) +
+    stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+    scale_color_manual(
+        name = "Treatment", 
+        labels = c('Neutral', 'Positive'), 
+        values = c('gray40', 'darkorange2')) +
+    geom_jitter(width = 0.1) + 
+    labs(x = "Passage Number", 
+         y = "Methane Oxidation Rate (-k)") +
+    coord_fixed(ratio) +
+  scale_x_continuous(labels = 1:5)
+```
+
+## Plot the log-transformed data
+
+```{r plot_log10}
+ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
+
+(p_response <- ggplot(fluxes, aes(x = passage, y = log_ch4, color = treat)) +
+    stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+    scale_color_manual(
+      name = "Treatment", 
+      labels = c('Neutral', 'Positive'), 
+      values = c('gray40', 'darkorange2')) +
+    geom_jitter(#aes(alpha = selected), 
+      width = 0.1) + 
+        labs(x = "Passage Number", 
+                  y = expression(log[10] ~ CH[4] ~ "(-k)")) +
+        coord_fixed(ratio_log10) +
+  scale_x_continuous(labels = 1:5))
+
+save(p_response, file = here(der_dir, 'response_plot.RData'))
+
+# ggsave(here(fig_dir, 'fig1.jpg'), p_response, width = 4, height = 3) 
+# ggsave(here(fig_dir, 'fig1.svg'), p_response, width = 4, height = 3) 
+
+```
+
+
+## Test a difference of slopes
+
+```{r raw_model}
+raw_model <- lm(ch4 ~ passage * treat, data = fluxes)
+
+ggplot(raw_model, aes(x = .fitted, y = .resid)) + geom_point()
+
+```
+
+```{r response_model}
+
+response_model <- lm(log_ch4 ~ passage * treat, data = fluxes)
+
+ggplot(response_model, aes(x = .fitted, y = .resid)) + geom_point()
+
+# Percent increase in CH4 per passage
+# Back calculate the slope of the positive treatment
+
+
+pos_slope <- 
+    response_model$coef[["passage:treatp"]]
+
+per_slope <-
+    (10^pos_slope - 1) * 100
+
+```
+
+```{r no_treat_model}
+# No treatment model
+no_treat_model <- lm(log_ch4 ~ passage, data = fluxes)
+
+
+```
+
+Here I fit two models. The first is the full model which includes passage number, treatment, and the interaction between the two. The second model includes only passage with no effect of treatment. Comparing the models using `anova` 
+
+```{r compare_models}
+# Compare interaction to no interaction
+compare_response_mods <- anova(no_treat_model, response_model)
+compare_response_mods <- tidy(compare_response_mods)
+kable(compare_response_mods)
+```
+
+Here is the full interaction model:
+
+```{r print_model}
+kable(tidy(response_model))
+```
+
+```{r save_model}
+save(response_model, compare_response_mods, per_slope, file = here(der_dir, 'response_model.RData'))
+```
+
+The intercept for the Neutral treatment was significantly different from zero
+at `r myround(tidy(response_model)[[1, 2]], 2)` 
+(SE = `r myround(tidy(response_model)[[1, 3]], 2)`, 
+t = `r myround(tidy(response_model)[[1, 4]], 2)`, 
+p = `r myround(tidy(response_model)[[1, 5]], 2)`). 
+The Positive
+treatment started at a significantly lower methane oxidation rate than the
+Neutral treatment with a y-intercept of 
+`r myround(tidy(response_model)[[3, 2]], 2)` relative to Neutral 
+(SE = `r myround(tidy(response_model)[[3, 3]], 2)`, 
+t = `r myround(tidy(response_model)[[3, 4]], 2)`, 
+p = `r myround(tidy(response_model)[[3, 5]], 2)`). 
+There was no change in methane oxidation rate of the Neutral
+treatment over the five passages 
+(slope = `r myround(tidy(response_model)[[2, 2]], 2)`, 
+SE = `r myround(tidy(response_model)[[2, 3]], 2)`, 
+t = `r myround(tidy(response_model)[[2, 4]], 2)`, 
+p = `r myround(tidy(response_model)[[2, 5]], 2)`). 
+By contrast, there was a significant increase in the Positive
+treatment of `r myround(tidy(response_model)[[4, 2]], 2)` per passage which is
+approximately a `r round((pos_slope - 1) * 100, 0)`% increase in methane
+oxidation rate per passage 
+(SE = `r myround(tidy(response_model)[[4, 3]], 2)`, 
+t = `r myround(tidy(response_model)[[4, 4]], 2)`, 
+p = `r myround(tidy(response_model)[[4, 5]], 2)`).
+
+# Heritability
+
+This script imports the heritability data. This dataset includes the mean flux
+within treatment by generation for 1) all parents, 2) selected parents, and 3)
+offspring. Then, it plots offspring on the selected parents with the two
+treatments combined and then separately for the two treatments.
+
+## Test heritability as mid-offspring on mid-parent
+
+```{r test_treatment}
+
+
+fit_no_treat <- lm(offspring ~ selected, data = heritability)
+kable(tidy(fit_no_treat))
+herit_model <- lm(offspring ~ selected * treat, data = heritability)
+kable(tidy(herit_model))
+kable(tidy(anova(fit_no_treat, herit_model)))
+summary(herit_model)
+
+herit_model_n <- 
+heritability %>% 
+  filter(treat == "n") %>% 
+  lm(offspring ~ selected, data = .) %>% 
+  tidy()
+herit_model_n
+herit_model_p <- 
+heritability %>% 
+  filter(treat == "p") %>% 
+  lm(offspring ~ selected, data = .)
+summary(herit_model_p)
+```
+
+Here, I fit two models. The first is simply offspring flux on selected parent flux, ignoring treatment. There is no correlation `r print_lm(fit_no_treat, 2)`. Next, I added treatment and the interaction between treatment and parental flux. Here, there is a significant correlation between parent and offspring for both the Neutral treatment `r print_lm(herit_model, 2)` and the Positive treatment `r print_lm(herit_model, 4)`. Notably, the sign of the effect is reversed: negative for the Neutral treatment and positive for the Positive treatment.
+
+```{r plot_herit}
+
+
+n_label <- paste0('Neutral slope = ', myround(tidy(herit_model)[2, 2], 2))
+p_label <- paste0('Positive slope = ', myround(tidy(herit_model)[2, 2] + tidy(herit_model)[4, 2], 2))
+  ratio <- calc_plot_ratios(heritability$selected, heritability$offspring)
+(p_herit <- 
+  ggplot(heritability, aes(selected, offspring, color = treat)) +
+    geom_point() + 
+    # stat_poly_eq() +
+    stat_smooth(method = 'lm', se = F) +
+    # annotate("text", x = min(heritability$parental), y = max(heritability$offspring), label = p_label, hjust = 0, color = "darkorange2") +
+    # annotate("text", x = min(heritability$parental), y = max(heritability$offspring) - 0.04, label = n_label, hjust = 0, color = "gray40") +
+    labs(x = expression(Donor ~ log[10] ~ CH[4] ~ "(-k)"), 
+         y = expression(atop(Recipient, log[10] ~ CH[4] ~ "(-k)"))) +
+    scale_color_manual(name = "Treatment", 
+                       labels = c('Neutral', 'Positive'), 
+                       values = c('gray40', 'darkorange2')) +
+    coord_fixed(1))
+
+save(p_herit, file = here(der_dir, 'herit_plot.RData'))
+
+# ggsave(here(fig_dir, 'fig2.jpg'), p_herit, width = 4, height = 3)
+# ggsave(here(fig_dir, 'fig2.svg'), p_herit, width = 4, height = 3)
+
+
+```
+
+```{r save_heritability}
+save(herit_model, file = here(der_dir, 'herit_model.RData'))
+```
+
+```{r}
+heritability_each <- read_tsv(here(der_dir, 'heritability_each.tsv'))
+
+fit_no_treat <- lm(offspring ~ selected, data = heritability_each)
+kable(tidy(fit_no_treat))
+herit_model <- lm(offspring ~ selected * treat, data = heritability_each)
+kable(tidy(herit_model))
+kable(tidy(anova(fit_no_treat, herit_model)))
+
+
+herit_model_n_each <- 
+heritability_each %>% 
+  filter(treat == "n") %>% 
+  lm(offspring ~ selected, data = .) %>% 
+  tidy()
+herit_model_p_each <- 
+heritability_each %>% 
+  filter(treat == "p") %>% 
+  lm(offspring ~ selected, data = .) %>% 
+  tidy()
+
+ratio <- calc_plot_ratios(heritability_each$selected, heritability_each$offspring)
+(p_herit_each <- 
+ggplot(heritability_each, aes(selected, offspring, color = treat)) +
+    # theme_classic() +
+    # geom_rangeframe(color = 'black') +
+    geom_point() + 
+    stat_smooth(method = 'lm', se = F) +
+    # stat_poly_line(se = T) +
+    # stat_poly_eq(aes(label = paste(after_stat(eq.label),
+                                 # after_stat(rr.label), sep = "*\", \"*"))) +
+    labs(x = expression(atop(Mean ~ Donor, log[10] ~ CH[4] ~ "(-k)")), 
+         y = expression(atop(Recipient, log[10] ~ CH[4] ~ "(-k)"))) +
+    scale_color_manual(name = "Treatment", 
+                       labels = c('Neutral', 'Positive'), 
+                       values = c('gray40', 'darkorange2')) +
+    coord_fixed(1))
+
+# save(p_herit_each, file = here(der_dir, 'herit_plot.RData'))
+# save(herit_model, file = here(der_dir 'herit_model.RData'))
+# 
+# ggsave(here(fig_dir, 'fig2_each.jpg'), p_herit_each, width = 4, height = 3) 
+# ggsave(here(fig_dir, 'fig2_each.svg'), p_herit_each, width = 4, height = 3) 
+```
+
+# Community Analysis
+
+
+```{r fix-treatment}
+
+aes_data <-
+  aes_data %>% 
+  mutate(passage_treat = treat) %>% 
+  separate(passage_treat, c('passage', "treat"), sep = 2, remove = FALSE) %>% 
+  select(sample, passage_treat, passage, treat, selected, ch4, asv, count, Kingdom:Species, seq)
+
+```
+
+
+
+```{r fix-taxonomy}
+
+# There are "Unknown Family" taxa with Genus and Class, but Order is Incertae Sedis.
+# I'm just going to remove everything below Class and call it "Unclassified"
+
+fill_taxonomy <- function(tab) {
+    if(is.na(tab[[1]])) tab[[1]] = "Unclassified"
+    for(i in 2:length(tab)) {
+      if(is.na(tab[[i]])){
+        if(grepl("unclassified", tab[[i-1]])) tab[[i]] = tab[[i-1]]
+        else tab[[i]] = paste(tab[[i-1]], "unclassified", sep = "_")
+      }
+    }
+    tab
+}
+
+aes_data <-
+  aes_data %>% 
+  nest(data = -c(asv, Kingdom:Species)) %>% 
+  nest(taxa = Kingdom:Species) %>% 
+  mutate(taxa = map(taxa, ~fill_taxonomy(.x))) %>% 
+  unnest(taxa) %>% 
+  unnest(data)
+
+
+```
+
+
+```{r remove_chloroplasts_mitochondria}
+
+chloroplast_seqs <- 
+  aes_data %>% 
+  filter(Order == 'Chloroplast') %>% 
+  select(asv, seq) %>% 
+  distinct() %$%
+  seq
+# 10 ASVs were identified as chloroplast in their taxonomy.
+# seq matches complete genomes of chloroplasts on NCBI so I will remove them.
+
+aes_data <- 
+  aes_data %>% 
+  filter(Order != 'Chloroplast')
+
+mitochondria_seqs <-
+  aes_data %>% 
+  filter(Family == 'Mitochondria') %>%
+  select(asv, seq) %>% 
+  distinct() %$%
+  seq
+
+# 99 ASVs were identified as Mitochondria
+
+aes_data <- 
+  aes_data %>% 
+  filter(Family != 'Mitochondria')
+
+```
+
+## Exploratory
+
+
+```{r n-seqs}
+
+aes_data %>% 
+  group_by(sample) %>% 
+  summarize(total = sum(count)) %>% 
+  ggplot(aes(x = total)) +
+  geom_histogram() +
+  theme_classic() +
+  labs(title = "Distribution sequencing depths",
+       x = "Library size",
+       y = "Frequency")
+
+seq_range <-
+  aes_data %>% 
+  group_by(sample) %>% 
+  summarize(total = sum(count)) %>% 
+  summarize(seq_range = range(total)) %$% 
+  seq_range
+
+min_seqs <- seq_range[1]
+
+a_analysis <- 
+  aes_data %>%
+  count(sample, count) %>%
+  nest(data = -sample) %>%
+  mutate(n_seqs = map_dbl(data, ~sum(.x$count * .x$n)),
+         sobs = map_dbl(data, ~sum(.x$n)),
+         rare = map_dbl(data, ~rarefy(rep(.x$count, .x$n), sample=seq_range[1]))) %>%
+  select(-data)
+
+a_analysis %>%
+  select(sample, n_seqs, sobs, rare) %>%
+  mutate(treat = substr(sample, 1, 3)) %>% 
+  select(-sample) %>% 
+  group_by(treat) %>% 
+  pivot_longer(-c(treat)) %>%
+  ggplot(aes(x=treat, y=value)) +
+  facet_wrap(~ name, nrow = 3, scales = "free") +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_classic() +
+  labs(title = "AES", x = "Treatment", y = "Value")
+
+```
+
+This is the number of reads (n_seqs), the rarefied richness (rare), and 
+the observed richness (sobs for "species observed") for the four treatments:
+generations 2 and 5 and selection treatments neutral and positive. As you can
+see, there were more sequences from G2 than G5 and also greater richness
+in G2 than G5. However, that richness difference is robust to rarefying
+to the level of the shallowest sample. There doesn't seem to be a systemic
+difference in sequencing depth or richness between the neutral and positive 
+treatments in either generation.
+
+
+### Richness
+
+#### Plot
+
+```{r alpha-diversity-plot}
+
+# aes_data %>% 
+#   group_by(sample) %>% 
+#   summarize(n_seqs = sum(count)) %>% 
+#   summarize(min = min(n_seqs))
+
+aes_df <-
+  aes_data %>% 
+  select(sample, asv, count) %>%
+  pivot_wider(names_from = "asv", values_from = "count", values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(aes_df) <- aes_df$sample
+aes_df <- aes_df[, -1]
+
+rare <- 
+  rarefy(aes_df, seq_range[1]) %>% 
+  as_tibble(rownames = "sample") %>% 
+  rename(rare = value)
+
+
+aes_data %>% 
+  inner_join(rare, by = 'sample') %>% 
+  select(sample, passage_treat, rare) %>% 
+  distinct %>% 
+  ggplot(aes(x = passage_treat, y = rare)) +
+  geom_boxplot() +
+  geom_jitter() +
+  labs(x = "Passage x Treatment", y = "Rarefied Richness") +
+  theme_bw() +
+  theme(
+    plot.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank())
+
+```
+
+```{r compare_richness_methods}
+
+aes_df_long <-
+  aes_df %>% 
+  as_tibble(rownames = "sample") %>% 
+  pivot_longer(starts_with("ASV")) %>%     
+  group_by(sample) %>% 
+  uncount(value)
+
+subsample <- function(data, sample_size) {
+  data %>% 
+    sample_n(sample_size) %>% 
+    summarize(s = n_distinct(name))
+}
+
+empirical <- map_dfr(1:10, ~subsample(aes_df_long, seq_range[1]), .id = "iters")
+empirical <-
+empirical %>% 
+  group_by(sample) %>% 
+  summarize(s = mean(s))
+
+inner_join(rare, empirical, by = "sample") %>% 
+  ggplot(aes(x = rare, y = s)) +
+  geom_abline(intercept = 0, slope = 1, color = "gray") +
+  geom_point()
+```
+
+This plot shows the correlation between Hurlbert's (1971) approach to
+richness estimation (rare) and empirically rarefying 10 times and taking
+the mean richness (s).
+
+#### Hypothesis Test
+
+```{r alpha-diversity-test}
+
+rare_data <-
+  aes_data %>% 
+  select(sample, passage_treat, passage, treat, ch4) %>% 
+  distinct %>% 
+  inner_join(rare, by = "sample")
+
+kt <- kruskal.test(rare ~ passage_treat, data = rare_data)
+kt <- tidy(kt)
+
+wt <- pairwise.wilcox.test(rare_data$rare, 
+                           rare_data$passage_treat, 
+                           p.adjust.method = "BH")
+wt <- tidy(wt)
+
+rare_median <-
+  rare_data %>% 
+  group_by(passage) %>% 
+  summarize(median = median(rare),
+            IQR = quart(rare)[2] - quart(rare)[1])
+
+  
+```
+
+There is an effect of passage x treatment on richness (Kruskal-Wallace test: chi-squared = 
+`r kt[1,1]`, df = `r kt[1,3]`, p = `r kt[1, 2]`). The pairwise test shows that
+G2 is different from G5, but N and P are not different in either generation
+(Wilcoxon/Mann-Whitney Test).
+
+```{r}
+
+kable(wt)
+
+```
+
+
+
+```{r alpha-diversity-ch4-test}
+
+s <- cor.test(~ ch4 + rare, data = rare_data, method = "spearman", alternative = "two.sided") %>% 
+  tidy
+
+s5 <-
+  rare_data %>% 
+  filter(passage == "G5") %>% 
+  cor.test(~ ch4 + rare, data = ., method = "spearman", alternative = "two.sided") %>%
+  tidy
+
+min_seqs <- paste(substr(as.character(min_seqs), 1, 3), substr(as.character(min_seqs), 4, 6), sep = ",")
+save(kt, wt, rare_median, s5, min_seqs, file = here(der_dir, "richness_models.RData"))
+
+```
+
+A Spearman's rank correlation test shows no correlation between
+methane oxidation rate and richness (Spearman's rho = `r s[1,1]`, p = `r s[1,3]`).
+ 
+## Beta Diversity
+
+```{r bray-curtis-nmds, messages=FALSE}
+
+dist <- vegdist(aes_df, method="bray")
+
+if(file.exists(here(der_dir, "rare_dist_bray.rds"))) {
+  rare_dist_bray <- 
+    readRDS(here(der_dir, "rare_dist_bray.rds"))
+} else {
+  rare_dist_bray <- avgdist(aes_df, dmethod="bray", sample=seq_range[1])
+  rare_dist_bray %>% 
+    saveRDS(here(der_dir, "rare_dist_bray.rds"))
+}
+
+nmds <- metaMDS(rare_dist_bray)
+
+nmds_scores <-
+  scores(nmds, display = "sites") %>% 
+  as_tibble(rownames = "sample")
+  
+nmds_data <-
+  aes_data %>% 
+  select(sample, passage, treat) %>% 
+  distinct %>% 
+  inner_join(nmds_scores, by = "sample")
+
+centroids <-
+  nmds_data %>% 
+  group_by(passage, treat) %>% 
+  summarize(NMDS1 = mean(NMDS1),
+            NMDS2 = mean(NMDS2),
+            .groups = "drop")
+p_beta <-
+  nmds_data %>%   
+  ggplot(aes(x = NMDS1, y = NMDS2, shape = passage, color = treat)) +
+  geom_point() +
+  stat_ellipse(show.legend = FALSE) +
+  coord_fixed() +
+  scale_shape_discrete(name = "Passage", labels = c(2, 5)) +
+  scale_color_manual(name = "Treatment",
+                       labels = c('Neutral', 'Positive'),
+                       values = c('gray40', 'darkorange2')) #+
+  # theme_bw() +
+  # theme(
+  #   plot.background = element_blank(),
+  #   panel.grid.major = element_blank(),
+  #   panel.grid.minor = element_blank())
+
+save(p_beta, file = here(der_dir, "beta_fig.RData"))
+
+ggsave(here(fig_dir, 'fig3.png'), p_beta, height = 2.5, width = 4) 
+
+ggsave(here(fig_dir, 'fig3.svg'), p_beta, height = 2.5, width = 4) 
+
+```
+
+```{r}
+dist_df <-
+  rare_dist_bray %>% 
+  as.matrix %>% 
+  as_tibble(rownames = "sample")
+
+meta_dist <-
+  aes_data %>% 
+  select(sample, passage_treat, passage, treat, ch4) %>% 
+  distinct %>% 
+  inner_join(dist_df, by = "sample")
+
+permanova <- adonis2(rare_dist_bray ~ passage * treat, data = meta_dist, permutations = 999)
+
+betadisper(rare_dist_bray, meta_dist$passage_treat) %>% 
+  anova()
+
+tidy_permanova <- 
+  tidy(permanova)
+
+save(tidy_permanova, file = here(der_dir, "beta_model.RData"))
+
+```
+
+There is a significant difference of centroid between passage, treatment, and
+their interaction. Testing a difference of dispersion using betadisper
+shows no difference in variance between the four groups.
+
+
+### dbrda methane in passage 5
+
+```{r dbrda, warnings=FALSE}
+passage5_df <-
+  aes_data %>%  
+  filter(passage == "G5") %>% 
+  group_by(asv) %>% 
+  mutate(total = sum(count)) %>% 
+  filter(total != 0) %>% 
+  ungroup() %>% 
+  select(-total) %>% 
+  select(sample, asv, count) %>%
+  pivot_wider(names_from = "asv", values_from = "count", values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(passage5_df) <- passage5_df$sample
+passage5_df <- passage5_df[, -1]
+
+if(file.exists(here(der_dir, "rare_dist_bray_p5.rds"))) {
+  rare_dist_bray_p5 <- 
+    readRDS(here(der_dir, "rare_dist_bray_p5.rds"))
+} else {
+rare_dist_bray_p5 <- avgdist(passage5_df, dmethod="bray", sample=seq_range[1])
+  rare_dist_bray_p5 %>% 
+    saveRDS(here(der_dir, "rare_dist_bray_p5.rds"))
+}
+
+
+
+rare_dist_df <-
+  rare_dist_bray_p5 %>% 
+  as.matrix %>% 
+  as_tibble(rownames = "sample")
+
+dbrda_meta_dist <-
+  aes_data %>% 
+  select(sample, passage_treat, passage, treat, ch4) %>% 
+  distinct %>% 
+  inner_join(rare_dist_df, by = "sample")
+
+dbrda_ch4 <- dbrda(rare_dist_bray_p5 ~ rank(ch4), 
+                      data = dbrda_meta_dist, 
+                      na.action = "na.omit",
+                      add = TRUE) 
+
+dbrda_aov <-
+  dbrda_ch4 %>% 
+  anova()
+
+dbrda_percent_explained <- 100 * eigenvals(dbrda_ch4) / sum(eigenvals(dbrda_ch4))
+
+dbrda_scores <-
+  scores(dbrda_ch4, display = "sites") %>% 
+  as_tibble(rownames = "sample")
+  
+dbrda_data <-
+  aes_data %>% 
+  select(sample, passage, treat, ch4) %>% 
+  distinct %>% 
+  inner_join(dbrda_scores, by = "sample")
+
+dbrda_data %>%   
+  ggplot(aes(x = dbRDA1, y = MDS1, shape = passage, color = treat)) +
+  geom_point() +
+  stat_ellipse(show.legend = FALSE) +
+  coord_fixed() +
+  scale_shape_discrete(name = "Passage") +
+  scale_color_manual(name = "Treatment",
+                       labels = c('Neutral', 'Positive'),
+                       values = c('gray40', 'darkorange2')) +
+  theme_bw() +
+  theme(
+    plot.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank())
+
+save(dbrda_aov, dbrda_percent_explained, file = here(der_dir, "dbrda.RData"))
+
+
+```
+
+## Differential Abundance
+
+### Unique to each treatment
+
+#### Family
+
+```{r}
+g5n <- 
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  select(Family) %>% 
+  distinct() %$%
+  Family
+
+g5p <- 
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  select(Family) %>% 
+  distinct() %$%
+  Family
+
+
+p_not_n <- g5p[!g5p %in% g5n]
+
+n_not_p <- g5n[!g5n %in% g5p]
+
+n_not_p_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  filter(Family %in% n_not_p) %>% 
+  select(sample, Family, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Family) %>% 
+  summarize(prevalence = sum(prevalence))
+
+n_not_p_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Positive")
+
+# n_not_p_prevalence %>%
+#   filter(prevalence == 1) %>% 
+#   nrow
+
+# n_not_p_prevalence %>%
+#   filter(prevalence == 2) %>% 
+#   nrow
+# n_not_p_prevalence %>%
+#   filter(prevalence > 2) %$%
+#   Family
+
+p_not_n_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  filter(Family %in% p_not_n) %>% 
+  select(sample, Family, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Family) %>% 
+  summarize(prevalence = sum(prevalence))
+
+p_not_n_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Neutral")
+# 
+# p_not_n_prevalence %>%
+#   filter(prevalence == 1) %>% 
+#   nrow
+# 
+# p_not_n_prevalence %>%
+#   filter(prevalence == 2) %>% 
+#   nrow
+p_not_n_over_6 <- p_not_n_prevalence %>%
+  filter(prevalence > 6)
+
+```
+
+First, I looked at which Families are unique to each treatment in passage 5.
+There were `r length(n_not_p)` families unique to N and `r length(p_not_n)`
+unique to P. However, of the  `r length(n_not_p)` unique to P, 
+`r n_not_p_prevalence %>% filter(prevalence == 1) %>% nrow` had a prevalence
+of 1 and `r n_not_p_prevalence %>% filter(prevalence == 2) %>% nrow` had
+a prevalence of 2 leaving only a single family, which had a prevalence of
+`r n_not_p_prevalence %>% filter(prevalence > 2) %$% prevalence`, which was `r n_not_p_prevalence %>% filter(prevalence > 2) %$% Family`.
+Of the `r length(p_not_n)` Families unique to P, 2 had prevalences greater than
+6, which were `r p_not_n_over_6$Family[1]` with a prevalence of
+`r p_not_n_over_6$prevalence[1]` and `r p_not_n_over_6$Family[2]` with
+a prevalence of `r p_not_n_over_6$prevalence[2]`.
+
+#### Genus
+
+```{r}
+g5n <- 
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  select(Genus) %>% 
+  distinct() %$%
+  Genus
+
+g5p <- 
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  select(Genus) %>% 
+  distinct() %$%
+  Genus
+
+
+p_not_n <- g5p[!g5p %in% g5n]
+
+n_not_p <- g5n[!g5n %in% g5p]
+
+n_not_p_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  filter(Genus %in% n_not_p) %>% 
+  select(sample, Genus, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Genus) %>% 
+  summarize(prevalence = sum(prevalence))
+
+n_not_p_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Positive")
+
+p_not_n_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  filter(Genus %in% p_not_n) %>% 
+  select(sample, Genus, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Genus) %>% 
+  summarize(prevalence = sum(prevalence))
+
+p_not_n_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Neutral")
+
+p_not_n_over_6 <- p_not_n_prevalence %>%
+  filter(prevalence > 6)
+
+n_not_p_over_6 <- n_not_p_prevalence %>%
+  filter(prevalence > 6)
+
+
+```
+
+#### Species
+
+```{r}
+g5n <- 
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  select(Species) %>% 
+  distinct() %$%
+  Species
+
+g5p <- 
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  select(Species) %>% 
+  distinct() %$%
+  Species
+
+
+p_not_n <- g5p[!g5p %in% g5n]
+
+n_not_p <- g5n[!g5n %in% g5p]
+
+n_not_p_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5N") %>% 
+  filter(Species %in% n_not_p) %>% 
+  select(sample, Species, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Species) %>% 
+  summarize(prevalence = sum(prevalence))
+
+n_not_p_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Positive")
+
+p_not_n_prevalence <-
+  aes_data %>% 
+  filter(passage_treat == "G5P") %>% 
+  filter(Species %in% p_not_n) %>% 
+  select(sample, Species, count) %>% 
+  mutate(prevalence = as.numeric(count > 0)) %>% 
+  select(-count) %>% 
+  group_by(Species) %>% 
+  summarize(prevalence = sum(prevalence))
+
+p_not_n_prevalence %>% 
+  ggplot(aes(x = prevalence)) +
+  geom_histogram() +
+  scale_x_continuous(breaks = 1:12) +
+  theme_classic() +
+  labs(title = "Unique to Neutral")
+
+p_not_n_over_6 <- p_not_n_prevalence %>%
+  filter(prevalence > 3)
+
+n_not_p_over_6 <- n_not_p_prevalence %>%
+  filter(prevalence > 3)
+
+
+```
+
+## Setup Differential Abundance Data
+
+### Family
+
+```{r setup-differential-abundance-data-family}
+
+aes_G5 <-
+  aes_data %>% 
+  filter(passage == "G5")
+
+
+aes_family_G5 <-
+  aes_G5 %>% 
+  select(asv, sample, treat, count, Family) %>%
+  group_by(sample, Family) %>% 
+  mutate(total = sum(count)) %>% 
+  ungroup() %>% 
+  select(sample, treat, Family, total) %>% 
+  distinct()
+
+prevalent_families <- 
+  aes_family_G5 %>% 
+  group_by(Family, treat) %>% 
+  summarize(prev = sum(total > 0), .groups = "drop") %>% 
+  pivot_wider(names_from = "treat", values_from = "prev", values_fill = 0) %>% 
+  filter(N/12 > 0.1 & P/12 > 0.1) %$%
+  Family
+
+otu_table <- 
+  aes_family_G5 %>% 
+  filter(Family %in% prevalent_families) %>% 
+  select(sample, Family, total) %>% 
+  pivot_wider(names_from = sample, values_from = total, values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(otu_table) <- otu_table[,1]
+otu_table <- otu_table[,-1]
+
+sample_data <- aes_family_G5 %>% 
+  select(sample, treat) %>% 
+  distinct() %>% 
+  as.data.frame()
+
+rownames(sample_data) <- sample_data[,1]
+
+```
+
+#### Corncob
+
+
+
+```{r}
+
+da_analysis <- differentialTest(formula = ~ treat,
+                                phi.formula = ~ 1,
+                                formula_null = ~ 1,
+                                phi.formula_null = ~ 1,
+                                test = "Wald", 
+                                boot = FALSE,
+                                data = otu_table,
+                                sample_data = sample_data,
+                                fdr_cutoff = 0.05, B = 100,
+                                taxa_are_rows = TRUE)
+
+dt_data <- plot(da_analysis, 
+                # level = c("Family"), 
+                data_only = TRUE)
+
+dt_plot <- function(dt_data) {
+  ggplot(dt_data, aes(x = x, xmin = xmin, xmax = xmax, y = reorder(taxa, x))) +
+    geom_pointrange() +
+    geom_vline(xintercept = 0) +
+    labs(x = "Estimate", y = NULL) +
+    coord_cartesian(clip="off") +
+    # theme(panel.border = element_blank()) +
+    theme_classic() +
+      theme(axis.text.y = element_markdown())
+    
+  
+}
+
+dt_data %>%
+  mutate(taxa = str_replace(taxa, "(.*)", "*\\1*"),
+         taxa = str_replace(taxa, "\\*(.*)_unclassified\\*",
+                                "Unclassified *\\1*")) %>% 
+  dt_plot()
+
+```
+
+#### ANCOM
+
+```{r}
+# 
+# # Install ANCOMBC
+# if (!requireNamespace("BiocManager", quietly=TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install("ANCOMBC")
+# 
+# # Load ANCOM
+# library(ANCOMBC)
+
+# Setup phyloseq object
+aes_ps <- phyloseq(otu_table(otu_table, taxa_are_rows=TRUE),
+                   sample_data(sample_data))
+
+# Save/Load output so you don't have to rerun ANCOM
+if(file.exists(here(der_dir, "ancom_out.rds"))) {
+  out <- 
+    readRDS(here(der_dir, "ancom_out.rds"))
+} else {
+  # Run Ancom
+  out = ancom(phyloseq = aes_ps,  
+              p_adj_method = "BH",
+              prv_cut = 0.1, 
+              lib_cut = 0, 
+              main_var = "treat",
+              rand_formula = NULL, 
+              lme_control = NULL,
+              struc_zero = TRUE, 
+              neg_lb = FALSE, 
+              alpha = 0.05, 
+              n_cl = 1)  
+  out %>% 
+    saveRDS(here(der_dir, "ancom_out.rds"))
+}
+
+
+res = out$res
+q_val = out$q_data
+beta_val = out$beta_data
+# Only consider the effect sizes with the corresponding q-value less than alpha
+beta_val = beta_val * (q_val < 0.05) 
+# Choose the maximum of beta's as the effect size
+beta_pos = apply(abs(beta_val), 2, which.max) 
+beta_max = vapply(seq_along(beta_pos), function(i) beta_val[beta_pos[i], i],
+                  FUN.VALUE = double(1))
+# Number of taxa except structural zeros
+n_taxa = ifelse(is.null(out$zero_ind), 
+                nrow(feature_table), 
+                sum(apply(out$zero_ind, 1, sum) == 0))
+# Cutoff values for declaring differentially abundant taxa
+cut_off = 0.7 * (n_taxa - 1)
+
+df_fig_w = res %>%
+  dplyr::mutate(beta = beta_max,
+                direct = case_when(
+                  detected_0.7 == TRUE & beta > 0 ~ "Positive",
+                  detected_0.7 == TRUE & beta <= 0 ~ "Negative",
+                  TRUE ~ "Not Significant"
+                  )) %>%
+  dplyr::arrange(W)
+df_fig_w$taxon_id = factor(df_fig_w$taxon_id, levels = df_fig_w$taxon_id)
+df_fig_w$W = replace(df_fig_w$W, is.infinite(df_fig_w$W), n_taxa - 1)
+df_fig_w$direct = factor(df_fig_w$direct, 
+                     levels = c("Negative", "Positive", "Not Significant"))
+
+p_w = df_fig_w %>%
+  ggplot(aes(x = taxon_id, y = W, color = direct)) +
+  geom_point(size = 2, alpha = 0.6) +
+  labs(x = "Taxon", y = "W") +
+  scale_color_discrete(name = NULL) + 
+  geom_hline(yintercept = cut_off, linetype = "dotted", 
+             color = "blue", size = 1.5) +
+  geom_text(aes(x = 2, y = cut_off + 0.5, label = "W[0.7]"), 
+            size = 5, vjust = -0.5, hjust = 0, color = "orange", parse = TRUE) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major = element_blank())
+p_w
+
+```
+
+#### Aldex2
+
+```{r}
+
+conds <- colnames(otu_table) %>% 
+  substr(3, 3)
+
+if(file.exists(here(der_dir, "aldex_x_all.rds"))) {
+  x.all <- 
+    readRDS(here(der_dir, "aldex_x_all.rds"))
+} else {
+  x.all <- aldex(otu_table, 
+                 conds, mc.samples=1000, test="t", effect=TRUE,
+                 include.sample.summary=FALSE, denom="all", verbose=FALSE, paired.test=FALSE)
+  x.all %>% 
+    saveRDS(here(der_dir, "aldex_x_all.rds"))
+}
+
+
+
+par(mfrow=c(1,2))
+aldex.plot(x.all, type="MA", test="welch", xlab="Log-ratio abundance",
+    ylab="Difference")
+aldex.plot(x.all, type="MW", test="welch", xlab="Dispersion",
+    ylab="Difference")
+
+par(mfrow=c(1,2))
+plot(x.all$effect, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
+  pch=19, xlab="Effect size", ylab="P value", main="Effect size plot")
+points(x.all$effect, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
+  pch=19)
+abline(h=0.05, lty=2, col="grey")
+legend(15,1, legend=c("P value", "BH-adjusted"), pch=19, col=c("blue", "red"))
+
+plot(x.all$diff.btw, x.all$we.ep, log="y", cex=0.7, col=rgb(0,0,1,0.2),
+  pch=19, xlab="Difference", ylab="P value", main="Volcano plot")
+points(x.all$diff.btw, x.all$we.eBH, cex=0.7, col=rgb(1,0,0,0.2),
+  pch=19)
+abline(h=0.05, lty=2, col="grey")
+
+x.all_effect_1 <-
+  x.all %>% 
+  filter(abs(effect) > 1) %>% 
+  as_tibble(rownames = "Family")
+
+# x.all_effect_1 %>% 
+#   # inner_join(taxa_table, by = "asv")
+#   ggplot(aes(y = reorder(Family, effect), x = effect)) +
+#   geom_point()
+
+# x.all_effect_1 %>% 
+#   select(Family, effect)
+  
+
+```
+
+#### Comparison
+
+##### All Significant
+
+```{r}
+
+# CORNCOB
+corncob_taxa <- dt_data$taxa
+
+# ANCOM
+ancom_taxa <- as.character(df_fig_w[df_fig_w$detected_0.7, ]$taxon_id)
+
+# ALDEX2
+aldex_taxa <- x.all_effect_1$Family
+
+
+
+at_least_one_taxa <-
+	aes_family_G5 %>%
+	group_by(sample) %>%
+	mutate(rel_abund = (total / sum(total)) * 100) %>%
+	filter(Family %in% ancom_taxa | Family %in% aldex_taxa | Family %in% corncob_taxa) %>%
+	mutate(Family = str_replace(Family, "(.*)", "*\\1*"),
+	       Family = str_replace(Family, "\\*(.*)_unclassified\\*",
+				    "Unclassified *\\1*"))
+
+at_least_one_iqm <- 
+	at_least_one_taxa %>%
+	group_by(treat, Family) %>%
+	summarize(median = median(rel_abund), 
+		  first_quartile = quart(rel_abund)[1],
+		  third_quartile = quart(rel_abund)[2], .groups = "drop")
+
+sort_order <-
+	at_least_one_taxa %>%
+	group_by(Family) %>%
+	summarize(median = median(rel_abund)) %>%
+	arrange(median)
+
+at_least_one_taxa$Family <- factor(at_least_one_taxa$Family, levels = sort_order$Family)
+
+at_least_one_taxa %>%
+	ggplot(aes(x = rel_abund, y = Family, color = treat)) +
+	geom_point(position=position_jitterdodge()) +
+	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
+			data = at_least_one_iqm, 
+			position = position_dodge(width = 0.75), 
+			shape = 21, 
+			color = "black") +
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Relative Abundance (%)", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2'))
+
+```
+
+##### Consensus Taxa
+
+```{r}
+aldex_effect <-
+  x.all_effect_1 %>% 
+  select(Family, effect)
+
+all_taxa <-
+	aes_family_G5 %>%
+	group_by(sample) %>%
+	mutate(rel_abund = (total / sum(total)) * 100) %>%
+  left_join(aldex_effect, by = "Family") %>% 
+	filter(Family %in% ancom_taxa & Family %in% aldex_taxa & Family %in% corncob_taxa) %>% 
+  ungroup()
+
+da_fams <-
+  all_taxa %>% 
+  select(Family) %>% 
+  distinct() %$%
+  Family
+
+all_taxa <-
+  all_taxa %>%
+	mutate(Family = str_replace(Family, "(.*)", "*\\1*"),
+	       Family = str_replace(Family, "\\*(.*)_unclassified\\*",
+				    "Unclassified *\\1*"))
+all_taxa$Family[all_taxa$Family == "Unclassified *0319-6G20*"] <- "Uncultured family 0319-6G20"
+# all_taxa$Family[all_taxa$Family == "Unclassified *Chloroplast*"] <- "Chloroplast"
+all_taxa$Family[all_taxa$Family == "Unclassified *Armatimonadales*"] <- "Unclassified Armatimonadales"
+all_taxa$Family[all_taxa$Family == "Unclassified *Gammaproteobacteria*"] <- "Unclassified Gammaproteobacteria"
+all_taxa$Family[all_taxa$Family == "Unclassified *Kapabacteriales*"] <- "Unclassified Kapabacteriales"
+
+all_iqm <- 
+	all_taxa %>%
+	group_by(treat, Family) %>%
+	summarize(median = median(rel_abund), 
+		  first_quartile = quart(rel_abund)[1],
+		  third_quartile = quart(rel_abund)[2], .groups = "drop")
+
+sort_order <-
+	all_taxa %>%
+  select(Family, effect) %>% 
+  distinct() %>% 
+  arrange(effect)
+	# group_by(Family) %>%
+	# summarize(median = median(rel_abund)) %>%
+	# arrange(median)
+
+all_taxa$Family <- factor(all_taxa$Family, levels = sort_order$Family)
+all_iqm$Family <- factor(all_iqm$Family, levels = sort_order$Family)
+all_taxa <-
+  all_taxa %>% 
+  mutate(direction = if_else(effect > 0, 0, 1))
+all_iqm <-
+all_taxa %>% 
+  select(Family, direction) %>% 
+  distinct() %>% 
+  full_join(all_iqm, by = "Family")
+(p <-
+	all_taxa %>%
+	ggplot(aes(x = rel_abund, y = Family, color = treat)) +
+	geom_point(position=position_jitterdodge()) +
+	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
+			data = all_iqm, 
+			position = position_dodge(width = 0.75), 
+			shape = 21, 
+			color = "black") +
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Relative Abundance (%)", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+    facet_grid(direction ~ ., scale = "free_y", space = "free")  + 
+theme(
+  strip.background = element_blank(),
+  strip.text.y = element_blank()
+))
+
+
+
+(p_log10 <- 
+	p +
+	scale_x_log10(breaks = c(0.001, 0.01, 0.1, 1),
+		      labels = c(0.001, 0.01, 0.1, 1)))
+
+
+save(p_log10, da_fams, file = here(der_dir, "da_fig.RData"))
+
+ggsave(here(fig_dir, 'fig4.jpg'), p_log10, width = 5, height = 5) 
+ggsave(here(fig_dir, 'fig4.svg'), p_log10, width = 5, height = 5) 
+
+
+## All
+# ggsave(here(fig_dir, "shared_taxa.png"), p)
+# ggsave(here(fig_dir, "shared_taxa_log.png"), p_log10, width = 5, height = 5)
+
+# aes_family_rclr_plot <-
+#   aes_family_rclr %>% 
+# 	filter(Family %in% ancom_taxa & Family %in% aldex_taxa & Family %in% corncob_taxa) %>% 
+#   pivot_longer(G2:G5, names_to = "passage", values_to = "rclr") %>% 
+#   select(Family, treat, rep, passage, rclr) %>% 
+#   distinct() %>% 	
+#   mutate(Family = str_replace(Family, "(.*)", "*\\1*"),
+# 	       Family = str_replace(Family, "\\*(.*)_unclassified\\*",
+# 				    "Unclassified *\\1*"))
+# 
+# aes_family_rclr_plot$Family[aes_family_rclr_plot$Family == "Unclassified *0319-6G20*"] <- "Uncultured family 0319-6G20"
+# aes_family_rclr_plot$Family[aes_family_rclr_plot$Family == "Unclassified *Chloroplast*"] <- "Chloroplast"
+# aes_family_rclr_plot$Family <- factor(aes_family_rclr_plot$Family, levels = sort_order$Family)
+# ggplot(aes_family_rclr_plot, aes(x = rclr, y = Family, color = treat)) +
+#   facet_grid( ~ passage) +
+#   geom_point(position = position_jitterdodge())
+
+p_effect <-
+	all_taxa %>%
+	ggplot(aes(x = effect, y = Family)) +
+	geom_point() +
+
+	theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Aldex2 Effect Size", y = NULL) +
+	scale_color_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Neutral', 'Positive'),
+			   values = c('gray40', 'darkorange2'))
+p_effect
+
+
+```
+
+
+## Methanogens and Methanotrophs
+
+Methanotrophy is (mostly) conserved at the family level. The Type I and Type X methanotrophs are in the Gammaproteobacteria in the families _Methylococcaceae_ and _Methylothermaceae_. There are also methanotrophs in the Verrumicrobiota in the family _Methylacidiphilaceae_. The Type II methanotrophs are in the _Alphaproteobacteria_ and are found in the families _Methylocystaceae_ and _Beijerinckiaceae_. However, the _Beijerinckiaceae_ also contain non-methanotrophs including N2-fixers and photoautotrophs. 
+
+
+```{r methanotroph-lists}
+# List of methanotrophs from Table 1 of Stein 2012 
+troph_genera <- c('Methylococcus',
+                  'Methylocaldum',
+                  'Methylobacter',
+                  'Methylomicrobium',
+                  'Methylomonas',
+                  'Methylosarcina',
+                  'Methylosoma',
+                  'Crenothrixa',
+                  'Clonothrixa',
+                  'Methylosphaera',
+                  'Methylohalobiusa',
+                  'Methylothermusa',
+                  'Methylocystis',
+                  'Methylosinus',
+                  'Methylocella',
+                  'Methylocapsa',
+                  'Methyloferula',
+                  'Methylomirabilis',
+                  'Methylacidiphilum')
+troph_genera <- c(troph_genera, paste(troph_genera, "unclassified", sep = "_"))
+
+methanotrophs <- c('Methylococcaceae', 
+                   'Methylothermaceae', 
+                   'Methylocystaceae', 
+                   'Beijerinckiaceae', 
+                   'NC10',
+                   'Methylacidiphilaceae')
+methanotrophs <- c(methanotrophs, paste(methanotrophs, "unclassified", sep = "_"))
+
+troph_orders <- c('Methylococcales')
+
+methanogen_classes <- c("Methanococci", "Methanomicrobia", "Methanobacteria")
+
+methanogen_classes <- c(methanogen_classes, paste(methanogen_classes, "unclassified", sep = "_"))
+
+```
+
+```{r}
+
+aes_data %>% 
+  select(Family, Genus, count, sample) %>% 
+  group_by(sample, Genus, Family) %>% 
+  summarize(total = sum(count), .groups = "drop") %>% 
+  group_by(sample) %>% 
+  mutate(rel_abund = total / sum(total)) %>% 
+  mutate(rclr = log(total/gm(total))) %>% 
+  filter(Family %in% methanotrophs) %>% 
+  select(-Family) %>% 
+  mutate(treat = substr(sample, 3, 3), passage = substr(sample, 1, 2)) %>% 
+  pivot_longer(rel_abund:rclr, names_to = "method", values_to = "value") %>% 
+  ggplot(aes(x = value, y = Genus, color = treat)) +
+  geom_jitter() +
+  facet_grid(passage ~ method, scales = "free") +
+  theme_bw()
+
+aes_data %>% 
+  select(Family, count, sample) %>% 
+  group_by(sample, Family) %>% 
+  summarize(total = sum(count), .groups = "drop") %>% 
+  group_by(sample) %>% 
+  mutate(rel_abund = total / sum(total)) %>% 
+  mutate(rclr = log(total/gm(total))) %>% 
+  filter(Family %in% methanotrophs) %>% 
+  mutate(treat = substr(sample, 3, 3), passage = substr(sample, 1, 2)) %>% 
+  pivot_longer(rel_abund:rclr, names_to = "method", values_to = "value") %>% 
+  ggplot(aes(x = value, y = Family, color = treat)) +
+  geom_jitter() +
+  facet_grid(passage ~ method, scales = "free") +
+  theme_bw()
+
+
+
+
+troph_asvs <-
+  aes_data %>% 
+  select(Kingdom:Species, asv) %>% 
+  distinct() %>% 
+  filter(Genus %in% troph_genera) %$%
+  asv
+
+troph_asvs <-
+  aes_data %>% 
+  select(Kingdom:Species, asv) %>% 
+  distinct() %>% 
+  filter(Family %in% methanotrophs) %$%
+  asv
+
+```
+
+
+Of the five methanotroph families, two are represented in this dataset:
+_Methylacidiphilaceae_ and _Beijerinckiaceae_. From these two families,
+there are eleven genera represented. These are spread across
+`r length(troph_asvs)` ASVs
+
+```{r}
+
+aes_data %>% 
+  select(Class, count, sample) %>% 
+  group_by(sample, Class) %>% 
+  mutate(total = sum(count)) %>% 
+  select(-count) %>% 
+  distinct() %>% 
+  filter(Class %in% methanogen_classes)
+
+```
+
+
+A grand total of 10 reads map to methanogen classes across the entire dataset,
+including 2 reads in Methanobacteria (sample G2N02) and 8 reads of
+Methanomicrobia (sample G2N07).
+
+### Methanotroph differential abundance
+
+```{r}
+
+troph_data <-
+  aes_data %>% 
+  select(sample, asv, treat, passage, count, Genus, Family) %>% 
+  filter(passage == "G5") %>% 
+  select(-passage) %>% 
+  filter(asv %in% troph_asvs)
+  
+troph_data_family <-
+  troph_data %>% 
+  select(sample, Family, count) %>% 
+  group_by(sample, Family) %>% 
+  summarize(total = sum(count), .groups = "drop") %>% 
+  pivot_wider(names_from = sample, values_from = total, values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(troph_data_family) <- troph_data_family[, 1]
+troph_data_family <- troph_data_family[, -1]
+
+
+troph_data_genus <-
+  troph_data %>% 
+  select(sample, Genus, count) %>% 
+  group_by(sample, Genus) %>% 
+  summarize(total = sum(count), .groups = "drop") %>% 
+  pivot_wider(names_from = sample, values_from = total, values_fill = 0) %>% 
+  as.data.frame()
+
+rownames(troph_data_genus) <- troph_data_genus[, 1]
+troph_data_genus <- troph_data_genus[, -1]
+
+sample_data <- 
+  troph_data %>% 
+  select(sample, treat) %>% 
+  distinct() %>% 
+  as.data.frame()
+conds <- sample_data[, 2]
+
+```
+
+
+```{r corncob-methanotrophs}
+if(file.exists(here(der_dir, "cc_family.rds"))) {
+  cc_family <- readRDS(here(der_dir, "cc_family.rds"))
+} else {
+cc_family <- differentialTest(formula = ~ treat,
+                                phi.formula = ~ 1,
+                                formula_null = ~ 1,
+                                phi.formula_null = ~ 1,
+                                test = "Wald", 
+                                boot = TRUE,
+                                data = troph_data_family,
+                                sample_data = sample_data,
+                                fdr_cutoff = 0.05, B = 1000)  
+cc_family %>% saveRDS(here(der_dir, "cc_family.rds"))
+}
+
+plot(cc_family)
+
+if(file.exists(here(der_dir, "cc_genus.rds"))) {
+  cc_genus <- 
+    readRDS(here(der_dir, "cc_genus.rds"))
+} else {
+cc_genus <- differentialTest(formula = ~ treat,
+                                phi.formula = ~ 1,
+                                formula_null = ~ 1,
+                                phi.formula_null = ~ 1,
+                                test = "Wald", 
+                                boot = TRUE,
+                                data = troph_data_genus,
+                                sample_data = sample_data,
+                                fdr_cutoff = 0.05, B = 1000) 
+cc_genus %>% 
+    saveRDS(here(der_dir, "cc_genus.rds"))
+}
+
+
+plot(cc_genus)
+
+```
+
+
+

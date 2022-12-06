@@ -1,9 +1,15 @@
 
-raw_dir <- 'Data/' # Raw Data Directory
-der_dir <- 'Output/' # Derived/Modified Data Directory
+# Directory Definitions
+
+raw_dir <- 'data/'      # Raw Data Directory
+der_dir <- 'analysis/output/'    # Derived/Modified Data Directory
+man_dir <- 'manuscript/'       # Manuscript directory
+fig_dir <- 'analysis/figs/'      # Figures directory
+
+# Set global ggplot theme
 
 theme_set(theme_classic() +
-            theme(panel.border = element_rect(fill = NA, size = 1.0625),
+            theme(panel.border = element_rect(fill = NA, linewidth = 1.0625),
                   axis.line = element_blank()))
 
 plot_flux <- function(fluxes, passage, estimate, ratio = NULL, log10 = FALSE) {
@@ -32,16 +38,15 @@ plot_flux <- function(fluxes, passage, estimate, ratio = NULL, log10 = FALSE) {
   return(p)
 }
 
-calc_plot_ratios <- function(x, y) {
-  (max(x)-min(x))/(max(y)-min(y))
-}
+
 
 
 print_lm <- function(fit, term = 1, estimate = 'slope') {
-  paste0('(', estimate, ' = ', myround(tidy(fit)[term, 2], 2), 
-        ', SE = ', myround(tidy(fit)[term, 3], 2), 
-        ', t = ', myround(tidy(fit)[term, 4], 2), 
-        ', p = ', myround(tidy(fit)[term, 5], 2), ')')
+  fit <- tidy(fit)
+  paste0('(', estimate, ' = ', myround(fit[term, 2], 2), 
+        ', SE = ', myround(fit[term, 3], 2), 
+        ', t = ', myround(fit[term, 4], 2), 
+        ', p = ', myround(fit[term, 5], 2), ')')
 }
 
 print_lrt <- function(fit, term = 2, test = "Likelihood ratio test") {
@@ -50,19 +55,6 @@ print_lrt <- function(fit, term = 2, test = "Likelihood ratio test") {
          ', p = ', myround(tidy(fit)[term, 5], 2))
 }
 
-
-plot_herit <- function(heritability, ratio) {
-  ratio <- calc_plot_ratios(heritability$selected, heritability$offspring)
-  ggplot(heritability, aes(selected, offspring, color = treat)) +
-    geom_jitter(width = 0.01) + 
-    stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
-    labs(x = expression(Parental ~ log[10] ~ CH[4] ~ "(-k)"), 
-         y = expression(atop(Offspring, log[10] ~ CH[4] ~ "(-k)"))) +
-    scale_color_manual(name = "Treatment", 
-                       labels = c('Neutral', 'Positive'), 
-                       values = c('gray40', 'darkorange2')) +
-    coord_fixed(ratio)
-}
 
 percent_less <- function(initial, final) {
   round(-100 * (final - initial)/abs(initial))
@@ -219,4 +211,6 @@ quart <- function(x) {
   }
   c(Q1=median(x[1:l]), Q3=median(x[u:n]))
 }
+
+calc_plot_ratios <- function(x, y) (max(x) - min(x)) / (max(y) - min(y))
 

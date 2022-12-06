@@ -9,7 +9,6 @@
 *.svg
 *.html
 *.tiff
-Permits/
 Figures/
 R/*.md
 R/Figs/
@@ -18,8 +17,11 @@ Archive/
 01_filtered_seqs/
 tax/
 myEnvironment.RData
-Presentation/
-Protocols/
-Excel/
+doc/presentation/
+data/protocols/
+data/excel/
 junk/
-Manuscript/.~lock.manuscript.docx#
+manuscript/.~lock.manuscript.docx#
+*.docx
+*.docx#
+manuscript/presentation

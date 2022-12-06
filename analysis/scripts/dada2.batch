@@ -12,5 +12,5 @@
 module load miniconda
 module load R/4.0.2
 
-Rscript R/dada2.R --save
+Rscript 04-create-asvs.R --save
 

@@ -118,5 +118,5 @@ taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 
-save(seqtab.nochim, taxa, file = "HPC_Output/dada2_output.RData")
+save(seqtab.nochim, taxa, file = "output/dada2_output.RData")
 

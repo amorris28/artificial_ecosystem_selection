@@ -1,6 +1,10 @@
 .PHONY: manuscript
 manuscript: Manuscript/manuscript.docx
 
+.PHONY: analysis
+analysis:
+	cd analysis/ && make analysis
+
 Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx Manuscript/bibliography.bib Manuscript/vancouver.csl Output/fluxes.tsv Output/heritability.tsv Output/response_model.RData Output/herit_model.RData Output/richness_models.RData Output/beta_model.RData Output/da_corncob.RData R/functions.R
 	Rscript -e "rmarkdown::render('$<')"
 

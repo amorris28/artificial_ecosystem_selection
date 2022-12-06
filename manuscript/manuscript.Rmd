@@ -243,7 +243,7 @@ treatment groups, twenty-four jars were created in an identical manner and then
 randomly assigned to either the positive or neutral selection line. Jars were
 flushed and respiked with methane twice per week to maintain aerobic conditions and elevated
 CH~4~ concentrations and were incubated at ambient temperature for
-approximately three weeks. Methane oxidation rates were determined at the end
+approximately four weeks. Methane oxidation rates were determined at the end
 of the incubation period. For the positive treatment, the three jars with the
 greatest CH~4~ oxidation rates were chosen to inoculate the next generation.
 For the neutral treatment, three jars were randomly selected to inoculate the
