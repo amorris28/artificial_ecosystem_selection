@@ -1,8 +1,6 @@
 
 library(tidyverse)
-#library(phyloseq)
 library(decontam)
-#library(microViz)
 library(knitr)
 library(vegan)
 source('R/functions.R')

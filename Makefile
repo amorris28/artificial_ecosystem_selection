@@ -1,11 +1,11 @@
 .PHONY: manuscript
-manuscript: Manuscript/manuscript.docx
+manuscript: manuscript/manuscript.docx
 
 .PHONY: analysis
 analysis:
 	cd analysis/ && make analysis
 
-Manuscript/manuscript.docx: Manuscript/manuscript.Rmd Manuscript/reference.docx Manuscript/bibliography.bib Manuscript/vancouver.csl Output/fluxes.tsv Output/heritability.tsv Output/response_model.RData Output/herit_model.RData Output/richness_models.RData Output/beta_model.RData Output/da_corncob.RData R/functions.R
+manuscript/manuscript.docx: manuscript/manuscript.Rmd manuscript/reference.docx manuscript/bibliography.bib manuscript/vancouver.csl analysis/output/fluxes.tsv analysis/output/heritability.tsv analysis/output/response_model.RData analysis/output/herit_model.RData analysis/output/richness_models.RData analysis/output/beta_model.RData analysis/output/da_corncob.RData R/functions.R
 	Rscript -e "rmarkdown::render('$<')"
 
 Output/richness_models.RData Output/beta_model.RData Output/beta_fig.RData Output/da_fig.RData R/08-community-analysis.html: R/08-community-analysis.Rmd Output/community_data.tsv R/functions.R

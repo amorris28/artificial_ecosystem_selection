@@ -9,247 +9,162 @@ csl: vancouver.csl
 ---
 
 ^1^ Institute of Ecology and Evolution, University of Oregon, Eugene, OR, USA  
-\* Correspondence: Andrew H. Morris, amorris3\@uoregon.edu  
-Competing Interests: We declare we have no competing interests.
-
-```{r options, echo=FALSE, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
-#knitr::opts_knit$set(root.dir=normalizePath('../'))
-
-
-```
-
-# Questions
-
-- What should be the order of the Intro?
-
-    1. What are we interested in and why
-    2. Past approaches and their limitations
-    3. Our approach and why it's better
-    4. Broader conceptual framework (Figure 1, Equation 1)
-
-- Or:
-
-    1. What are we interested in and why
-    2. Past approaches and their limitations
-    3. Broader conceptual framework (Figure 1, Equation 1)
-    4. Our approach and why it's better
-
-- Or:
-
-    1. What are we interested in and why
-    2. Broader conceptual framework (Figure 1, Equation 1)
-    3. Past approaches and their limitations
-    4. Our approach and why it's better
-
-
+\* correspondence: Andrew H. Morris, amorris3\@uoregon.edu  
+Competing interests: We declare we have no competing interests.
 
 # Introduction
 
-
-## What is the knowledge gap?
-
-### What are we interested in, why are we interested in it, how has it been and studied and what are the shortfalls, and why precisely is our approach better?
-
 Microbiomes mediate a variety of important ecosystem functions. This suggests
 that understanding variation in microbiome composition might be important for
-predicting the rates of ecosystem functions. Many studies have attempted to
-document such a relationship. However, it is difficult to isolate the effect of
-microbiome composition from other drivers of variation in ecosystem function.
-For example, microbiome manipulations often confound "diversity" with broad
-phylogenetic patterns or "composition" with abundance. Likewise, comparative
-studies must control for abiotic variation statistically to identify the direct
-effect of the microbiome, which relies on measuring the correct abiotic
-variables and cannot account for unmeasured environmental variation. Here, we
-overcome these limitations by using a selection approach to estimate the degree
-to which an ecosystem function varies with microbiome composition. We want to
-understand what is the relationship between _variation in the microbiome_ and
-_variation in the rate of ecosystem function_?
+predicting the rates of ecosystem functions 
+[@conrad1996; @schimel1998; @crowther2019]. 
+Many studies have attempted to document such a relationship
+[@cavigeli2000; @balser2005; @waldrop2006; @strickland2009; wagg2014; wagg2020].
+However, it is difficult to isolate the effect of variation in microbiome
+composition from other drivers of variation in ecosystem function. For example,
+microbiome manipulations often confound variation in diversity, composition, and
+abundance.  Likewise, comparative studies must control for abiotic variation
+statistically to identify the direct effect of microbiome variation. This
+approach relies on measuring the relevant abiotic variables and cannot account
+for unmeasured environmental variation. Here, we overcome these limitations by
+using a selection approach to estimate the degree to which an ecosystem function
+varies with microbiome composition.
 
 There have been two general categories of approaches that investigators have
-applied to address this question: comparative and manipulative. Comparative
+used to estimate the degree to which an ecosystem function varies with
+microbiome composition: comparative and manipulative. Comparative
 studies sample natural variation in an ecosystem function across different
 habitats and simultaneously measure variation in community composition.
 Investigators can then correlate ecosystem function with community structure
 while trying to control for environmental variation. These approaches have
 documented important relationships between microbiomes and ecosystem
 functions. For example, a meta-analysis of these studies observed a small but
-significant unique contribution of the microbiome to variation in ecosystem
-function after controlling for environmental variation (Graham 2016). In
+significant contribution of the microbiome to variation in ecosystem
+function after controlling for environmental variation [@graham2016]. In
 addition, studies focusing on the correlation between the rate of an ecosystem
 function and the abundance of an associated functional marker gene observe a
 significant correlation, though this relationship is rare and contingent upon
-both the function and the ecosystem sampled (Rocca 2015). Comparative studies
-come with some unique challenges and limitations. One issues is the covariance
-problem where microbiome attributes tend to covary with the abiotic conditions
-within an environment and whether and how the investigator controls for these
-variables affects the conclusions. In addition, it is difficult to know a
-priori which environmental variables or community attributes to measure.
-Finally, while these approaches can establish a potential magnitude and
-direction for these relationships, they fail to establish a mechanism
-underlying the relationship.
+both the function and the ecosystem sampled [@rocca2015]. However, comparative
+studies come with some unique challenges and limitations. One issue is that
+microbiome attributes tend to covary with the abiotic conditions within an
+environment, and whether and how the investigator controls for these variables
+can affect the conclusions of such a comparative study. In addition, it is
+difficult to know a priori which environmental variables or community attributes
+to measure. Finally, while these approaches can establish a potential magnitude
+and direction for these relationships, it is often difficult to identify the taxa or
+genes that explain the connection between composition and function.
 
-The other broad category of approaches to address this question are
+The other broad category of approaches used to address this question are
 manipulative approaches. Manipulative experiments try to alter microbial
-community structure and observe the effect on function. For example,
-reciprocal transplant and common garden experiments have shown that
-microbiomes originating from different ecosystems inoculated onto the same
-substrate or introduced into a common environment display distinct functional
-rates (Cavigeli 2000, Balser 2005, Waldrop 2006, Strickland 2009). In
-addition, manipulating diversity by filtering communities by cell size or
-through dilution alters ecosystem function (Wagg 2014, 2020, dilution
-citation?). However, manipulating the microbiome directly is challenging. Each
-of the manipulative approaches applied confound community structure with other
-factors such as abiotic conditions or phylogenetic relationships. For example,
-reciprocal transplant and common garden experiments confound community
-structure with the abiotic conditions carried on the inoculum (Reed and
-Martiny 2007). In addition, manipulating microbial diversity through filtering
-confounds diversity with broad phylogenetic categories such as nematodes,
-fungi, and bacteria while manipulating diversity through dilution confounds
-diversity with biomass and composition. 
+community composition and observe the effect on function. For example,
+reciprocal transplant and common garden experiments have shown that microbiomes
+originating from different ecosystems inoculated into the same substrate or
+introduced into a common environment display distinct functional rates 
+[@cavigeli2000; @balser2005; @waldrop2006; @strickland2009]. In addition,
+manipulating
+diversity by filtering communities by cell size or through dilution has been
+shown to alter the rate of ecosystem functions [@wagg2014; @wagg2020]. However,
+manipulating the microbiome directly is challenging. Each
+of the manipulative approaches applied confound community composition with other
+factors. For example, reciprocal transplant and common garden experiments
+confound community composition with the abiotic conditions carried on the
+inoculum while manipulating composition through dilution
+may confound composition with biomass [@reed2007]. 
 
 In this study, we sought to build on the observations of comparative and
-manipulative studies by applying a different approach to the question of
-whether variation in the microbiome contributes to variation in the rate of an
-ecosystem function. We used artificial ecosystem selection to select for
-microbiomes that performed a greater rate of ecosysem function. We then tested
-whether variation in the microbiome contributed to variation in the rate of
-ecosystem function and identified microbiome attributes that might explain
-this relationship. There are several potential advantages to this approach for
-documenting BEF relationships and for investigating potential mechanisms
-underlying those relationships. In particular, by passaging microbiomes over
-multiple rounds using a common substrate (or isogenic host), we can weaken the
-covariance between microbes and the environment by repeatedly diluting the
-abiotic effect. In addition, by inoculating our ecosystems with equally sized
-subsamples, we eliminate the need to generate microbiome variation through
-methods that are confounded with diversity, biomass, or cell size. Lastly, by
-comparing our artificially selected community to a control community without
-selection or with random selection, we can both control for changes in the
-environment over time and identify significant genes or taxa associated with our
-function of interest to establish a potential mechanism that explains this
-variation. 
+manipulative studies by applying a different approach to the question of whether
+variation in the microbiome contributes to variation in the rate of an ecosystem
+function. We used artificial ecosystem selection to select for microbiomes that
+performed a greater rate of ecosystem function [@swenson2000; @blouin2015; @panke-buisse2015]. We then tested whether variation
+in the microbiome contributed to variation in the rate of ecosystem function and
+identified microbiome attributes that might explain this relationship. There are
+several potential advantages to this approach for documenting
+microbiome-function relationships and for investigating potential mechanisms
+underlying those relationships. By passaging microbiomes over multiple rounds
+using a common environment, we can weaken the covariance between microbes and
+the environment by repeatedly diluting abiotic effects. In addition, by
+inoculating our ecosystems with equally sized subsamples, we eliminate the need
+to generate microbiome variation through methods that are confounded with
+biomass or cell size. Lastly, by comparing our artificially selected community
+to a control community resulting from random selection, we can both control for
+changes in the environment over time and identify significant genes or taxa
+associated with our selection treatment to establish a potential mechanism that
+explains this variation. 
 
-One important conceptual distinction that we should make when investigating
-biodiversity-ecosystem function relationships is to be clear that we are
-interested in _variation_. In particular, we are interested in what drives
-variation in the rate of an ecosystem function across ecosystems. For example,
-we want to know whether variation in the rate of methane oxidation rate in soils
-is driven by variation in microbial community structure. This question is
-distinct from the question "Which microbes consume methane?" To illustrate this
-distinction, we can draw an analogy with the genetic basis of traits in
-organisms. If we are interested in whether variation in human height is
-associated with variation in genotype, we can sample a population of humans,
-measure their height, and look at the correlation between phenotype and genotype
-using gene markers or proxies for genotypic similarity, such as kinship.
-However, this does not address the question of "Which genes control human
-height?" Likewise, we could go into the lab and perform an experiment on mice
-where we knockout or over-express a gene thought to be associated with height
-and observe height differences among the treatment groups. This would
-demonstrate that a particular gene affects height, but it does _not_ demonstrate
-that variation in genotype drives variation in height in a population.
-___WHY DOES THIS MATTER?___
+We applied artificial ecosystem selection to soil microbiomes by selecting on
+soil methane oxidation rate. We chose this function because methane is a
+globally important greenhouse gas and methane oxidation by soil bacteria is the
+primary biological sink for atmospheric methane as well as possibly the main driver
+of temporal methane dynamics [@kirschke2013]. In addition, there is evidence that
+soil methane oxidation rate may vary with microbiome composition based on
+comparative studies in a variety of arctic and tropical ecosystems 
+[@meyer2020; @meyer2020a; @freitag2009; @freitag2010]. Finally, methanotrophy is one of
+the most deeply conserved
+microbial physiologies and is represented in a narrow range of taxa, which
+suggests that the taxonomic composition of the microbiome is more
+likely to be associated with the rate of methane oxidation than other broader or
+more shallowly conserved functions [@schimel1998; @martiny2013]. 
 
-To understand variation in the rate of an ecosystem function, we can think about
-different drivers of variation as illustrated in Figure 1 and Equation 1. In
-this model, variation in the rate of an ecosystem function ($V_F$) is the sum of
-the variation in the environmental conditions ($V_E$), variation in the
-microbiome ($V_M$), and $\epsilon$, which represents variation unexplained by
-the other two factors, technical error, and unmeasured environmental or
-microbial variation. In addition, we can consider another variable,
-$cov(V_E:V_M)$, which is the covariance between the microbiome and the
-environment. We can conceptualize this as a situation in which a particular
-environmental condition, such as pH or moisture content, selects for a particular
-microorganism that is associated with variation in function. For simplicity, we
-have omitted a final parameter, which is the interaction between the microbiome
-and the environment, which would represent a change in the effect of the
-microbiome under different environmental conditions. Here, we assume we're
-talking about a single ecosystem and so assume this parameter to be zero. 
-
-![Figure 1. Conceptual diagram of the potential relationship between environmental variation, microbiome variation, and variation in the rate of an ecosystem function. We omitted the reverse arrows for illustration, but in theory those relationships also exist but we make the assumption that they are small. In addition, this diagram represents the relationships for a single environment, but one could imagine the same microbiome exerting a different influence on variation in function in a second environment, which would be illustrated by the interaction between microbiome and environment ($V_E:V_M$)`](Figure1.png)
+In this study, we evaluated whether variation in the microbiome contributes to
+variation in the rate of ecosystem functions. To address this problem, we
+applied artificial ecosystem selection to methane oxidation rate of the soil
+microbiome and answered the following questions: Does variation in the relative
+abundance of microbial taxa contribute to variation in soil methane oxidation
+rate in the lab? How much of the variation in soil methane oxidation rate can
+be attributed to the microbiome? What attributes of the microbiome regulate
+variation in methane oxidation rate? And do these attributes match our
+assumptions about what regulates methane oxidation rate in nature?
 
 
-$$
-V_F = V_E + V_M + COV(V_E:V_M) + \epsilon
-$$
 
-How can we use this conceptual framework to address our original question: Does
-variation in the microbiome contribute to variation in the rate of ecosystem
-function? Under the null hypothesis that we can ignore the microbiome and
-simply use abiotic environmental variables to predict function, we would assume
-that $V_M$ is essentially zero and that all of the variation in function
-($V_F$) is due to variation in the environment and the covariance between the
-microbiome and the environment ($V_E + COV(V_E:V_M)$). In this case, it is
-unnecessary to understand anything about the microbiome. However, if we consider
-the results from Graham (2016), this hypothesis does not appear to match the
-data. Graham observed that across the studies that they analyzed, environmental
-variables explained an average of 56\% of the variation in ecosystem function
-while microbial community structure explained an average of 31\% of the
-variation. Models that included both explained an average of 65\% of the
-variation. Putting these numbers together, we see that $V_M$ = 11\% (65 - 56),
-$cov(V_E:V_M)$ = 20\% (31 - $V_M$ = 31 - 11), and $V_E$ = 36\% (56 -
-$cov(V_E:V_M)$ = 56 - 20). Therefore, the environment explains 36% of the
-variation directly
-and 20% via covariation with the microbiome and the microbiome explains 11%
-directly. This means at least 1/6 (11/65) of the explained variation can be
-uniquely attributed to the microbiome according to the conclusions of Graham.
+The ultimate goal of this study could be summarized as "do microbes matter to
+ecosystem function?" And there are perhaps three ways we could address that
+question. One would be to ask whether microorganisms mediate the function. This
+question is perhaps trivial. In the case of methane emissions from soil, we know
+that microorganisms produce and consume methane. We could also ask what would
+happen if we removed the microorganisms. Again, this question is trivial. We
+don't know of any abiotic reactions in soil that consume methane (outside of the
+troposphere, the stratosphere, and the marine boundary layer; kirschke).
+Therefore, removing the microbiome would likely eliminate methane production and
+consumption. The third question we could ask is whether *variation* in the
+microbiome is associated with *variation* in the rate of ecosystem function. The
+answer to this question is not so obvious.
 
-Of course, these numbers should be taken with a grain of salt. As discussed
-earlier, comparative studies such as these are unable to break the covariance
-between microbes and the environment. In this case, $V_M$ and $\epsilon$ may
-represent the direct or indirect effect (via covariance) of unmeasured
-environmental variables rather than a unique contribution of the microbiome. In
-addition, the proportion of variation depends upon the magnitude of the
-variation in $V_F$ and $V_E$. For example, if we were to include variation in
-methane emissions of wetland and upland ecosystems, we might find that virtually
-100\% of the variation in function was due to variation in the environment,
-since methane production requires anaerobic conditions. However, if we looked
-across wetlands, we might observe a smaller $V_F$ and $V_E$ and an equivalent
-$V_M$. Under this scenario, even though $V_M$ was the same, $\frac{V_M}{V_F}$
-would be much greater and therefore the environment would no longer explain
-100\% of the variation. Therefore, any study that wishes to address this
-question must consider the variation in the population that they are studying.
+![Figure 1. Conceptual diagram of the potential relationship between environmental variation, microbiome variation, and variation in the rate of an ecosystem function. Without experimentally or statistically controlling for the underlying environmental variation, it can be difficult to distinguish between the direct effect of the microbiome and the effect of the microbiome due to covariance with the environment.](Figure1.png)
 
-We performed artificial ecosystem selection on soil microbiomes by selecting on
-the methane oxidation rate. To perform this experiment, we created 24 jars in an
-identical manner using sterile potting mix inoculated with living soil. Each jar
-was randomly assigned to either a positive selection treatment that underwent
-selection on high soil methane oxidation rate or a random selection treatment.
-At the end of each incubation, we selected jars with a high methane oxidation
-rate (for the positive treatment), homogenized them, and used this homogenate to
-inoculate a new set of sterile soil jars. We repeated this process over multiple
-passges. The idea is that by shuffling microbiome composition through
-subsampling and homogenizing the environment we are exploring the parameter
-space for the bidoversity-ecosystem function relationship. In addition,
-subsampling at each step would dilute away the effect of the abiotic
-environment. The only way for there to be a response to selection would be for
-microbes to actually grow in the medium.
+If we look at variation in the rate of a microbially-mediated ecosystem function
+across a set of habitats, that variation could be associated with variation in
+the abiotic environmental conditions, variation in the composition of
+microbiomes, or some interaction or covariance between the two (see Figure 1). To address the
+question of whether variation in the microbiome matters for ecosystem function,
+we need to identify the component of variation uniquely associated with the
+microbiome. If we sample natural variation, as in the comparative approach, it
+can be difficult to distinguish between the direct effect of the microbiome and
+the effect of the microbiome due to covariance with the environment. Likewise,
+with the manipulative approach even though we are placing ecosystem propagules
+into a common environment or onto a common substrate, the propagule itself
+carries with it environmental conditions that cannot be removed. Generating
+variation in microbiome composition through filtering or other similar means
+often confounds composition with other factors, for example, by extinguishing
+all fungi while sparing the bacteria, in which case it is uncertain whether this
+represents the effect of composition or simply the gross effects of mass
+extinction.
 
-Here are some hypothetical results we could observe. If soil methane oxidation
-rate is entirely environmentally determined, i.e., in the parlance of our
-conceptual framework that would mean that $V_E$ and $cov(V_E:V_M)$ are large and
-that $V_M$ is relatively small, then we would expect to observe no response to
-selection. This is because the effect of the abiotic environment would be
-diluted at eaching passaging step. If variation in methane oxidation rate was
-independent of microbes and the environment in our system then the varation
-should be random and $\epsilon$ would be large relative to the other parameters
-and again we would observe no response to selection. If variation in methane
-oxidation rate is at least partially driven by variation in the microbiome then
-we would expect manipulating microbiome composition through selection would
-result in an increase in methane oxidation rate as a response to selection. This
-would manifest as a correlation between donor and recipient jars in consecutive
-passages.
-
-(Aside: What we seem to be saying in the above paragraph is that passaging
-ecosystem propagules is somehow intrinsically tied to the magnitude of Vm. This
-seems to be based on the argument that Vm reproduces itself with high fidelity,
-but Ve does not. Is this true? Adding a low pH 5g of soil to a neutral pH 45g of
-soil doesn't shift the pH, but adding a 5g soil microbial inoculum to 45g of
-autoclaved soil does shift the community? Is this any different than the
-manipulative experiments we describe above? Or perhaps the argument is that
-_repeated_ passaging dilutes away the environmental effect so by the time you
-get to passage 5 it's 1/1e5 of the original soil inoculum, but if the microbes
-have reproduced then they have rebuilt their population at each passage. I guess
-this is the idea behind serial batch culturing??? IDK if a reviewer will be
-convinced by this argument.)
-
+Using artificial ecosystem selection, we can generate a set of ecosystems in
+bottles using a common, sterile substrate and inoculate them with a propagule
+containing a diverse microbiome that is a subsample of an existing microbiome.
+This generates variation in microbiome composition among the ecosystems. We can
+then measure the rate of an ecosystem function for each bottle and select the
+bottles with the highest (or lowest) rate of ecosystem function. The selected
+ecosystems are then homogenized and used as the propagule to inoculate a new set of
+ecosystems containing the same sterile substrate as the initial set. By
+passaging the microbiome in this way over multiple generations we can observe
+whether varying the microbiome can generate variation in the rate of our
+ecosystem function. If we observe no change in ecosystem function from
+generation to generation, we would conclude that this ecosystem function in this
+set of ecosystems is driven primarily by environmental variation or technical
+error among the replicates. However, if we observe a response to selection, that
+is, a shift in the mean ecosystem function between successive passages, we would
+conclude variation in the microbiome can generate variation in the rate of
+ecosystem function.
 

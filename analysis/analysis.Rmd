@@ -45,13 +45,87 @@ set.seed(1337)
 fluxes <- read_tsv(here(der_dir, 'fluxes.tsv'))
 heritability <- read_tsv(here(der_dir, 'heritability.tsv'))
 aes_data <- read_tsv(here(der_dir, 'community_data.tsv'))
+```
 
+# Clean data
 
+```{r}
 # Shift the passage numbers so the first passage becomes "Passage 0"
 fluxes <-
   fluxes %>% 
   mutate(passage = passage - 1)
 ```
+
+```{r fix-treatment}
+
+aes_data <-
+  aes_data %>% 
+  mutate(passage_treat = treat) %>% 
+  separate(passage_treat, c('passage', "treat"), sep = 2, remove = FALSE) %>% 
+  select(sample, passage_treat, passage, treat, selected, ch4, asv, count, Kingdom:Species, seq)
+
+```
+
+
+
+```{r fix-taxonomy}
+
+# There are "Unknown Family" taxa with Genus and Class, but Order is Incertae Sedis.
+# I'm just going to remove everything below Class and call it "Unclassified"
+
+fill_taxonomy <- function(tab) {
+    if(is.na(tab[[1]])) tab[[1]] = "Unclassified"
+    for(i in 2:length(tab)) {
+      if(is.na(tab[[i]])){
+        if(grepl("unclassified", tab[[i-1]])) tab[[i]] = tab[[i-1]]
+        else tab[[i]] = paste(tab[[i-1]], "unclassified", sep = "_")
+      }
+    }
+    tab
+}
+
+aes_data <-
+  aes_data %>% 
+  nest(data = -c(asv, Kingdom:Species)) %>% 
+  nest(taxa = Kingdom:Species) %>% 
+  mutate(taxa = map(taxa, ~fill_taxonomy(.x))) %>% 
+  unnest(taxa) %>% 
+  unnest(data)
+
+
+```
+
+
+```{r remove_chloroplasts_mitochondria}
+
+chloroplast_seqs <- 
+  aes_data %>% 
+  filter(Order == 'Chloroplast') %>% 
+  select(asv, seq) %>% 
+  distinct() %$%
+  seq
+# 10 ASVs were identified as chloroplast in their taxonomy.
+# seq matches complete genomes of chloroplasts on NCBI so I will remove them.
+
+aes_data <- 
+  aes_data %>% 
+  filter(Order != 'Chloroplast')
+
+mitochondria_seqs <-
+  aes_data %>% 
+  filter(Family == 'Mitochondria') %>%
+  select(asv, seq) %>% 
+  distinct() %$%
+  seq
+
+# 99 ASVs were identified as Mitochondria
+
+aes_data <- 
+  aes_data %>% 
+  filter(Family != 'Mitochondria')
+
+```
+
 
 # Overview
 
@@ -310,76 +384,6 @@ ggplot(heritability_each, aes(selected, offspring, color = treat)) +
 
 # Community Analysis
 
-
-```{r fix-treatment}
-
-aes_data <-
-  aes_data %>% 
-  mutate(passage_treat = treat) %>% 
-  separate(passage_treat, c('passage', "treat"), sep = 2, remove = FALSE) %>% 
-  select(sample, passage_treat, passage, treat, selected, ch4, asv, count, Kingdom:Species, seq)
-
-```
-
-
-
-```{r fix-taxonomy}
-
-# There are "Unknown Family" taxa with Genus and Class, but Order is Incertae Sedis.
-# I'm just going to remove everything below Class and call it "Unclassified"
-
-fill_taxonomy <- function(tab) {
-    if(is.na(tab[[1]])) tab[[1]] = "Unclassified"
-    for(i in 2:length(tab)) {
-      if(is.na(tab[[i]])){
-        if(grepl("unclassified", tab[[i-1]])) tab[[i]] = tab[[i-1]]
-        else tab[[i]] = paste(tab[[i-1]], "unclassified", sep = "_")
-      }
-    }
-    tab
-}
-
-aes_data <-
-  aes_data %>% 
-  nest(data = -c(asv, Kingdom:Species)) %>% 
-  nest(taxa = Kingdom:Species) %>% 
-  mutate(taxa = map(taxa, ~fill_taxonomy(.x))) %>% 
-  unnest(taxa) %>% 
-  unnest(data)
-
-
-```
-
-
-```{r remove_chloroplasts_mitochondria}
-
-chloroplast_seqs <- 
-  aes_data %>% 
-  filter(Order == 'Chloroplast') %>% 
-  select(asv, seq) %>% 
-  distinct() %$%
-  seq
-# 10 ASVs were identified as chloroplast in their taxonomy.
-# seq matches complete genomes of chloroplasts on NCBI so I will remove them.
-
-aes_data <- 
-  aes_data %>% 
-  filter(Order != 'Chloroplast')
-
-mitochondria_seqs <-
-  aes_data %>% 
-  filter(Family == 'Mitochondria') %>%
-  select(asv, seq) %>% 
-  distinct() %$%
-  seq
-
-# 99 ASVs were identified as Mitochondria
-
-aes_data <- 
-  aes_data %>% 
-  filter(Family != 'Mitochondria')
-
-```
 
 ## Exploratory
 
