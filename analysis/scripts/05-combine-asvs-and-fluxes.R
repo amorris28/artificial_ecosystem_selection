@@ -5,7 +5,7 @@ library(knitr)
 library(vegan)
 source('R/functions.R')
 
-load(file = paste0(der_dir, "dada2_output.RData"))
+load(file = "analysis/hpc_output/dada2_output.RData")
 
 samples <- read_tsv(paste0(der_dir, "barcode_master.tsv"))
 fluxes <- read_tsv(paste0(der_dir, "fluxes.tsv"))

@@ -10,17 +10,31 @@ This is the project directory for the manuscript entitled "Artificial
 ecosystem selection reveals relationships between microbiome composition and
 ecosystem function" that is currently in preparation. See the [Directories](#directories) section for an
 explanation of what files are contained in each directory. See the Data
-Dictionary at  `Data/data_dictionary.tsv` for an explanation of the variables
+Dictionary at  `data/data_dictionary.tsv` for an explanation of the variables
 in each data file.
 
-To rerun the analysis, the scripts in `analysis/scripts` are numbered and can
-be run in order. The  `analysis/analysis.Rmd` relies on the output of the
-scripts in `analysis/scripts`. Most scripts should be able to run on a standard
-laptop/desktop computer with the exception of the script `R/06-dada2.R` which
-should be run on a computing cluster. An example slurm batch script to run this
-file is at `analysis/scripts/dada2.sbatch`, which may need to be modified for your
-computing environment. The `dada2` scripts expect a machine with 28 cores and
-117 GB of ram.
+All intermediate files needed to recreate the manuscript are included in the repository. To recreate the manuscript simply run:
+
+```
+make manuscript
+```
+
+To re-run the analyses from scratch simply run:
+
+```
+make clean
+make manuscript
+```
+
+All scripts to rerun the analysis are in the `analysis` directory. Knitting the
+`analysis.Rmd` will recreate the analyses in the paper. This file depends on
+the scripts in `analysis/scripts`. These are numbered and can be run in order
+to recreate the intermediate data files. Most scripts should be able to run on
+a standard laptop/desktop computer with the exception of the script
+`04-dada2.R` which should be run on a computing cluster. An example slurm batch
+script to run this file is at `analysis/scripts/dada2.sbatch`, which may need
+to be modified for your computing environment. The `dada2` scripts expect a
+machine with 28 cores and 117 GB of ram.
 
 If you would like to use the exact same versions of `R` packages as I have
 used, there is an `renv` directory containing the lockfile. You can run
@@ -33,7 +47,7 @@ overview can be found [here](https://rstudio.github.io/renv/).
 
 All metadata are included in the `Data/` directory of this repository.
 
-Sequencing data (16S rRNA sequences) can be download from the NCBI SRA here: 
+The 16S rRNA sequencing data generated during the current study are available in the NCBI Sequence Read Archive (SRA) under BioProject accession number PRJNA832314, https://www.ncbi.nlm.nih.gov/sra/PRJNA832314.
 
 The Silva taxonomic database version that we used to assign taxonomy with DADA2 can be downloaded from Zenodo [here](https://zenodo.org/record/4587955).
 

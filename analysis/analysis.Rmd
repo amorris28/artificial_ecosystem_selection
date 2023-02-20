@@ -22,7 +22,6 @@ library(morris)
 library(broom)
 library(knitr)
 library(broman)
-
 library(phyloseq)
 library(knitr)
 library(magrittr)
@@ -34,6 +33,7 @@ library(corncob)
 library(ANCOMBC)
 library(tidyverse)
 library(here)
+library(patchwork)
 
 source(here('R/', 'functions.R'))
 
@@ -66,6 +66,19 @@ aes_data <-
 
 ```
 
+```{r}
+aes_data %>% 
+    select(sample, count, Phylum, Family) %>% 
+    group_by(sample) %>% 
+    mutate(sum_count = sum(count)) %>% 
+    mutate(ra = count / sum_count) %>% 
+    filter(is.na(Family)) %>%
+    # filter(Family == "") %>%
+    summarize(sum = sum(ra))
+
+    
+    
+```
 
 
 ```{r fix-taxonomy}
@@ -151,7 +164,6 @@ and the neutral treatment.
 ## Plot the raw data
 
 ```{r plot_raw}
-ratio <- calc_plot_ratios(fluxes$passage, fluxes$ch4)
 
 ggplot(fluxes, aes(x = passage, y = ch4, color = treat)) +
     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
@@ -162,14 +174,14 @@ ggplot(fluxes, aes(x = passage, y = ch4, color = treat)) +
     geom_jitter(width = 0.1) + 
     labs(x = "Passage Number", 
          y = "Methane Oxidation Rate (-k)") +
-    coord_fixed(ratio) +
   scale_x_continuous(labels = 1:5)
 ```
 
 ## Plot the log-transformed data
 
 ```{r plot_log10}
-ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
+
+ratio = calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
 
 (p_response <- ggplot(fluxes, aes(x = passage, y = log_ch4, color = treat)) +
     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
@@ -181,13 +193,13 @@ ratio_log10 <- calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
       width = 0.1) + 
         labs(x = "Passage Number", 
                   y = expression(log[10] ~ CH[4] ~ "(-k)")) +
-        coord_fixed(ratio_log10) +
-  scale_x_continuous(labels = 1:5))
+  scale_x_continuous(labels = 1:5) +
+    coord_fixed(ratio))
 
-save(p_response, file = here(der_dir, 'response_plot.RData'))
+# save(p_response, file = here(der_dir, 'response_plot.RData'))
 
-# ggsave(here(fig_dir, 'fig1.jpg'), p_response, width = 4, height = 3) 
-# ggsave(here(fig_dir, 'fig1.svg'), p_response, width = 4, height = 3) 
+# ggsave(here(fig_dir, 'fig1.jpg'), p_response, width = 4, height = 3)
+# ggsave(here(fig_dir, 'fig1.svg'), p_response, width = 4, height = 3)
 
 ```
 
@@ -200,6 +212,8 @@ raw_model <- lm(ch4 ~ passage * treat, data = fluxes)
 ggplot(raw_model, aes(x = .fitted, y = .resid)) + geom_point()
 
 ```
+
+Since the residuals are not normally distributed, we will use the log-transformed data.
 
 ```{r response_model}
 
@@ -242,7 +256,7 @@ kable(tidy(response_model))
 ```
 
 ```{r save_model}
-save(response_model, compare_response_mods, per_slope, file = here(der_dir, 'response_model.RData'))
+# save(response_model, compare_response_mods, per_slope, file = here(der_dir, 'response_model.RData'))
 ```
 
 The intercept for the Neutral treatment was significantly different from zero
@@ -278,108 +292,99 @@ within treatment by generation for 1) all parents, 2) selected parents, and 3)
 offspring. Then, it plots offspring on the selected parents with the two
 treatments combined and then separately for the two treatments.
 
-## Test heritability as mid-offspring on mid-parent
+## Test heritability as divergence on cumulative selection differential
 
-```{r test_treatment}
+```{r heritability}
 
+divergence <-
+    fluxes %>% 
+    select(passage, treat, log_ch4) %>% 
+    group_by(passage, treat) %>% 
+    summarize(mean = mean(log_ch4), .groups = "drop") %>% 
+    pivot_wider(names_from = "treat", values_from = "mean") %>% 
+    mutate(divergence = p - n, .keep = 'unused')
 
-fit_no_treat <- lm(offspring ~ selected, data = heritability)
-kable(tidy(fit_no_treat))
-herit_model <- lm(offspring ~ selected * treat, data = heritability)
-kable(tidy(herit_model))
-kable(tidy(anova(fit_no_treat, herit_model)))
-summary(herit_model)
+# Selection Differential
+sd <- 
+    heritability %>% 
+    mutate(sd = selected - parental) %>% 
+    select(passage, treat, sd) %>% 
+    pivot_wider(names_from = 'treat', values_from = 'sd') %>% 
+    mutate(sd_sum = p + n, .keep = 'unused')
 
-herit_model_n <- 
-heritability %>% 
-  filter(treat == "n") %>% 
-  lm(offspring ~ selected, data = .) %>% 
-  tidy()
-herit_model_n
-herit_model_p <- 
-heritability %>% 
-  filter(treat == "p") %>% 
-  lm(offspring ~ selected, data = .)
-summary(herit_model_p)
+sd %>% 
+    arrange(passage) %>% 
+    mutate(sd_csum = cumsum(sd_sum)) ->
+    sd_csum
+
+# Realized Heritability
+rh <-
+    divergence %>% 
+    left_join(sd_csum, by = "passage") %>% 
+    filter(passage != 0 )
 ```
 
-Here, I fit two models. The first is simply offspring flux on selected parent flux, ignoring treatment. There is no correlation `r print_lm(fit_no_treat, 2)`. Next, I added treatment and the interaction between treatment and parental flux. Here, there is a significant correlation between parent and offspring for both the Neutral treatment `r print_lm(herit_model, 2)` and the Positive treatment `r print_lm(herit_model, 4)`. Notably, the sign of the effect is reversed: negative for the Neutral treatment and positive for the Positive treatment.
-
-```{r plot_herit}
-
-
-n_label <- paste0('Neutral slope = ', myround(tidy(herit_model)[2, 2], 2))
-p_label <- paste0('Positive slope = ', myround(tidy(herit_model)[2, 2] + tidy(herit_model)[4, 2], 2))
-  ratio <- calc_plot_ratios(heritability$selected, heritability$offspring)
-(p_herit <- 
-  ggplot(heritability, aes(selected, offspring, color = treat)) +
-    geom_point() + 
-    # stat_poly_eq() +
-    stat_smooth(method = 'lm', se = F) +
-    # annotate("text", x = min(heritability$parental), y = max(heritability$offspring), label = p_label, hjust = 0, color = "darkorange2") +
-    # annotate("text", x = min(heritability$parental), y = max(heritability$offspring) - 0.04, label = n_label, hjust = 0, color = "gray40") +
-    labs(x = expression(Donor ~ log[10] ~ CH[4] ~ "(-k)"), 
-         y = expression(atop(Recipient, log[10] ~ CH[4] ~ "(-k)"))) +
-    scale_color_manual(name = "Treatment", 
-                       labels = c('Neutral', 'Positive'), 
-                       values = c('gray40', 'darkorange2')) +
-    coord_fixed(1))
-
-save(p_herit, file = here(der_dir, 'herit_plot.RData'))
-
-# ggsave(here(fig_dir, 'fig2.jpg'), p_herit, width = 4, height = 3)
-# ggsave(here(fig_dir, 'fig2.svg'), p_herit, width = 4, height = 3)
-
-
-```
-
-```{r save_heritability}
-save(herit_model, file = here(der_dir, 'herit_model.RData'))
-```
 
 ```{r}
-heritability_each <- read_tsv(here(der_dir, 'heritability_each.tsv'))
-
-fit_no_treat <- lm(offspring ~ selected, data = heritability_each)
-kable(tidy(fit_no_treat))
-herit_model <- lm(offspring ~ selected * treat, data = heritability_each)
-kable(tidy(herit_model))
-kable(tidy(anova(fit_no_treat, herit_model)))
 
 
-herit_model_n_each <- 
-heritability_each %>% 
-  filter(treat == "n") %>% 
-  lm(offspring ~ selected, data = .) %>% 
-  tidy()
-herit_model_p_each <- 
-heritability_each %>% 
-  filter(treat == "p") %>% 
-  lm(offspring ~ selected, data = .) %>% 
-  tidy()
-
-ratio <- calc_plot_ratios(heritability_each$selected, heritability_each$offspring)
-(p_herit_each <- 
-ggplot(heritability_each, aes(selected, offspring, color = treat)) +
-    # theme_classic() +
-    # geom_rangeframe(color = 'black') +
+ratio_div <- calc_plot_ratios(divergence$passage, divergence$divergence)
+(
+p_div <-
+ggplot(divergence, 
+       aes(x = passage, 
+           y = divergence)) +
+    stat_smooth(method = 'lm', 
+                se = FALSE, 
+                formula = 'y ~ x',
+                color = "black",
+                linewidth = 0.5) +
     geom_point() + 
-    stat_smooth(method = 'lm', se = F) +
-    # stat_poly_line(se = T) +
-    # stat_poly_eq(aes(label = paste(after_stat(eq.label),
-                                 # after_stat(rr.label), sep = "*\", \"*"))) +
-    labs(x = expression(atop(Mean ~ Donor, log[10] ~ CH[4] ~ "(-k)")), 
-         y = expression(atop(Recipient, log[10] ~ CH[4] ~ "(-k)"))) +
-    scale_color_manual(name = "Treatment", 
-                       labels = c('Neutral', 'Positive'), 
-                       values = c('gray40', 'darkorange2')) +
-    coord_fixed(1))
+    labs(x = expression(atop("Passage Number", " ")), 
+         y = expression(atop("Divergence", log[10] ~ CH[4] ~ "(-k)"))) +
+    coord_fixed(ratio_div) +
+    scale_x_continuous(labels = 1:5) + 
+    scale_y_continuous(n.breaks = 4) +
+    theme(plot.margin = margin(0, 0.25, 0, 0.5, "cm"))
+)
+ratio_rh <- calc_plot_ratios(rh$sd_csum, rh$divergence)
 
-# save(p_herit_each, file = here(der_dir, 'herit_plot.RData'))
-# save(herit_model, file = here(der_dir 'herit_model.RData'))
-# 
-# ggsave(here(fig_dir, 'fig2_each.jpg'), p_herit_each, width = 4, height = 3) 
-# ggsave(here(fig_dir, 'fig2_each.svg'), p_herit_each, width = 4, height = 3) 
+(
+p_rh <-
+rh %>% 
+ggplot(aes(x = sd_csum, 
+           y = divergence)) +
+    stat_smooth(method = 'lm',
+                se = F,
+                formula = 'y ~ x',
+                color = "black",
+                linewidth = 0.5) +
+    geom_point() + 
+    labs(x = expression(atop("Cumulative Selection Differential", log[10] ~ CH[4] ~ "(-k)")), 
+         y = expression(atop("Divergence", log[10] ~ CH[4] ~ "(-k)"))) +
+    scale_y_continuous(n.breaks = 4) +
+    # theme(plot.margin = margin(0, 0.5, 0, 0.25, "cm")) +
+    coord_fixed()
+)
+
+remove_y <- theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank()
+)
+p <- list(p_div, p_rh)
+herit_plot <- wrap_plots(p, nrow = 1) + plot_layout(guides = "collect")
+
+rh_model<-lm(divergence~sd_csum,data = rh)
+summary(rh_model)
+
+# save(herit_plot, file = here(der_dir, "herit_plot.RData"))
+
+# ggsave(here(fig_dir, "fig2.png"), width = 8*.9, height = 4*.9)
+# ggsave(here(fig_dir, "fig2.svg"), width = 8*.9, height = 4*.9)
+
+# save(rh_model, file = here(der_dir, 'herit_model.RData'))
+
 ```
 
 # Community Analysis
@@ -568,7 +573,7 @@ s5 <-
   tidy
 
 min_seqs <- paste(substr(as.character(min_seqs), 1, 3), substr(as.character(min_seqs), 4, 6), sep = ",")
-save(kt, wt, rare_median, s5, min_seqs, file = here(der_dir, "richness_models.RData"))
+# save(kt, wt, rare_median, s5, min_seqs, file = here(der_dir, "richness_models.RData"))
 
 ```
 
@@ -623,12 +628,42 @@ p_beta <-
   #   plot.background = element_blank(),
   #   panel.grid.major = element_blank(),
   #   panel.grid.minor = element_blank())
+  #   
+pcoa <- cmdscale(rare_dist_bray, eig = TRUE, add = TRUE)
+round(pcoa$eig*100/sum(pcoa$eig),1)
+pcoa_per_exp <- 100 * eigenvals(pcoa) / sum(eigenvals(pcoa))
 
-save(p_beta, file = here(der_dir, "beta_fig.RData"))
+ratio = pcoa_per_exp[2]/pcoa_per_exp[1]
 
-ggsave(here(fig_dir, 'fig3.png'), p_beta, height = 2.5, width = 4) 
+pcoa_scores <-
+  scores(pcoa, display = "sites") %>% 
+  as_tibble(rownames = "sample")
+  
+pcoa_data <-
+  aes_data %>% 
+  select(sample, passage, treat) %>% 
+  distinct %>% 
+  inner_join(pcoa_scores, by = "sample")
+# p_beta <-
+  pcoa_data %>%   
+  ggplot(aes(x = Dim1, y = Dim2, shape = passage, color = treat)) +
+  geom_point() +
+  stat_ellipse(show.legend = FALSE) +
+  coord_fixed(ratio) +
+  scale_shape_discrete(name = "Passage", labels = c(2, 5)) +
+  scale_color_manual(name = "Treatment",
+                       labels = c('Neutral', 'Positive'),
+                       values = c('gray40', 'darkorange2')) #+
+  # theme_bw() +
+  # theme(
+  #   plot.background = element_blank(),
+  #   panel.grid.major = element_blank(),
+  #   panel.grid.minor = element_blank())
 
-ggsave(here(fig_dir, 'fig3.svg'), p_beta, height = 2.5, width = 4) 
+# save(p_beta, file = here(der_dir, "beta_fig.RData"))
+
+# ggsave(here(fig_dir, 'fig3.png'), p_beta, height = 2.5, width = 4) 
+# ggsave(here(fig_dir, 'fig3.svg'), p_beta, height = 2.5, width = 4) 
 
 ```
 
@@ -652,7 +687,7 @@ betadisper(rare_dist_bray, meta_dist$passage_treat) %>%
 tidy_permanova <- 
   tidy(permanova)
 
-save(tidy_permanova, file = here(der_dir, "beta_model.RData"))
+# save(tidy_permanova, file = here(der_dir, "beta_model.RData"))
 
 ```
 
@@ -737,7 +772,7 @@ dbrda_data %>%
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank())
 
-save(dbrda_aov, dbrda_percent_explained, file = here(der_dir, "dbrda.RData"))
+# save(dbrda_aov, dbrda_percent_explained, file = here(der_dir, "dbrda.RData"))
 
 
 ```
@@ -1347,10 +1382,10 @@ theme(
 		      labels = c(0.001, 0.01, 0.1, 1)))
 
 
-save(p_log10, da_fams, file = here(der_dir, "da_fig.RData"))
+# save(p_log10, da_fams, file = here(der_dir, "da_fig.RData"))
 
-ggsave(here(fig_dir, 'fig4.jpg'), p_log10, width = 5, height = 5) 
-ggsave(here(fig_dir, 'fig4.svg'), p_log10, width = 5, height = 5) 
+# ggsave(here(fig_dir, 'fig4.jpg'), p_log10, width = 5, height = 5) 
+# ggsave(here(fig_dir, 'fig4.svg'), p_log10, width = 5, height = 5) 
 
 
 ## All
@@ -1598,4 +1633,22 @@ plot(cc_genus)
 ```
 
 
+```{r save_outputs}
+
+save(p_response, herit_plot, p_beta, p_log10, file = here(der_dir, 'plots.RData'))
+save(response_model, compare_response_mods, per_slope, rh_model, kt, wt, rare_median, s5, min_seqs, tidy_permanova, dbrda_aov, dbrda_percent_explained, da_fams, file = here(der_dir, 'models.RData'))
+
+# save(p_response, file = here(der_dir, 'response_plot.RData'))
+# save(response_model, compare_response_mods, per_slope, file = here(der_dir, 'response_model.RData'))
+# 
+# save(herit_plot, file = here(der_dir, "herit_plot.RData"))
+
+# save(rh_model, file = here(der_dir, 'herit_model.RData'))
+# save(kt, wt, rare_median, s5, min_seqs, file = here(der_dir, "richness_models.RData"))
+# save(p_beta, file = here(der_dir, "beta_fig.RData"))
+# save(tidy_permanova, file = here(der_dir, "beta_model.RData"))
+# save(dbrda_aov, dbrda_percent_explained, file = here(der_dir, "dbrda.RData"))
+# save(p_log10, da_fams, file = here(der_dir, "da_fig.RData"))
+
+```
 
