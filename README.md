@@ -45,7 +45,7 @@ overview can be found [here](https://rstudio.github.io/renv/).
 
 ## Data
 
-All metadata are included in the `Data/` directory of this repository.
+All metadata are included in the `data/` directory of this repository.
 
 The 16S rRNA sequencing data generated during the current study are available in the NCBI Sequence Read Archive (SRA) under BioProject accession number PRJNA832314, https://www.ncbi.nlm.nih.gov/sra/PRJNA832314.
 
