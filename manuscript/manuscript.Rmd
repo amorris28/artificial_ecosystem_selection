@@ -117,6 +117,8 @@ indirect effect of the environment on function through microbiome assembly.
 Here, we overcome these limitations by using a selection approach to estimate
 the degree to which an ecosystem function varies with microbiome composition.
 
+(`r figures("concept", display = "cite")`)
+
 There have been two general categories of approaches that investigators have
 used to estimate the degree to which an ecosystem function varies with
 microbiome composition: comparative and manipulative. Comparative
@@ -463,7 +465,7 @@ microbiome manipulations require that the manipulated microbiome contribute to
 variation in ecosystem function independent of other drivers of ecosystem
 variation (such as variation in environmental conditions). This is because the
 drivers of variation in ecosystem functions can interact in complicated ways
-(Figure 5);
+(`r figures("concept", display = "cite")`);
 for example, environmental variation can directly contribute by providing
 conditions that select for microbial groups that in turn alter the rates of
 ecosystem functions. Determining the independent contribution of microbiome
@@ -604,7 +606,9 @@ https://github.com/amorris28/artificial_ecosystem_selection.
 
 # Figures
 
-  
+![](Figure1.png)
+
+`r figures("concept", "Variation in the rate of an ecosystem function is potentially the result of at least three components: variation in the abiotic environmental conditions, variation in microbiome composition, and the covariance between microbiomes and the environment. It is difficult with traditional study designs to isolate the direct effect of the microbiome from the effect of the environment via covariance with the microbiome. Here, we attempt to isolate the effect of the microbiome through artificial selection on microbiome composition. For simplicity, we omitted the reverse arrows as well as the interaction between microbiome and the environment, though these relationships may also exist.")`
 
 ```{r response, fig.width=4, fig.height=3}
 
@@ -639,5 +643,5 @@ p_log10
 
 `r figures("da", "Differentially abundant family-level taxa identified by ANCOM-II, ALDEx2, and CORNCOB. Values on the x-axis are relative abundances on a log~10~ scale. Large points with error bars are the median relative abundance and interquartile range. Taxa in the top panel are enriched in the Positive treatment and taxa in the bottom panel are depleted in the Positive treatment. Taxa are sorted by their effect size with taxa at the top having the largest positive effect size and taxa at the bottom with the largest negative effect size.")`
 
-![Figure 5. Variation in the rate of an ecosystem function is potentially the result of at least three components: variation in the abiotic environmental conditions, variation in microbiome composition, and the covariance between microbiomes and the environment. It is difficult with traditional study designs to isolate the direct effect of the microbiome from the effect of the environment via covariance with the microbiome. Here, we attempt to isolate the effect of the microbiome through artificial selection on microbiome composition. For simplicity, we omitted the reverse arrows as well as the interaction between microbiome and the environment, though these relationshps may also exist.](Figure1.png)
+
 
