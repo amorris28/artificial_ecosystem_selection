@@ -10,7 +10,8 @@ fig_dir <- 'analysis/figs/'      # Figures directory
 
 theme_set(theme_classic() +
             theme(panel.border = element_rect(fill = NA, linewidth = 1.0625),
-                  axis.line = element_blank()))
+                  axis.line = element_blank(),
+                  ))
 
 plot_flux <- function(fluxes, passage, estimate, ratio = NULL, log10 = FALSE) {
   p <- ggplot(fluxes, aes(x = {{passage}}, y = {{estimate}}, color = treat)) +

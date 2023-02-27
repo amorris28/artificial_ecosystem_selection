@@ -1,7 +1,7 @@
 ---
 title: "Analysis"
 author: "Andrew Morris"
-date: "2022-11-21"
+date: "`r Sys.Date()`"
 output: 
     html_document:
         toc: true
@@ -34,10 +34,16 @@ library(ANCOMBC)
 library(tidyverse)
 library(here)
 library(patchwork)
+library(extrafont)
 
 source(here('R/', 'functions.R'))
 
 set.seed(1337)
+
+theme_set(theme_classic(base_size = 7) +
+            theme(panel.border = element_rect(fill = NA, linewidth = 1.0625),
+                  axis.line = element_blank(),
+                  text = element_text(family = 'Arial')))
 ```
 
 
@@ -169,7 +175,7 @@ ggplot(fluxes, aes(x = passage, y = ch4, color = treat)) +
     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
     scale_color_manual(
         name = "Treatment", 
-        labels = c('Neutral', 'Positive'), 
+        labels = c('Control', 'Selection'), 
         values = c('gray40', 'darkorange2')) +
     geom_jitter(width = 0.1) + 
     labs(x = "Passage Number", 
@@ -183,23 +189,63 @@ ggplot(fluxes, aes(x = passage, y = ch4, color = treat)) +
 
 ratio = calc_plot_ratios(fluxes$passage, fluxes$log_ch4)
 
-(p_response <- ggplot(fluxes, aes(x = passage, y = log_ch4, color = treat)) +
-    stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
-    scale_color_manual(
-      name = "Treatment", 
-      labels = c('Neutral', 'Positive'), 
-      values = c('gray40', 'darkorange2')) +
-    geom_jitter(#aes(alpha = selected), 
-      width = 0.1) + 
-        labs(x = "Passage Number", 
-                  y = expression(log[10] ~ CH[4] ~ "(-k)")) +
-  scale_x_continuous(labels = 1:5) +
-    coord_fixed(ratio))
+# (p_response_cl <- ggplot(fluxes, aes(x = passage, y = log_ch4, color = treat)) +
+#     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x') +
+#     scale_color_manual(
+#       name = "Treatment", 
+#       labels = c('Control', 'Selection'), 
+#       values = c('gray40', 'darkorange2')) +
+#     geom_jitter(#aes(alpha = selected), 
+#       width = 0.1) + 
+#         labs(x = "Passage Number", 
+#                   y = expression(log[10] ~ CH[4] ~ "(-k)")) +
+#   scale_x_continuous(labels = 1:5) +
+#     coord_fixed(ratio))
 
 # save(p_response, file = here(der_dir, 'response_plot.RData'))
 
-# ggsave(here(fig_dir, 'fig1.jpg'), p_response, width = 4, height = 3)
-# ggsave(here(fig_dir, 'fig1.svg'), p_response, width = 4, height = 3)
+# ggsave(here(fig_dir, 'fig2.jpg'), p_response, width = 4, height = 3)
+# ggsave(here(fig_dir, 'fig2.svg'), p_response, width = 4, height = 3)
+# ggsave(here(fig_dir, 'fig2_cl.png'), p_response_cl, width = 4, height = 3)
+
+(p_response_bw <- ggplot(fluxes, aes(x = passage, y = log_ch4, fill = treat, linetype = treat)) +
+    stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x', color = 'black',
+                linewidth = 0.5) +
+    scale_fill_manual(
+      name = "Treatment", 
+      labels = c('Control', 'Selection'), 
+      values = c('white', 'black')) +
+    scale_linetype_manual(
+      name = "Treatment", 
+      labels = c('Control', 'Selection'), 
+      values = c(3, 1)) +
+        geom_jitter(shape = 21, 
+      width = 0.1,
+      size = 1) + 
+        labs(x = "Passage Number", 
+                  y = expression(log[10] ~ CH[4] ~ "(-k)")) +
+  scale_x_continuous(labels = 1:5) +
+    coord_fixed(ratio)
+    )
+
+ggsave(here(fig_dir, 'fig2.eps'), p_response_bw, width = 88, height = 65, units = 'mm', device = cairo_ps)
+# embed_fonts(here(fig_dir, 'fig2_bw.eps'))
+
+# (p_response_gs <- ggplot(fluxes, aes(x = passage, y = log_ch4, color = treat)) +
+#     stat_smooth(method = 'lm', se = FALSE, formula = 'y ~ x', linewidth = 0.5) +
+#     scale_color_manual(
+#       name = "Treatment", 
+#       labels = c('Control', 'Selection'), 
+#       values = c('gray50', 'black')) +
+#     geom_jitter(#aes(alpha = selected), 
+#       width = 0.1,
+#       size = 0.5) + 
+#         labs(x = "Passage Number", 
+#                   y = expression(log[10] ~ CH[4] ~ "(-k)")) +
+#   scale_x_continuous(labels = 1:5) +
+#     coord_fixed(ratio)
+# )
+# ggsave(here(fig_dir, 'fig2_gs.png'), p_response_gs, width = 88, height = 65, units = 'mm')
 
 ```
 
@@ -334,11 +380,12 @@ p_div <-
 ggplot(divergence, 
        aes(x = passage, 
            y = divergence)) +
-    stat_smooth(method = 'lm', 
-                se = FALSE, 
-                formula = 'y ~ x',
-                color = "black",
-                linewidth = 0.5) +
+    # stat_smooth(method = 'lm', 
+    #             se = FALSE, 
+    #             formula = 'y ~ x',
+    #             color = "black",
+    #             linewidth = 0.5) +
+        geom_line() +
     geom_point() + 
     labs(x = expression(atop("Passage Number", " ")), 
          y = expression(atop("Divergence", log[10] ~ CH[4] ~ "(-k)"))) +
@@ -359,7 +406,7 @@ ggplot(aes(x = sd_csum,
                 formula = 'y ~ x',
                 color = "black",
                 linewidth = 0.5) +
-    geom_point() + 
+    geom_point(size = 1) + 
     labs(x = expression(atop("Cumulative Selection Differential", log[10] ~ CH[4] ~ "(-k)")), 
          y = expression(atop("Divergence", log[10] ~ CH[4] ~ "(-k)"))) +
     scale_y_continuous(n.breaks = 4) +
@@ -380,9 +427,18 @@ summary(rh_model)
 
 # save(herit_plot, file = here(der_dir, "herit_plot.RData"))
 
-# ggsave(here(fig_dir, "fig2.png"), width = 8*.9, height = 4*.9)
-# ggsave(here(fig_dir, "fig2.svg"), width = 8*.9, height = 4*.9)
-
+# ggsave(here(fig_dir, "fig3.png"), width = 8*.9, height = 4*.9)
+# ggsave(here(fig_dir, "fig3.svg"), width = 8*.9, height = 4*.9)
+ggsave(here(fig_dir, "fig3.eps"),
+       p_rh,
+       width = 88,
+       height = 45, 
+       units = 'mm',
+       device = cairo_ps)
+# ggsave(here(fig_dir, "fig3.eps"), 
+#        p_rh,
+#        width = 5,
+#        height = 2.5)
 # save(rh_model, file = here(der_dir, 'herit_model.RData'))
 
 ```
@@ -613,47 +669,48 @@ centroids <-
   summarize(NMDS1 = mean(NMDS1),
             NMDS2 = mean(NMDS2),
             .groups = "drop")
-p_beta <-
-  nmds_data %>%   
-  ggplot(aes(x = NMDS1, y = NMDS2, shape = passage, color = treat)) +
-  geom_point() +
-  stat_ellipse(show.legend = FALSE) +
-  coord_fixed() +
-  scale_shape_discrete(name = "Passage", labels = c(2, 5)) +
-  scale_color_manual(name = "Treatment",
-                       labels = c('Neutral', 'Positive'),
-                       values = c('gray40', 'darkorange2')) #+
+# p_beta_cl <-
+#   nmds_data %>%   
+#   ggplot(aes(x = NMDS1, y = NMDS2, shape = passage, color = treat)) +
+#   geom_point() +
+#   stat_ellipse(show.legend = FALSE) +
+#   coord_fixed() +
+#   scale_shape_discrete(name = "Passage", labels = c(2, 5)) +
+#   scale_color_manual(name = "Treatment",
+#                        labels = c('Control', 'Selection'),
+#                        values = c('gray40', 'darkorange2')) #+
   # theme_bw() +
   # theme(
   #   plot.background = element_blank(),
   #   panel.grid.major = element_blank(),
   #   panel.grid.minor = element_blank())
   #   
-pcoa <- cmdscale(rare_dist_bray, eig = TRUE, add = TRUE)
-round(pcoa$eig*100/sum(pcoa$eig),1)
-pcoa_per_exp <- 100 * eigenvals(pcoa) / sum(eigenvals(pcoa))
-
-ratio = pcoa_per_exp[2]/pcoa_per_exp[1]
-
-pcoa_scores <-
-  scores(pcoa, display = "sites") %>% 
-  as_tibble(rownames = "sample")
-  
-pcoa_data <-
-  aes_data %>% 
-  select(sample, passage, treat) %>% 
-  distinct %>% 
-  inner_join(pcoa_scores, by = "sample")
-# p_beta <-
-  pcoa_data %>%   
-  ggplot(aes(x = Dim1, y = Dim2, shape = passage, color = treat)) +
-  geom_point() +
-  stat_ellipse(show.legend = FALSE) +
-  coord_fixed(ratio) +
-  scale_shape_discrete(name = "Passage", labels = c(2, 5)) +
-  scale_color_manual(name = "Treatment",
-                       labels = c('Neutral', 'Positive'),
-                       values = c('gray40', 'darkorange2')) #+
+# pcoa <- cmdscale(rare_dist_bray, eig = TRUE, add = TRUE)
+# round(pcoa$eig*100/sum(pcoa$eig),1)
+# pcoa_per_exp <- 100 * eigenvals(pcoa) / sum(eigenvals(pcoa))
+# 
+# ratio = pcoa_per_exp[2]/pcoa_per_exp[1]
+# 
+# pcoa_scores <-
+#   scores(pcoa, display = "sites") %>%
+#   as_tibble(rownames = "sample")
+# 
+# pcoa_data <-
+#   aes_data %>%
+#   select(sample, passage, treat) %>%
+#   distinct %>%
+#   inner_join(pcoa_scores, by = "sample")
+# 
+# # p_beta <-
+#   pcoa_data %>%
+#   ggplot(aes(x = Dim1, y = Dim2, shape = passage, color = treat)) +
+#   geom_point() +
+#   stat_ellipse(show.legend = FALSE) +
+#   coord_fixed(ratio) +
+#   scale_shape_discrete(name = "Passage", labels = c(2, 5)) +
+#   scale_color_manual(name = "Treatment",
+#                        labels = c('Neutral', 'Positive'),
+#                        values = c('gray40', 'darkorange2')) #+
   # theme_bw() +
   # theme(
   #   plot.background = element_blank(),
@@ -662,8 +719,68 @@ pcoa_data <-
 
 # save(p_beta, file = here(der_dir, "beta_fig.RData"))
 
-# ggsave(here(fig_dir, 'fig3.png'), p_beta, height = 2.5, width = 4) 
-# ggsave(here(fig_dir, 'fig3.svg'), p_beta, height = 2.5, width = 4) 
+# ggsave(here(fig_dir, 'fig4.png'), p_beta, height = 2.5, width = 4) 
+# ggsave(here(fig_dir, 'fig4.svg'), p_beta, height = 2.5, width = 4) 
+# ggsave(here(fig_dir, 'fig4_cl.png'), p_beta_cl, height = 2.5, width = 4)
+
+(p_beta_bw <-
+  nmds_data %>%   
+  ggplot(aes(x = NMDS1, y = NMDS2, shape = passage, fill = treat, 
+             # linetype = treat
+             )) +
+  geom_point() +
+  # stat_ellipse(
+  #     # show.legend = FALSE
+  #     ) +
+  #   scale_linetype_manual(
+  #     name = "Treatment", 
+  #     labels = c('Control', 'Selection'), 
+  #     values = c(3, 1)) +
+  coord_fixed() +
+  scale_shape_manual(name = "Passage", 
+                     labels = c(2, 5),
+                     values = c(24, 21)) +
+  scale_fill_manual(name = "Treatment",
+                       labels = c('Control', 'Selection'),
+                       values = c('white', 'black')) +
+  guides(fill=guide_legend(override.aes = list(shape=21)))
+  # scale_color_manual(name = "Treatment",
+  #                      labels = c('Neutral', 'Positive'),
+  #                      values = c('white', 'black')) #+
+  # theme_bw() +
+  # theme(
+  #   plot.background = element_blank(),
+  #   panel.grid.major = element_blank(),
+  #   panel.grid.minor = element_blank())
+  #   
+)
+ggsave(here(fig_dir, 'fig4.eps'), 
+       p_beta_bw, 
+       height = 60,
+       width = 180,
+       # height = 60,
+       # width = 88,
+       units = 'mm', 
+       device = cairo_ps
+       )
+
+# (p_beta_gs <-
+#   nmds_data %>%   
+#   ggplot(aes(x = NMDS1, y = NMDS2, shape = passage, color = treat)) +
+#   geom_point() +
+#   # stat_ellipse(
+#   #     # show.legend = FALSE
+#   #     ) +
+#   coord_fixed() +
+#   scale_shape_manual(name = "Passage",
+#                      labels = c(2, 5),
+#                      values = c(17, 19)) +
+#   scale_color_manual(name = "Treatment",
+#                        labels = c('Control', 'Selection'),
+#                        values = c('gray50', 'black')) +
+#   guides(fill=guide_legend(override.aes = list(shape=21)))
+# )
+# ggsave(here(fig_dir, 'fig4_gs.png'), p_beta_gs, height = 2.5*1.5, width = 4*1.5)
 
 ```
 
@@ -1350,42 +1467,109 @@ all_taxa %>%
   select(Family, direction) %>% 
   distinct() %>% 
   full_join(all_iqm, by = "Family")
-(p <-
-	all_taxa %>%
-	ggplot(aes(x = rel_abund, y = Family, color = treat)) +
-	geom_point(position=position_jitterdodge()) +
-	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
-			data = all_iqm, 
-			position = position_dodge(width = 0.75), 
-			shape = 21, 
-			color = "black") +
-	theme_bw() +
-	theme(axis.text.y = element_markdown()) +
-	labs(x = "Relative Abundance (%)", y = NULL) +
-	scale_color_manual(name = "Treatment",
-			   labels = c('Neutral', 'Positive'),
-			   values = c('gray40', 'darkorange2')) +
-	scale_fill_manual(name = "Treatment",
-			   labels = c('Neutral', 'Positive'),
-			   values = c('gray40', 'darkorange2')) +
-    facet_grid(direction ~ ., scale = "free_y", space = "free")  + 
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank()
-))
-
-
-
-(p_log10 <- 
-	p +
-	scale_x_log10(breaks = c(0.001, 0.01, 0.1, 1),
-		      labels = c(0.001, 0.01, 0.1, 1)))
+# (p_log10_cl <-
+# 	all_taxa %>%
+# 	ggplot(aes(x = rel_abund, y = Family, color = treat)) +
+# 	geom_point(position=position_jitterdodge()) +
+# 	geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, fill = treat), 
+# 			data = all_iqm, 
+# 			position = position_dodge(width = 0.75), 
+# 			shape = 21, 
+# 			color = "black") +
+# 	theme_bw() +
+# 	theme(axis.text.y = element_markdown()) +
+# 	labs(x = "Relative Abundance (%)", y = NULL) +
+# 	scale_color_manual(name = "Treatment",
+# 			   labels = c('Control', 'Selection'),
+# 			   values = c('gray40', 'darkorange2')) +
+# 	scale_fill_manual(name = "Treatment",
+# 			   labels = c('Control', 'Selection'),
+# 			   values = c('gray40', 'darkorange2')) +
+#     facet_grid(direction ~ ., scale = "free_y", space = "free")  + 
+# theme(
+#   strip.background = element_blank(),
+#   strip.text.y = element_blank()
+# ) +
+# 	scale_x_log10(breaks = c(0.001, 0.01, 0.1, 1),
+# 		      labels = c(0.001, 0.01, 0.1, 1)))
 
 
 # save(p_log10, da_fams, file = here(der_dir, "da_fig.RData"))
 
-# ggsave(here(fig_dir, 'fig4.jpg'), p_log10, width = 5, height = 5) 
-# ggsave(here(fig_dir, 'fig4.svg'), p_log10, width = 5, height = 5) 
+# ggsave(here(fig_dir, 'fig5.jpg'), p_log10, width = 5, height = 5)
+# ggsave(here(fig_dir, 'fig5.svg'), p_log10, width = 5, height = 5)
+# ggsave(here(fig_dir, 'fig5_cl.png'), p_log10_cl, width = 5, height = 5)
+(p_log10_bw <-
+	all_taxa %>%
+	ggplot(aes(x = rel_abund, y = Family, fill = treat)) +
+	geom_point(position=position_jitterdodge(jitter.width = 0.1,
+	                                         dodge.width = 0.4), shape = 21, size = 1) +
+        theme_bw(base_size = 7) +
+            theme(panel.border = element_rect(fill = NA, linewidth = 1.0625),
+                  axis.line = element_blank(),
+                  text = element_text(family = 'Arial')) +
+	# geom_jitter(shape = 21, height = 0.1) +
+	# geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, color = treat), 
+	# 		data = all_iqm, 
+	# 		position = position_dodge(width = 0.75), 
+	# 		shape = 21, 
+	# 		# color = "black"
+	# 		) +
+	# theme_bw() +
+	theme(axis.text.y = element_markdown()) +
+	labs(x = "Relative Abundance (%)", y = NULL) +
+	# scale_color_manual(name = "Treatment",
+	# 		   labels = c('Control', 'Selection'),
+	# 		   values = c('black', 'gray')) +
+	scale_fill_manual(name = "Treatment",
+			   labels = c('Control', 'Selection'),
+			   values = c('white', 'black')) +
+    facet_grid(direction ~ ., 
+               scale = "free_y",
+               space = "free")  + 
+theme(
+  strip.background = element_blank(),
+  strip.text.y = element_blank()) +
+	scale_x_log10(breaks = c(0.001, 0.01, 0.1, 1),
+		      labels = c(0.001, 0.01, 0.1, 1))
+    )
+ggsave(here(fig_dir, 'fig5.eps'), 
+       p_log10_bw, 
+       width = 100, 
+       height = 88,
+       units = 'mm',
+       device = cairo_ps
+       )
+
+# (p_log10_gs <-
+# 	all_taxa %>%
+# 	ggplot(aes(x = rel_abund, y = Family, color = treat)) +
+# 	# geom_point(position=position_jitterdodge(), shape = 21) +
+# 	geom_jitter(#shape = 21, 
+# 	            height = 0.1) +
+# 	# geom_pointrange(aes(x = median, xmax = third_quartile, xmin = first_quartile, color = treat), 
+# 	# 		data = all_iqm, 
+# 	# 		position = position_dodge(width = 0.75), 
+# 	# 		shape = 21, 
+# 	# 		# color = "black"
+# 	# 		) +
+# 	theme_bw() +
+# 	theme(axis.text.y = element_markdown()) +
+# 	labs(x = "Relative Abundance (%)", y = NULL) +
+# 	# scale_color_manual(name = "Treatment",
+# 	# 		   labels = c('Control', 'Selection'),
+# 	# 		   values = c('black', 'gray')) +
+# 	scale_color_manual(name = "Treatment",
+# 			   labels = c('Control', 'Selection'),
+# 			   values = c('gray50', 'black')) +
+#     facet_grid(direction ~ ., scale = "free_y", space = "free")  + 
+# theme(
+#   strip.background = element_blank(),
+#   strip.text.y = element_blank()
+# ) +
+# 	scale_x_log10(breaks = c(0.001, 0.01, 0.1, 1),
+# 		      labels = c(0.001, 0.01, 0.1, 1)))
+# ggsave(here(fig_dir, 'fig5_gs.eps'), p_log10_gs, width = 5, height = 5)
 
 
 ## All
@@ -1409,7 +1593,7 @@ theme(
 #   facet_grid( ~ passage) +
 #   geom_point(position = position_jitterdodge())
 
-p_effect <-
+(p_effect <-
 	all_taxa %>%
 	ggplot(aes(x = effect, y = Family)) +
 	geom_point() +
@@ -1418,12 +1602,12 @@ p_effect <-
 	theme(axis.text.y = element_markdown()) +
 	labs(x = "Aldex2 Effect Size", y = NULL) +
 	scale_color_manual(name = "Treatment",
-			   labels = c('Neutral', 'Positive'),
+			   labels = c('Control', 'Selection'),
 			   values = c('gray40', 'darkorange2')) +
 	scale_fill_manual(name = "Treatment",
-			   labels = c('Neutral', 'Positive'),
+			   labels = c('Control', 'Selection'),
 			   values = c('gray40', 'darkorange2'))
-p_effect
+    )
 
 
 ```
@@ -1635,7 +1819,7 @@ plot(cc_genus)
 
 ```{r save_outputs}
 
-save(p_response, herit_plot, p_beta, p_log10, file = here(der_dir, 'plots.RData'))
+# save(p_response, herit_plot, p_beta, p_log10, file = here(der_dir, 'plots.RData'))
 save(response_model, compare_response_mods, per_slope, rh_model, kt, wt, rare_median, s5, min_seqs, tidy_permanova, dbrda_aov, dbrda_percent_explained, da_fams, file = here(der_dir, 'models.RData'))
 
 # save(p_response, file = here(der_dir, 'response_plot.RData'))
