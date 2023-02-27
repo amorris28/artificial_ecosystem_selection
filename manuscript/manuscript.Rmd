@@ -8,8 +8,7 @@ bibliography: bibliography.bib
 csl: vancouver.csl
 ---
 
-{title max characters 150; current = 106 w/spaces}
-
+{title max characters 150; current = 106 w/spaces}  
 ^1^ Institute of Ecology and Evolution, University of Oregon, Eugene, OR, USA  
 \* Correspondence: Andrew H. Morris, amorris3\@uoregon.edu  
 Competing Interests: We declare we have no competing interests.
@@ -46,7 +45,7 @@ fluxes <- read_tsv(paste0(der_dir, 'fluxes.tsv'))
 
 load(file = paste0(der_dir, 'decontam.RData'))
 
-load(file = paste0(der_dir, 'plots.RData'))
+#load(file = paste0(der_dir, 'plots.RData'))
 load(file = paste0(der_dir, 'models.RData'))
 
 
@@ -71,8 +70,7 @@ load(file = paste0(der_dir, 'models.RData'))
 
 # Abstract
 
-{max 250 words; current = 249}
-
+{max 250 words; current = 249}  
 Microbiomes mediate important ecosystem functions, yet it has proven difficult
 to determine the relationship between microbiome composition and the rate of
 ecosystem functions. This challenge remains because it is difficult to
@@ -87,7 +85,8 @@ ecosystems. We performed artificial ecosystem selection on replicate soil
 microbiomes to select for increased soil methane oxidation rate. We observed a
 strong response to selection with a `r myround(per_slope, 1)`\% increase in
 methane oxidation rate per passage. We
-estimated that 40\% of the variation in methane oxidation
+estimated that `r myround(tidy(rh_model)[[2, 2]]*100, 1)`\% of the variation in
+methane oxidation
 rate in these soils can be attributed to microbiome variation. We also found
 that selection did not enrich for known methane oxidizers; instead, `r length(da_fams)` families not
 known to oxidize methane, including *Fimbriimonadaceae*, *Cytophagaceae*, and
@@ -98,7 +97,7 @@ composition can contribute to variation in the rate of ecosystem function and
 that manipulating microbiome composition could be a viable strategy for managing
 ecosystem functions.
 
-{max text 5000 words; current text = 4549}
+{max text 5000 words; current text = 4549}  
 
 # Introduction
 
@@ -517,7 +516,8 @@ by microbiome scientists who study host-associated microbiomes. Although rarely
 used in the study of environmental microbiomes, this concept could be very
 useful for understanding and manipulating microbially-mediated functions in a
 variety of ecosystems. In our experiment, variation in microbiome taxonomic
-composition statistically explained (i.e., was associated with) 40% of the
+composition statistically explained (i.e., was associated with) 
+`r myround(tidy(rh_model)[[2, 2]]*100, 1)`\% of the
 variation we observed in the rate of methane oxidation.  This suggests that
 there is substantial potential for altering this ecosystem function through
 microbiome manipulation in this soil. It is very likely that the
@@ -604,44 +604,15 @@ https://github.com/amorris28/artificial_ecosystem_selection.
 ::: {#refs}
 :::
 
-# Figures
-
-![](Figure1.png)
+# Figure Captions
 
 `r figures("concept", "Variation in the rate of an ecosystem function is potentially the result of at least three components: variation in the abiotic environmental conditions, variation in microbiome composition, and the covariance between microbiomes and the environment. It is difficult with traditional study designs to isolate the direct effect of the microbiome from the effect of the environment via covariance with the microbiome. Here, we attempt to isolate the effect of the microbiome through artificial selection on microbiome composition. For simplicity, we omitted the reverse arrows as well as the interaction between microbiome and the environment, though these relationships may also exist.")`
 
-```{r response, fig.width=4, fig.height=3}
+`r figures("response", paste0("Response to selection on soil CH~4~ oxidation rate. The y-axis is CH~4~ oxidation rate as the log~10~ of the additive inverse of the first-order exponential decay constant $k$ (i.e., $-k$) with units day^-1^ so that a more positive value represents a higher CH~4~ oxidation rate. There was a significant difference of slopes between the positive selection treatment and the control (F~", compare_response_mods[2,4], ",", compare_response_mods[2,2], "~ = ", myround(compare_response_mods[2,5], 2), ", p = ", myround(compare_response_mods[2,6], 2), ")."))`  
 
-p_response
+`r figures("herit", paste0("Divergence between the positive selection line and the control line over the cumulative selection differential. Values are CH~4~ oxidation rate as the additive inverse of the first-order exponential decay constant k (day^-1^). Regression of divergence on cumulative selection differential provides an estimate of realized heritability (h^2^ &pm; SE) and the slope of the regression was ", myround(tidy(rh_model)[[2, 2]], 2), " &pm; ", myround(tidy(rh_model)[[2, 3]], 2), ", though this was not significant (F~", glance(rh_model)$df,  ",", glance(rh_model)$df.residual,  "~ = ", myround(glance(rh_model)$statistic, 2),  ", p =  ", myround(glance(rh_model)$p.value, 2),  ")."))`  
 
-```
+`r figures("beta", "Non-metric multidimensional scaling plot of beta diversity for all jars. Dissimilarities are rarefied Bray-Curtis dissimilarity averaged over 99 subsamples.")`
 
-`r figures("response", "Response to selection on soil CH~4~ oxidation rate. The y-axis is the log~10~ of the additive inverse of the first-order exponential decay constant $k$ (i.e., $-k$) with units day^-1^ so that a more positive value represents a higher CH~4~ oxidation rate.")`  
-
-
-```{r herit, fig.width=7}
-# 
-herit_plot
-#`r figures("herit", paste0("Ecosystem heritability as the regression of mid-recipient methane flux on mid-donor methane flux ($-k$ with units day^-1^). Donor is the mean oxidation rate of the three jars selected to inoculate the next passage. Recipient is the mean oxidation rate of the 12 jars in the next passage. The orange lines and points are the Positive treatment and the gray lines and points are the Neutral treatment. Slope of the regression line estimates the proportion of variation in methane oxidation rate due to variation in the microbiome. For the Positive treatment, the variance explained by the microbiome was ", myround((coefficients(herit_model)[2] + coefficients(herit_model)[4])*100, 1), "% (slope = ", myround(coefficients(herit_model)[2] + coefficients(herit_model)[4], 3), ", SE = ", myround(tidy(herit_model)$std.error[4], 2), ") and for the Neutral treatment the variance explained by the microbiome was ", myround(coefficients(herit_model)[2]*100, 1), "% (slope = ", myround(coefficients(herit_model)[2], 3), ", SE = ", myround(tidy(herit_model)$std.error[2], 2), ")."))`
-```
-
-`r figures("herit", paste0("Divergence between the positive selection line and the control line over five passages. Values are CH~4~ oxidation rate as the additive inverse of the first-order exponential decay constant k (day^-1^). Regression of divergence on cumulative selection differential provides an estimate of realized heritability (h^2^ &pm; SE) and the slope of the regression was ", myround(tidy(rh_model)[[2, 2]], 2), " &pm; ", myround(tidy(rh_model)[[2, 3]], 2), "."))`  
-
-```{r beta, results=FALSE, fig.height=2.5}
-
-p_beta
-
-```
-
-`r figures("beta", "Non-metric multidimensional scaling plot of beta diversity for all jars. Dissimilarities are based on rarefied Bray-Curtis dissimilarity. Colors represent treatment and shapes represent passage number.")`
-
-```{r da, results=FALSE}
-
-p_log10
-
-```
-
-`r figures("da", "Differentially abundant family-level taxa identified by ANCOM-II, ALDEx2, and CORNCOB. Values on the x-axis are relative abundances on a log~10~ scale. Large points with error bars are the median relative abundance and interquartile range. Taxa in the top panel are enriched in the Positive treatment and taxa in the bottom panel are depleted in the Positive treatment. Taxa are sorted by their effect size with taxa at the top having the largest positive effect size and taxa at the bottom with the largest negative effect size.")`
-
-
+`r figures("da", "Differentially abundant family-level taxa identified by ANCOM-II, ALDEx2, and CORNCOB. Values on the x-axis are relative abundances on a log~10~ scale. Taxa in the top panel are enriched in the positive selection treatment relative to the control and taxa in the bottom panel are depleted in the positive selection treatment relative to the control. Taxa are sorted by their effect size with taxa at the top having the largest positive effect size and taxa at the bottom with the largest negative effect size.")`
 
