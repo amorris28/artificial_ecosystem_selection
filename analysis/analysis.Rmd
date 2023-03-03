@@ -1819,7 +1819,7 @@ plot(cc_genus)
 
 ```{r save_outputs}
 
-# save(p_response, herit_plot, p_beta, p_log10, file = here(der_dir, 'plots.RData'))
+#save(p_response, herit_plot, p_beta, p_log10, file = here(der_dir, 'plots.RData'))
 save(response_model, compare_response_mods, per_slope, rh_model, kt, wt, rare_median, s5, min_seqs, tidy_permanova, dbrda_aov, dbrda_percent_explained, da_fams, file = here(der_dir, 'models.RData'))
 
 # save(p_response, file = here(der_dir, 'response_plot.RData'))

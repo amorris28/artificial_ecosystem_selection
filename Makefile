@@ -5,10 +5,10 @@ manuscript: manuscript/manuscript.docx
 .PHONY: analysis
 analysis: analysis/analysis.html
 
-manuscript/manuscript.docx: manuscript/manuscript.Rmd manuscript/reference.docx manuscript/bibliography.bib manuscript/vancouver.csl analysis/output/fluxes.tsv analysis/output/heritability.tsv analysis/output/models.RData analysis/output/plots.RData R/functions.R
+manuscript/manuscript.docx: manuscript/manuscript.Rmd manuscript/reference.docx manuscript/bibliography.bib manuscript/vancouver.csl analysis/output/models.RData R/functions.R
 	Rscript -e "rmarkdown::render('$<')"
 
-analysis/output/models.RData analysis/output/plots.RData analysis/analysis.html: analysis/analysis.Rmd analysis/output/community_data.tsv R/functions.R
+analysis/output/models.RData analysis/analysis.html: analysis/analysis.Rmd analysis/output/community_data.tsv R/functions.R
 	Rscript -e "rmarkdown::render('$<')"
 
 analysis/output/community_data.tsv: analysis/scripts/05-combine-asvs-and-fluxes.R analysis/hpc_output/dada2_output.RData analysis/output/barcode_master.tsv analysis/output/fluxes.tsv data/post_pcr_qubit.tsv R/functions.R
