@@ -591,9 +591,6 @@ generated during the current study as well as the scripts to recreate the
 analysis are available on Github,
 https://github.com/amorris28/artificial_ecosystem_selection.
 
-# Supplement
-
-
 # References
 
 ::: {#refs}
