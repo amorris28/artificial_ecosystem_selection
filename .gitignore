@@ -9,6 +9,7 @@
 *.svg
 *.html
 *.tiff
+*.eps
 Figures/
 R/*.md
 R/Figs/

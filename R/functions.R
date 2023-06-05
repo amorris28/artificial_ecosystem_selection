@@ -144,7 +144,7 @@ randomize_asv_table <- function(x) {
   x %>%
     uncount(count) %>%
     mutate(rand_asv = sample(asv)) %>%
-    select(-asv) %>%
+    dplyr::select(-asv) %>%
     count(sample, rand_asv, name="value")
 }
 
