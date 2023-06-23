@@ -27,3 +27,4 @@ manuscript/.~lock.manuscript.docx#
 *.docx#
 manuscript/presentation
 analysis/test/
+analysis/output/picrust2_out_pipeline
