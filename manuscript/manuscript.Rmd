@@ -1,5 +1,5 @@
 ---
-title: Artificial ecosystem selection reveals relationships between microbiome composition and ecosystem function
+title: Response of soil microbiome composition to selection on methane oxidation rate
 author: "Andrew H. Morris^1^* and Brendan J. M. Bohannan^1^"
 output:
   word_document:

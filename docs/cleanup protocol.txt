@@ -1,0 +1,20 @@
+>> Single cleanup =
+
+* Add 0.8 x 25 uL = 20 UL omega beads to each PCR reaction, mix well, sit for 5 mins at room temp, then place on magnet until clear
+
+* Aspirate and DISCARD supernatant (containing unwanted small
+fragments)
+
+* Add 150 UL 80% ethanol while on magnet, let sit 30 secs at room temp, then aspirate the wash (repeat this step for a total of 2 washes)
+
+* Remove any remaining droplets of ethanol
+
+* Allow to air dry for 2 minutes
+
+* Add 25 UL Elution Buffer, mix well to resuspend beads, sit for 3 mins at room temp, then place on magnet until clear
+
+* Aspirate and TRANSFER clear supernatant (containing eluted amplicons)
+to new plate
+
+>> This entire cleanup process is repeated twice on each sample, thus
+>> the "double cleanup."

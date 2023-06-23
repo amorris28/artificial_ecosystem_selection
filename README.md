@@ -1,15 +1,14 @@
-# Artificial ecosystem selection reveals relationships between microbiome composition and ecosystem function
+# Response of soil microbiome composition to selection on methane oxidation rate
 
 ## Citation
 
-Morris, Andrew H, Bohannan, Brendan JM. 2023. Artificial ecosystem selection
-reveals relationships between microbiome composition and ecosystem function. 
+Morris, Andrew H, Bohannan, Brendan JM. 2023. Response of soil microbiome composition to selection on methane oxidation rate. 
 
 ## Overview
 
-This is the project directory for the manuscript entitled "Artificial ecosystem
-selection reveals relationships between microbiome composition and ecosystem
-function" that is currently in preparation. See the [Directories](#directories)
+This is the project directory for the manuscript entitled "Response of soil
+microbiome composition to selection on methane oxidation rate" that is
+currently in preparation. See the [Directories](#directories)
 section for an explanation of what files are contained in each directory. See
 the Data Dictionary at `data/data_dictionary.tsv` for an explanation of the
 variables in each data file.
@@ -79,3 +78,8 @@ curl https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz -
 |manuscript/|Contains .Rmd source code for the manuscript, a reference.docx containing formatting, references in a .bib, and the vancouver CSL citation style file.|
 |renv/|Directory containing renv lockfile with the R version and package versions used in the analysis.|
 
+## License
+
+Software and code licensed under the [MIT license](https://github.com/amorris28/artificial_ecosystem_selection/blob/main/LICENSE.md)
+
+Datasets within `Data/` licensed under [CC0](https://github.com/amorris28/artificial_ecosystem_selection/blob/main/data/LICENSE.md) 
