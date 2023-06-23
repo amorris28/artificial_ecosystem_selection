@@ -70,8 +70,8 @@ ch4_conc_data <-
   select(flux_date, jar, t, ppm) %>% 
   spread(t, ppm)
 
-ch4_conc_data %>% 
-    summarize(mean = mean(t1), sd = sd(t1))
+#ch4_conc_data %>% 
+#    summarize(mean = mean(t1), sd = sd(t1))
 
 # Finally, this step takes the time intervals and ch4 concentrations and fits a
 # first-order exponential decay function to compute methane flux as `k` which is

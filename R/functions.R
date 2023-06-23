@@ -4,7 +4,7 @@
 raw_dir <- 'data/'      # Raw Data Directory
 der_dir <- 'analysis/output/'    # Derived/Modified Data Directory
 man_dir <- 'manuscript/'       # Manuscript directory
-fig_dir <- 'analysis/figs/'      # Figures directory
+fig_dir <- 'manuscript/figs/'      # Figures directory
 
 # Set global ggplot theme
 theme_set(theme_classic() +

@@ -112,42 +112,43 @@ aes_data %>%
   scale_x_continuous(breaks = 1:9)
 
 ## Top 20 taxa in controls
-
-top20_taxa_in_treatment <- function(x, treatment) {
-x %>% 
-  filter(treat == treatment) %>% 
-  select(-sample, -row, -col, -qubit_ngml) %>% 
-  group_by(asv) %>% 
-  mutate(count = sum(count)) %>%  
-  ungroup() %>% 
-  distinct() %>% 
-  arrange(desc(count)) %>% 
-  slice_head(n = 20)
-}
-
-### Potting Mix
-
-top20_taxa_in_treatment(aes_data, "PM0")
-
-
-### Negative Control
-
-top20_taxa_in_treatment(aes_data, "NC0")
-
-
-### PCR Positive Control
-
-top20_taxa_in_treatment(aes_data, "PCRP")
-
-
-### PCR Negative Control
-
-top20_taxa_in_treatment(aes_data, "PCRN")
-
-
-### Soil Core
-
-top20_taxa_in_treatment(aes_data, "SC0")
+#
+#top20_taxa_in_treatment <- function(x, treatment) {
+#    print(paste0('Top 20 taxa in ', treatment))
+#x %>% 
+#  filter(treat == treatment) %>% 
+#  select(-sample, -row, -col, -qubit_ngml) %>% 
+#  group_by(asv) %>% 
+#  mutate(count = sum(count)) %>%  
+#  ungroup() %>% 
+#  distinct() %>% 
+#  arrange(desc(count)) %>% 
+#  slice_head(n = 20)
+#}
+#
+#### Potting Mix
+#
+#top20_taxa_in_treatment(aes_data, "PM0")
+#
+#
+#### Negative Control
+#
+#top20_taxa_in_treatment(aes_data, "NC0")
+#
+#
+#### PCR Positive Control
+#
+#top20_taxa_in_treatment(aes_data, "PCRP")
+#
+#
+#### PCR Negative Control
+#
+#top20_taxa_in_treatment(aes_data, "PCRN")
+#
+#
+#### Soil Core
+#
+#top20_taxa_in_treatment(aes_data, "SC0")
 
 # Sequence Depth Distribution
 
