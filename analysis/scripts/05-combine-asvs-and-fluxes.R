@@ -29,6 +29,10 @@ sum(colnames(seqtab.nochim) != rownames(taxa))
 # They match if = 0 
 seqs <- tibble(asv = paste0("ASV", seq(ncol(seqtab.nochim))),
                seq = colnames(seqtab.nochim))
+seq_out <- seqs
+names(seq_out) <- c('seq.name', 'seq.text')
+phylotools::dat2fasta(seq_out, 'analysis/output/refseqs.fna')
+
 colnames(seqtab.nochim) <- paste0("ASV", seq(ncol(seqtab.nochim)))
 rownames(seqtab.nochim) <- metadata$sample
 rownames(taxa) <- colnames(seqtab.nochim)
@@ -36,6 +40,17 @@ rownames(taxa) <- colnames(seqtab.nochim)
 asvs <-
   seqtab.nochim %>% 
   as_tibble(rownames = "sample")
+
+asvs %>% 
+    pivot_longer(-sample, names_to = 'asv', values_to = 'count') %>% 
+    pivot_wider(names_from = sample, values_from = count)%>% 
+    as.data.frame ->
+    asv_to_biom
+
+rownames(asv_to_biom) <- asv_to_biom[,1]
+asv_to_biom <- asv_to_biom[,-1]
+asv_biom <- biomformat::make_biom(asv_to_biom)
+biomformat::write_biom(asv_biom, 'analysis/output/asv.biom')
 
 rm(seqtab.nochim)
 

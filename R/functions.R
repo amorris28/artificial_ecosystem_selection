@@ -7,7 +7,10 @@ man_dir <- 'manuscript/'       # Manuscript directory
 fig_dir <- 'analysis/figs/'      # Figures directory
 
 # Set global ggplot theme
-
+theme_set(theme_classic() +
+              theme(panel.border = element_rect(fill = NA, linewidth = 0.5),
+                    axis.line = element_blank(),
+              ))
 theme_set(theme_classic() +
             theme(panel.border = element_rect(fill = NA, linewidth = 1.0625),
                   axis.line = element_blank(),
