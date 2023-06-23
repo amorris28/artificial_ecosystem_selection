@@ -82,4 +82,4 @@ curl https://zenodo.org/record/4587955/files/silva_nr99_v138.1_train_set.fa.gz -
 
 Software and code licensed under the [MIT license](https://github.com/amorris28/artificial_ecosystem_selection/blob/main/LICENSE.md)
 
-Datasets within `Data/` licensed under [CC0](https://github.com/amorris28/artificial_ecosystem_selection/blob/main/data/LICENSE.md) 
+Datasets within `data/` licensed under [CC0](https://github.com/amorris28/artificial_ecosystem_selection/blob/main/data/LICENSE.md) 
