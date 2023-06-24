@@ -2,16 +2,16 @@
 
 ## Citation
 
-Morris, Andrew H, Bohannan, Brendan JM. 2023. Response of soil microbiome composition to selection on methane oxidation rate. 
+Morris, Andrew H. and Bohannan, Brendan J. M. 2023. Response of soil microbiome composition to selection on methane oxidation rate. bioRxiv 2023.06.23.546315; doi: https://doi.org/10.1101/2023.06.23.546315 
 
 ## Overview
 
 This is the project directory for the manuscript entitled "Response of soil
-microbiome composition to selection on methane oxidation rate" that is
-currently in preparation. See the [Directories](#directories)
-section for an explanation of what files are contained in each directory. See
-the Data Dictionary at `data/data_dictionary.tsv` for an explanation of the
-variables in each data file.
+microbiome composition to selection on methane oxidation rate." See the
+[Directories](#directories) section for an explanation of what files are
+contained in each directory. See the Data Dictionary at
+`data/data_dictionary.tsv` for an explanation of the variables in each data
+file.
 
 All intermediate files needed to recreate the manuscript are included in the
 repository and a Makefile has been included to easily recreate the manuscript
