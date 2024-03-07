@@ -216,7 +216,7 @@ moss, pumice, sand, composted manure, and biochar (Lane Potting Mix, Lane Forest
 Products, Eugene, OR). The initial soil microbiome inoculum was sampled from the
 top 10 cm of an upland mineral soil under a deciduous forest ecosystem near the
 University of Oregon campus in Eugene, OR, USA. Each jar
-was capped and injected with 4.3 mL of 99\% CH~4~, which produced a mean
+was capped and injected with 0.43 mL of 99\% CH~4~, which produced a mean
 headspace concentration of 763.9 ppm (SD = 183.1). Twice per week, jars were
 flushed in a biosafety cabinet (to avoid contamination) and respiked with CH~4~ 
 to maintain aerobic conditions and elevated CH~4~ concentrations.
