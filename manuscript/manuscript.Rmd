@@ -242,8 +242,8 @@ autoclaved potting mix and the same moisture and CH~4~ content.
 
 ## Methane oxidation rate
 
-Methane oxidation rates were determined after flushing and spiking jars to
-1000 ppm CH~4~. Headspace samples of 1 mL were collected from
+Methane oxidation rates were determined after flushing and spiking jars with 
+0.43 mL of 99\% CH~4~. Headspace samples of 1 mL were collected from
 each jar immediately after spiking and then at time points 3, 6, 24, and 48
 hours for a 5-point curve. Samples were immediately injected into a SRI model
 8610C gas chromatograph equipped with a flame ionization detector (SRI
